@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, MoreHorizontal, Pencil, Shield, Power, KeyRound } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Pencil, Shield, Power, KeyRound, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import Swal from "sweetalert2"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -83,6 +84,51 @@ export function UsuariosModule() {
     if (!val) return;
     setEstado(val as "todos" | "activo" | "inactivo")
     setCurrentPage(1)
+  }
+
+  const handleToggleActivo = async (usuario: Usuario) => {
+    try {
+      await api.usuarios.update(usuario.id, { ...usuario, activo: !usuario.activo })
+      toast.success(`${usuario.nombre} ha sido ${!usuario.activo ? "activado" : "inactivado"}`)
+      fetchUsuarios()
+    } catch (err: any) {
+      console.error(err)
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Error al cambiar el estado del usuario",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
+    }
+  }
+
+  const handleDeleteUsuario = async (usuario: Usuario) => {
+    const confirmation = await Swal.fire({
+      title: "¿Está seguro?",
+      text: `¿Desea eliminar al usuario ${usuario.nombre}? Esta acción ocultará al usuario pero mantendrá sus registros en el sistema.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+    })
+
+    if (!confirmation.isConfirmed) return
+
+    try {
+      await api.usuarios.delete(usuario.id)
+      toast.success(`Usuario ${usuario.nombre} eliminado`)
+      fetchUsuarios()
+    } catch (err: any) {
+      console.error(err)
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Error al eliminar el usuario",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
+    }
   }
 
   const filtered = items
@@ -198,13 +244,17 @@ export function UsuariosModule() {
                             <Shield className="size-4" />
                             Cambiar rol
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.warning(`${u.nombre} ${u.activo ? "inactivado" : "activado"}`)}>
+                          <DropdownMenuItem onClick={() => handleToggleActivo(u)}>
                             <Power className="size-4" />
                             {u.activo ? "Inactivar" : "Activar"}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toast.success(`Contraseña restablecida para ${u.nombre}`)}>
                             <KeyRound className="size-4" />
                             Restablecer contraseña
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteUsuario(u)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20">
+                            <Trash2 className="size-4" />
+                            Eliminar usuario
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>

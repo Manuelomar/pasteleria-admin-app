@@ -74,6 +74,7 @@ const mapUsuarioToBackend = (u: any): any => {
   if (u.username !== undefined && !result.username) result.username = u.username;
   if (u.password !== undefined) result.password = u.password;
   if (u.rol !== undefined) result.role = u.rol;
+  if (u.activo !== undefined) result.activo = u.activo;
   if (u.permisos !== undefined) result.permissions = u.permisos;
   return result;
 };

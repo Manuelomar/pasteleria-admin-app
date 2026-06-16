@@ -66,6 +66,27 @@ export function UsuarioDialog({
   }, [open, usuario])
 
   const handleSave = async () => {
+    if (!nombre.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Error de validación",
+        text: "El nombre es requerido",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!correo || !emailRegex.test(correo)) {
+      Swal.fire({
+        icon: "error",
+        title: "Error de validación",
+        text: "Por favor, introduce un correo electrónico válido (ej. usuario@ejemplo.com)",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
+      return
+    }
+
     setIsSaving(true)
     try {
       const data: any = {
@@ -83,7 +104,12 @@ export function UsuarioDialog({
         toast.success("Usuario actualizado")
       } else {
         if (!password) {
-          toast.error("La contraseña es requerida para nuevos usuarios")
+          Swal.fire({
+            icon: "error",
+            title: "Error de validación",
+            text: "La contraseña es requerida para nuevos usuarios",
+            confirmButtonColor: "hsl(var(--primary))"
+          })
           setIsSaving(false)
           return
         }
