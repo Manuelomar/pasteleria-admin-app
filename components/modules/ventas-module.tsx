@@ -45,6 +45,7 @@ export function VentasModule() {
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pagado")
   const [montoPagado, setMontoPagado] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [lastVentaId, setLastVentaId] = useState<string | null>(null)
 
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
@@ -147,6 +148,24 @@ export function VentasModule() {
     setClienteId("general")
   }
 
+  const imprimirFactura = (id: string) => {
+    const iframeId = "print-invoice-iframe"
+    const existingIframe = document.getElementById(iframeId)
+    if (existingIframe) {
+      existingIframe.remove()
+    }
+
+    const iframe = document.createElement("iframe")
+    iframe.id = iframeId
+    iframe.style.position = "absolute"
+    iframe.style.width = "0px"
+    iframe.style.height = "0px"
+    iframe.style.border = "none"
+    iframe.src = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/ventas/${id}/print`
+    
+    document.body.appendChild(iframe)
+  }
+
   const guardar = async () => {
     if (items.length === 0) {
       toast.error("Agrega al menos un producto a la venta")
@@ -154,6 +173,21 @@ export function VentasModule() {
     }
     if (estadoPago !== "pagado" && !esCredito) {
       toast.error("Las ventas a crédito requieren un cliente registrado")
+      return
+    }
+
+    const confirmacion = await Swal.fire({
+      title: "¿Está seguro?",
+      text: "¿Desea procesar el pago de esta venta?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, procesar",
+      cancelButtonText: "No, cancelar",
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+    })
+
+    if (!confirmacion.isConfirmed) {
       return
     }
     
@@ -173,13 +207,24 @@ export function VentasModule() {
         items
       })
       
-      Swal.fire({
+      if (res && res.data && res.data.id) {
+        setLastVentaId(res.data.id)
+      }
+
+      const printConfirm = await Swal.fire({
         title: "¡Venta Completada!",
-        text: res.message || `Operación realizada correctamente`,
+        text: `${res.message || "Operación realizada correctamente"}\n\n¿Desea imprimir la factura?`,
         icon: "success",
-        confirmButtonText: "Continuar",
+        showCancelButton: true,
+        confirmButtonText: "Sí, imprimir",
+        cancelButtonText: "No, continuar",
         confirmButtonColor: "#e11d48",
+        cancelButtonColor: "#6b7280",
       })
+
+      if (printConfirm.isConfirmed && res && res.data && res.data.id) {
+        imprimirFactura(res.data.id)
+      }
 
       limpiar()
       loadProductos()
@@ -401,7 +446,16 @@ export function VentasModule() {
               {isLoading ? "Procesando..." : "Procesar Pago"}
             </Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => toast.info("Imprimiendo factura...")}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (lastVentaId) {
+                    imprimirFactura(lastVentaId)
+                  } else {
+                    toast.error("No hay ninguna venta reciente para imprimir")
+                  }
+                }}
+              >
                 <Printer data-icon="inline-start" />
                 Imprimir
               </Button>

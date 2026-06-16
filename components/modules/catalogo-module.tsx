@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/toggle-group"
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
+import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
 import { currency, type Producto, type Tipo } from "@/lib/data"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,7 @@ export function CatalogoModule() {
   const [disp, setDisp] = useState<"todos" | "disponible" | "no-disponible">("todos")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
+  const [viewing, setViewing] = useState<Producto | null>(null)
 
   const fetchProductos = () => {
     setIsLoading(true)
@@ -189,7 +191,7 @@ export function CatalogoModule() {
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => toast.info(`${p.nombre}: ${p.descripcion}`)}
+                onClick={() => setViewing(p)}
               >
                 <Eye data-icon="inline-start" />
                 Ver
@@ -215,13 +217,13 @@ export function CatalogoModule() {
                 <PackagePlus />
                 <span className="sr-only">Añadir stock</span>
               </Button>
-              <Button
+              {/* <Button
                 size="sm"
                 onClick={() => toast.success(`${p.nombre} agregado a la venta`)}
               >
                 <ShoppingCart />
                 <span className="sr-only">Agregar a venta</span>
-              </Button>
+              </Button> */}
             </CardFooter>
           </Card>
         ))}
@@ -247,6 +249,12 @@ export function CatalogoModule() {
         onOpenChange={setDialogOpen} 
         producto={editing} 
         onSaved={fetchProductos}
+      />
+
+      <DetalleProductoDialog
+        open={!!viewing}
+        onOpenChange={(open) => !open && setViewing(null)}
+        producto={viewing}
       />
     </div>
   )
