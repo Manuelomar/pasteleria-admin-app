@@ -1,12 +1,13 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { DollarSign, ShoppingBag, Users, Package, AlertCircle, TrendingUp } from "lucide-react"
+import { DollarSign, ShoppingBag, Users, Package, AlertCircle, TrendingUp, Wallet, Percent } from "lucide-react"
 import {
   Bar,
   BarChart,
   CartesianGrid,
   XAxis,
+  YAxis,
   Cell,
   Pie,
   PieChart,
@@ -55,7 +56,7 @@ export function DashboardModule() {
     })
   }, [])
 
-  // Computed Stats
+  // Computed Stats - Hoy
   const ventasDia = useMemo(() => {
     const today = new Date().toISOString().split("T")[0]
     return ventas.filter(v => new Date(v.fecha).toISOString().split("T")[0] === today).reduce((s, v) => s + v.total, 0)
@@ -70,12 +71,39 @@ export function DashboardModule() {
   const productosDisp = productos.filter((p) => p.disponible).length
   const porCobrar = clientes.reduce((s, c) => s + c.balance, 0)
 
+  // Computed Stats - Globales y Financieras
+  const { totalVentasAnio, subtotalAnio, impuestoAnio, promedioOrden } = useMemo(() => {
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    
+    let sumTotal = 0
+    let anio = 0
+    let subtotalA = 0
+    let impuestoA = 0
+
+    ventas.forEach(v => {
+      const date = new Date(v.fecha)
+      sumTotal += v.total
+      if (date.getFullYear() === currentYear) {
+        anio += v.total
+        subtotalA += (v.subtotal || 0)
+        impuestoA += (v.impuesto || 0)
+      }
+    })
+
+    return {
+      totalVentasAnio: anio,
+      promedioOrden: ventas.length > 0 ? sumTotal / ventas.length : 0,
+      subtotalAnio: subtotalA,
+      impuestoAnio: impuestoA
+    }
+  }, [ventas])
+
   const masVendidos = useMemo(() => {
     return [...productos].sort((a, b) => b.vendidos - a.vendidos).slice(0, 5)
   }, [productos])
 
   const ventasSemanales = useMemo(() => {
-    // Ultimos 7 dias
     const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
     const data = []
     for (let i = 6; i >= 0; i--) {
@@ -85,6 +113,23 @@ export function DashboardModule() {
       const sum = ventas.filter(v => new Date(v.fecha).toISOString().split("T")[0] === dateStr).reduce((s, v) => s + v.total, 0)
       data.push({ dia: days[d.getDay()], ventas: sum })
     }
+    return data
+  }, [ventas])
+
+  const ventasMensuales = useMemo(() => {
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    const data = months.map(mes => ({ mes, ventas: 0, subtotal: 0, impuesto: 0 }))
+    
+    const currentYear = new Date().getFullYear()
+    ventas.forEach(v => {
+      const date = new Date(v.fecha)
+      if (date.getFullYear() === currentYear) {
+        data[date.getMonth()].ventas += v.total
+        data[date.getMonth()].subtotal += (v.subtotal || 0)
+        data[date.getMonth()].impuesto += (v.impuesto || 0)
+      }
+    })
+    
     return data
   }, [ventas])
 
@@ -113,6 +158,26 @@ export function DashboardModule() {
     })).filter(x => x.valor > 0)
   }, [ventas, productos])
 
+  const metodosPago = useMemo(() => {
+    const colors: Record<string, string> = {
+      Efectivo: "var(--color-chart-1)",
+      Tarjeta: "var(--color-chart-2)",
+      Transferencia: "var(--color-chart-3)",
+    }
+    const map: Record<string, number> = { Efectivo: 0, Tarjeta: 0, Transferencia: 0 }
+    
+    ventas.forEach(v => {
+      const met = v.metodoPago === "efectivo" ? "Efectivo" : v.metodoPago === "tarjeta" ? "Tarjeta" : "Transferencia"
+      map[met] += v.total
+    })
+
+    return Object.keys(map).map(k => ({
+      metodo: k,
+      valor: map[k],
+      fill: colors[k] || "var(--color-chart-1)"
+    })).filter(x => x.valor > 0)
+  }, [ventas])
+
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 text-muted-foreground">
@@ -123,18 +188,111 @@ export function DashboardModule() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard title="Ventas del día" value={currency(ventasDia)} icon={DollarSign} accent="primary" hint="Actualizado hoy" />
-        <StatCard title="Ventas totales" value={currency(ventas.reduce((s, v) => s + v.total, 0))} icon={TrendingUp} accent="green" hint="Histórico" />
-        <StatCard title="Órdenes del día" value={String(ordenesDia)} icon={ShoppingBag} accent="orange" />
-        <StatCard title="Clientes registrados" value={String(clientesReg)} icon={Users} accent="muted" />
-        <StatCard title="Productos disponibles" value={String(productosDisp)} icon={Package} accent="green" />
-        <StatCard title="Cuentas por cobrar" value={currency(porCobrar)} icon={AlertCircle} accent="primary" />
+    <div className="flex flex-col gap-8">
+      
+      {/* SECCIÓN: Hoy y Operativo */}
+      <div>
+        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Operativo Hoy</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard title="Ventas del día" value={currency(ventasDia)} icon={DollarSign} accent="primary" hint="Actualizado hoy" />
+          <StatCard title="Órdenes del día" value={String(ordenesDia)} icon={ShoppingBag} accent="orange" />
+          <StatCard title="Cuentas por cobrar" value={currency(porCobrar)} icon={AlertCircle} accent="primary" />
+          <StatCard title="Clientes registrados" value={String(clientesReg)} icon={Users} accent="muted" />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      {/* SECCIÓN: Finanzas e Impuestos */}
+      <div>
+        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Métricas Financieras (Año)</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-border bg-card/50 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <DollarSign className="size-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground">Total Facturado</span>
+                <div className="flex items-end gap-2">
+                  <span className="font-heading text-lg font-bold text-foreground">{currency(totalVentasAnio)}</span>
+                  <span className="text-[10px] text-muted-foreground mb-1">con ITBIS</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-11 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <TrendingUp className="size-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground">Ventas Sin ITBIS</span>
+                <span className="font-heading text-lg font-bold text-foreground">{currency(subtotalAnio)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-11 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <Percent className="size-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground">ITBIS Recaudado</span>
+                <span className="font-heading text-lg font-bold text-foreground">{currency(impuestoAnio)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card/50 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-11 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Wallet className="size-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground">Ticket Promedio</span>
+                <span className="font-heading text-lg font-bold text-foreground">{currency(promedioOrden)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* SECCIÓN: Gráficas de Rendimiento */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Evolución de Ventas e ITBIS</CardTitle>
+            <CardDescription>Comparativa de facturación con y sin impuestos en el año</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {ventasMensuales.some(v => v.ventas > 0) ? (
+              <ChartContainer 
+                config={{ 
+                  subtotal: { label: "Sin ITBIS", color: "var(--chart-2)" }, 
+                  impuesto: { label: "ITBIS", color: "var(--chart-1)" } 
+                }} 
+                className="h-[280px] w-full"
+              >
+                <BarChart data={ventasMensuales}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="subtotal" stackId="a" fill="var(--color-subtotal)" radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="impuesto" stackId="a" fill="var(--color-impuesto)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground text-sm">
+                No hay ventas este año
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Ventas de la semana</CardTitle>
             <CardDescription>Total facturado por día (últimos 7 días)</CardDescription>
@@ -148,8 +306,9 @@ export function DashboardModule() {
                 <BarChart data={ventasSemanales}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
                   <XAxis dataKey="dia" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="ventas" fill="var(--color-ventas)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="ventas" fill="var(--color-ventas)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ChartContainer>
             ) : (
@@ -159,7 +318,9 @@ export function DashboardModule() {
             )}
           </CardContent>
         </Card>
+      </div>
 
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Ventas por categoría</CardTitle>
@@ -177,7 +338,7 @@ export function DashboardModule() {
               >
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={55}>
+                  <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={60} outerRadius={85} paddingAngle={4}>
                     {ventasPorCategoria.map((entry) => (
                       <Cell key={entry.categoria} fill={entry.fill} />
                     ))}
@@ -192,9 +353,41 @@ export function DashboardModule() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Métodos de Pago Preferidos</CardTitle>
+            <CardDescription>Distribución de transacciones</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {metodosPago.length > 0 ? (
+              <ChartContainer
+                config={{ 
+                  Efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
+                  Tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
+                  Transferencia: { label: "Transferencia", color: "var(--chart-3)" } 
+                }}
+                className="mx-auto h-[280px] w-full"
+              >
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Pie data={metodosPago} dataKey="valor" nameKey="metodo" innerRadius={60} outerRadius={85} paddingAngle={4}>
+                    {metodosPago.map((entry) => <Cell key={entry.metodo} fill={entry.fill} />)}
+                  </Pie>
+                  <ChartLegend content={<ChartLegendContent nameKey="metodo" />} />
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground text-sm">
+                Sin transacciones
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* SECCIÓN: Movimientos Recientes */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Últimas ventas</CardTitle>

@@ -6,7 +6,6 @@ import { DashboardModule } from "@/components/modules/dashboard-module"
 import { CatalogoModule } from "@/components/modules/catalogo-module"
 import { ClientesModule } from "@/components/modules/clientes-module"
 import { VentasModule } from "@/components/modules/ventas-module"
-import { GraficosModule } from "@/components/modules/graficos-module"
 import { EstadoCuentaModule } from "@/components/modules/estado-cuenta-module"
 import { UsuariosModule } from "@/components/modules/usuarios-module"
 import { LoginModule } from "@/components/modules/login-module"
@@ -20,7 +19,6 @@ const titles: Record<ModuleId, string> = {
   clientes: "Clientes",
   catalogo: "Catálogo",
   ventas: "Ventas y Facturación",
-  graficos: "Gráficos y Reportes",
   "estado-cuenta": "Finanzas y Caja",
   usuarios: "Usuarios",
 }
@@ -98,7 +96,6 @@ export default function Page() {
           {active === "clientes" && <ClientesModule />}
           {active === "catalogo" && <CatalogoModule />}
           {active === "ventas" && <VentasModule />}
-          {active === "graficos" && <GraficosModule />}
           {active === "estado-cuenta" && <EstadoCuentaModule />}
           {active === "usuarios" && <UsuariosModule />}
         </>

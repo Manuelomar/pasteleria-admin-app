@@ -22,7 +22,6 @@ export type ModuleId =
   | "clientes"
   | "catalogo"
   | "ventas"
-  | "graficos"
   | "estado-cuenta"
   | "usuarios"
 
@@ -37,7 +36,6 @@ const modulos: NavItem[] = [
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "catalogo", label: "Catálogo", icon: BookOpen },
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
-  { id: "graficos", label: "Gráficos", icon: BarChart3 },
   { id: "estado-cuenta", label: "Finanzas y Caja", icon: Wallet },
 ]
 
@@ -192,11 +190,11 @@ export function AppShell({
             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
               {currentUser?.nombre?.substring(0, 2) || "U"}
             </div>
-            {onLogout && (
+            {/* {onLogout && (
               <Button variant="ghost" size="sm" onClick={onLogout} className="ml-2 text-muted-foreground hover:text-foreground">
                 Cerrar sesión
               </Button>
-            )}
+            )} */}
           </div>
         </header>
 
