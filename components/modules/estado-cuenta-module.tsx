@@ -206,43 +206,32 @@ export function EstadoCuentaModule() {
                 </CardHeader>
                 <CardContent>
                   {ventasDelDia.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Factura</TableHead>
-                              <TableHead>Hora</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Método de Pago</TableHead>
-                              <TableHead className="text-right">Total</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {ventasDelDia.map(v => {
-                              const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                              return (
-                                <TableRow key={v.id}>
-                                  <TableCell className="font-mono text-sm">{v.factura}</TableCell>
-                                  <TableCell className="text-sm">{hora}</TableCell>
-                                  <TableCell className="text-sm">{v.clienteNombre || "Cliente de Paso"}</TableCell>
-                                  <TableCell className="text-sm capitalize">{v.metodoPago}</TableCell>
-                                  <TableCell className="text-right font-semibold">{currency(v.total)}</TableCell>
-                                </TableRow>
-                              )
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {/* Siempre mostramos el paginador si hay datos, o según el componente internamente */}
-                      <AppPagination
-                        currentPage={pageCaja}
-                        pageSize={pageSizeCaja}
-                        totalItems={totalItemsCaja}
-                        totalPages={totalPagesCaja}
-                        onPageChange={setPageCaja}
-                        itemName="ventas"
-                      />
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Factura</TableHead>
+                            <TableHead>Hora</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Método de Pago</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ventasDelDia.map(v => {
+                            const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            return (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-mono text-sm">{v.factura}</TableCell>
+                                <TableCell className="text-sm">{hora}</TableCell>
+                                <TableCell className="text-sm">{v.clienteNombre || "Cliente de Paso"}</TableCell>
+                                <TableCell className="text-sm capitalize">{v.metodoPago}</TableCell>
+                                <TableCell className="text-right font-semibold">{currency(v.total)}</TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
                   ) : (
                     <div className="py-8 text-center text-sm text-muted-foreground">
@@ -251,6 +240,18 @@ export function EstadoCuentaModule() {
                   )}
                 </CardContent>
               </Card>
+              {ventasDelDia.length > 0 && (
+                <div className="mt-2">
+                  <AppPagination
+                    currentPage={pageCaja}
+                    pageSize={pageSizeCaja}
+                    totalItems={totalItemsCaja}
+                    totalPages={totalPagesCaja}
+                    onPageChange={setPageCaja}
+                    itemName="ventas"
+                  />
+                </div>
+              )}
             </>
           )}
         </TabsContent>
@@ -294,37 +295,27 @@ export function EstadoCuentaModule() {
                 </CardHeader>
                 <CardContent>
                   {topProducts.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Producto</TableHead>
-                              <TableHead className="text-right">Cantidad Vendida</TableHead>
-                              <TableHead className="text-right">Ingresos Generados</TableHead>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Producto</TableHead>
+                            <TableHead className="text-right">Cantidad Vendida</TableHead>
+                            <TableHead className="text-right">Ingresos Generados</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {topProducts.map((p, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{p.nombre}</TableCell>
+                              <TableCell className="text-right">{p.cantidad} unds.</TableCell>
+                              <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                                {currency(p.total)}
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {topProducts.map((p, index) => (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">{p.nombre}</TableCell>
-                                <TableCell className="text-right">{p.cantidad} unds.</TableCell>
-                                <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
-                                  {currency(p.total)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <AppPagination
-                        currentPage={pageReporte}
-                        pageSize={pageSizeReporte}
-                        totalItems={totalItemsReporte}
-                        totalPages={totalPagesReporte}
-                        onPageChange={setPageReporte}
-                        itemName="productos"
-                      />
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   ) : (
                     <div className="py-8 text-center text-sm text-muted-foreground">
@@ -333,6 +324,18 @@ export function EstadoCuentaModule() {
                   )}
                 </CardContent>
               </Card>
+              {topProducts.length > 0 && (
+                <div className="mt-2">
+                  <AppPagination
+                    currentPage={pageReporte}
+                    pageSize={pageSizeReporte}
+                    totalItems={totalItemsReporte}
+                    totalPages={totalPagesReporte}
+                    onPageChange={setPageReporte}
+                    itemName="productos"
+                  />
+                </div>
+              )}
             </>
           )}
         </TabsContent>

@@ -141,19 +141,22 @@ export function UsuariosModule() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Correo</TableHead>
+                <TableHead>Usuario</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Último acceso</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-right pr-6">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium text-foreground">{u.nombre}</TableCell>
-                  <TableCell className="text-muted-foreground">{u.correo}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-foreground">{u.nombre}</span>
+                      <span className="text-xs text-muted-foreground">{u.correo}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="font-medium">
                       {rolLabel[u.rol]}
@@ -170,11 +173,11 @@ export function UsuariosModule() {
                       minute: "2-digit",
                     })}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right pr-6">
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="ml-auto">
                             <MoreHorizontal className="size-4" />
                             <span className="sr-only">Acciones</span>
                           </Button>
@@ -212,17 +215,17 @@ export function UsuariosModule() {
             </TableBody>
           </Table>
         </div>
-        
-        {/* Paginación */}
-        <AppPagination
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemName="usuarios"
-        />
       </Card>
+
+      {/* Paginación */}
+      <AppPagination
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        itemName="usuarios"
+      />
 
       <UsuarioDialog open={dialogOpen} onOpenChange={setDialogOpen} usuario={editing} onSaved={fetchUsuarios} />
     </div>
