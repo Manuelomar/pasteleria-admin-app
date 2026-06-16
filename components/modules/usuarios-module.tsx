@@ -110,10 +110,8 @@ export function UsuariosModule() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los roles</SelectItem>
-              <SelectItem value="administrador">Administrador</SelectItem>
-              <SelectItem value="cajero">Cajero</SelectItem>
-              <SelectItem value="vendedor">Vendedor</SelectItem>
-              <SelectItem value="supervisor">Supervisor</SelectItem>
+              <SelectItem value="admin">Administrador</SelectItem>
+              <SelectItem value="usuario">Usuario</SelectItem>
             </SelectContent>
           </Select>
           <Select value={estado} onValueChange={handleEstadoChange}>

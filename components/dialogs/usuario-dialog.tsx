@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { Usuario } from "@/lib/data"
+import Swal from "sweetalert2"
 
 import { api } from "@/lib/api"
 
@@ -39,8 +40,18 @@ export function UsuarioDialog({
   const [nombre, setNombre] = useState("")
   const [correo, setCorreo] = useState("")
   const [password, setPassword] = useState("")
-  const [rol, setRol] = useState("cajero")
+  const [rol, setRol] = useState("usuario")
   const [activo, setActivo] = useState(true)
+  const defaultPermisos = {
+    dashboard: true,
+    clientes: true,
+    catalogo: true,
+    ventas: true,
+    graficos: true,
+    estadoCuenta: true,
+    usuarios: false,
+  }
+  const [permisos, setPermisos] = useState<Record<string, boolean>>(defaultPermisos)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -48,8 +59,9 @@ export function UsuarioDialog({
       setNombre(usuario?.nombre ?? "")
       setCorreo(usuario?.correo ?? "")
       setPassword("")
-      setRol(usuario?.rol ?? "cajero")
+      setRol(usuario?.rol ?? "usuario")
       setActivo(usuario?.activo ?? true)
+      setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
   }, [open, usuario])
 
@@ -62,6 +74,7 @@ export function UsuarioDialog({
         rol,
         activo,
         username: correo, // username equals correo for now
+        permisos,
       }
       if (password) data.password = password
       
@@ -80,9 +93,14 @@ export function UsuarioDialog({
       
       if (onSaved) onSaved()
       onOpenChange(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      toast.error("Error al guardar el usuario")
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message || "Error al guardar el usuario",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
     } finally {
       setIsSaving(false)
     }
@@ -90,7 +108,7 @@ export function UsuarioDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{usuario ? "Editar usuario" : "Nuevo usuario"}</DialogTitle>
           <DialogDescription>Datos de acceso al sistema.</DialogDescription>
@@ -121,10 +139,8 @@ export function UsuarioDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="administrador">Administrador</SelectItem>
-                <SelectItem value="cajero">Cajero</SelectItem>
-                <SelectItem value="vendedor">Vendedor</SelectItem>
-                <SelectItem value="supervisor">Supervisor</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="usuario">Usuario</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -133,7 +149,35 @@ export function UsuarioDialog({
             <Switch id="usr-activo" checked={activo} onCheckedChange={setActivo} />
           </Field>
         </FieldGroup>
-        <DialogFooter>
+
+        {/* Sección de Permisos - Ocultar si es administrador ya que tiene todo por defecto */}
+        {rol !== "admin" && (
+          <div className="mt-6 flex flex-col gap-3">
+            <h4 className="text-sm font-medium leading-none">Permisos de Módulos</h4>
+            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+              {Object.entries({
+                dashboard: "Dashboard",
+                clientes: "Clientes",
+                catalogo: "Catálogo",
+                ventas: "Ventas",
+                graficos: "Gráficos",
+                estadoCuenta: "Finanzas y Caja",
+                usuarios: "Usuarios",
+              }).map(([key, label]) => (
+                <Field key={key} orientation="horizontal" className="items-center justify-between col-span-2 sm:col-span-1">
+                  <FieldLabel htmlFor={`perm-${key}`} className="font-normal text-sm">{label}</FieldLabel>
+                  <Switch 
+                    id={`perm-${key}`} 
+                    checked={permisos[key] ?? false} 
+                    onCheckedChange={(checked) => setPermisos(p => ({ ...p, [key]: checked }))} 
+                  />
+                </Field>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="mt-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

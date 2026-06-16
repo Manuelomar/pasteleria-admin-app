@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { type Usuario, rolLabel } from "@/lib/data"
 
 export type ModuleId =
   | "dashboard"
@@ -85,11 +86,18 @@ function SidebarContent({
   active,
   onSelect,
   onLogout,
+  currentUser,
 }: {
   active: ModuleId
   onSelect: (id: ModuleId) => void
   onLogout?: () => void
+  currentUser?: Usuario | null
 }) {
+  const isAdmin = currentUser?.rol === "admin"
+  const permisos = currentUser?.permisos || {}
+
+  const modulosVisibles = modulos.filter((m) => isAdmin || permisos[m.id] === true)
+  const administracionVisibles = administracion.filter((m) => isAdmin || permisos[m.id] === true)
   return (
     <div className="flex h-full flex-col p-4">
       <div className="flex items-center gap-3 px-2 py-3">
@@ -104,14 +112,18 @@ function SidebarContent({
         </div>
       </div>
       <nav className="mt-2 flex flex-1 flex-col gap-2">
-        <NavSection title="Módulos" items={modulos} active={active} onSelect={onSelect} />
-        <div className="my-1 h-px bg-border" />
-        <NavSection
-          title="Administración"
-          items={administracion}
-          active={active}
-          onSelect={onSelect}
-        />
+        <NavSection title="Módulos" items={modulosVisibles} active={active} onSelect={onSelect} />
+        {administracionVisibles.length > 0 && (
+          <>
+            <div className="my-1 h-px bg-border" />
+            <NavSection
+              title="Administración"
+              items={administracionVisibles}
+              active={active}
+              onSelect={onSelect}
+            />
+          </>
+        )}
       </nav>
       {onLogout && (
         <div className="mt-auto pt-4">
@@ -131,12 +143,14 @@ export function AppShell({
   title,
   children,
   onLogout,
+  currentUser,
 }: {
   active: ModuleId
   onSelect: (id: ModuleId) => void
   title: string
   children: React.ReactNode
   onLogout?: () => void
+  currentUser?: Usuario | null
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -149,7 +163,7 @@ export function AppShell({
     <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-sidebar lg:block">
-        <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} />
+        <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} currentUser={currentUser} />
       </aside>
 
       <div className="flex flex-1 flex-col lg:pl-64">
@@ -166,17 +180,17 @@ export function AppShell({
             />
             <SheetContent side="left" className="w-72 bg-sidebar p-0">
               <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
-              <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} />
+              <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} currentUser={currentUser} />
             </SheetContent>
           </Sheet>
           <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium leading-none text-foreground">Manuel Omar</p>
-              <p className="text-xs text-muted-foreground">Administrador</p>
+              <p className="text-sm font-medium leading-none text-foreground">{currentUser?.nombre || "Usuario"}</p>
+              <p className="text-xs text-muted-foreground">{currentUser ? rolLabel[currentUser.rol] : ""}</p>
             </div>
-            <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-              MO
+            <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
+              {currentUser?.nombre?.substring(0, 2) || "U"}
             </div>
             {onLogout && (
               <Button variant="ghost" size="sm" onClick={onLogout} className="ml-2 text-muted-foreground hover:text-foreground">

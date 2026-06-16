@@ -32,7 +32,15 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
         window.location.href = '/login';
       }
     }
-    throw new Error(`API Error: ${res.statusText}`);
+    
+    let errorMsg = `API Error: ${res.statusText}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.message) {
+        errorMsg = Array.isArray(errJson.message) ? errJson.message.join(', ') : errJson.message;
+      }
+    } catch (e) {}
+    throw new Error(errorMsg);
   }
   
   // Si no hay contenido, retorna null
@@ -52,17 +60,21 @@ const mapUsuarioToFrontend = (u: any): Usuario => {
     id: u.id,
     nombre: u.name || u.username || '',
     correo: u.username || '',
-    rol: u.role || 'vendedor',
+    rol: (u.role === 'admin' || u.role === 'administrador') ? 'admin' : 'usuario',
     activo: u.activo ?? true,
     ultimoAcceso: u.createdAt || new Date().toISOString(),
+    permisos: u.permissions || {},
   };
 };
 
 const mapUsuarioToBackend = (u: any): any => {
-  const result: any = { ...u };
-  if (u.nombre) result.name = u.nombre;
-  if (u.correo) result.username = u.correo;
-  if (u.rol) result.role = u.rol;
+  const result: any = {};
+  if (u.nombre !== undefined) result.name = u.nombre;
+  if (u.correo !== undefined) result.username = u.correo;
+  if (u.username !== undefined && !result.username) result.username = u.username;
+  if (u.password !== undefined) result.password = u.password;
+  if (u.rol !== undefined) result.role = u.rol;
+  if (u.permisos !== undefined) result.permissions = u.permisos;
   return result;
 };
 
@@ -114,6 +126,7 @@ const mapVentaToFrontend = (v: any): Venta => {
 export const api = {
   auth: {
     login: (data: any): Promise<{ access_token: string }> => fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+    getMe: (): Promise<Usuario> => fetchAPI('/auth/me').then(mapUsuarioToFrontend),
   },
   productos: {
     getAll: (): Promise<Producto[]> => fetchAPI('/productos').then((list: any[]) => list.map(mapProductoToFrontend)),

@@ -71,7 +71,7 @@ export interface Movimiento {
   estado: EstadoPago
 }
 
-export type Rol = "administrador" | "cajero" | "vendedor" | "supervisor"
+export type Rol = "admin" | "usuario"
 
 export interface Usuario {
   id: string
@@ -80,6 +80,7 @@ export interface Usuario {
   rol: Rol
   activo: boolean
   ultimoAcceso: string
+  permisos?: Record<string, boolean>
 }
 
 export function currency(n: number) {
@@ -97,10 +98,8 @@ export const tipoLabel: Record<Tipo, string> = {
 }
 
 export const rolLabel: Record<Rol, string> = {
-  administrador: "Administrador",
-  cajero: "Cajero",
-  vendedor: "Vendedor",
-  supervisor: "Supervisor",
+  admin: "Administrador",
+  usuario: "Usuario",
 }
 
 export interface PaginatedResponse<T> {

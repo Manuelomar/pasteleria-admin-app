@@ -10,6 +10,8 @@ import { GraficosModule } from "@/components/modules/graficos-module"
 import { EstadoCuentaModule } from "@/components/modules/estado-cuenta-module"
 import { UsuariosModule } from "@/components/modules/usuarios-module"
 import { LoginModule } from "@/components/modules/login-module"
+import { api } from "@/lib/api"
+import type { Usuario } from "@/lib/data"
 
 import { useParams, useRouter } from "next/navigation"
 
@@ -31,14 +33,26 @@ export default function Page() {
   const isValidModule = Object.keys(titles).includes(currentModule)
   const active = isValidModule ? currentModule : "dashboard"
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
 
-  useEffect(() => {
+  const checkAuth = async () => {
     const token = localStorage.getItem("token")
     if (token) {
-      setIsAuthenticated(true)
+      try {
+        const user = await api.auth.getMe()
+        setCurrentUser(user)
+        setIsAuthenticated(true)
+      } catch (err) {
+        localStorage.removeItem("token")
+        setIsAuthenticated(false)
+      }
     } else {
       setIsAuthenticated(false)
     }
+  }
+
+  useEffect(() => {
+    checkAuth()
   }, [])
 
   if (isAuthenticated === null) {
@@ -46,7 +60,12 @@ export default function Page() {
   }
 
   if (!isAuthenticated) {
-    return <LoginModule onLoginSuccess={() => setIsAuthenticated(true)} />
+    return <LoginModule onLoginSuccess={checkAuth} />
+  }
+
+  const hasPermission = (moduloId: string) => {
+    if (currentUser?.rol === "admin") return true
+    return currentUser?.permisos?.[moduloId] === true
   }
 
   return (
@@ -62,16 +81,28 @@ export default function Page() {
       title={titles[active]}
       onLogout={() => {
         localStorage.removeItem("token")
+        setCurrentUser(null)
         setIsAuthenticated(false)
       }}
+      currentUser={currentUser}
     >
-      {active === "dashboard" && <DashboardModule />}
-      {active === "clientes" && <ClientesModule />}
-      {active === "catalogo" && <CatalogoModule />}
-      {active === "ventas" && <VentasModule />}
-      {active === "graficos" && <GraficosModule />}
-      {active === "estado-cuenta" && <EstadoCuentaModule />}
-      {active === "usuarios" && <UsuariosModule />}
+      {!hasPermission(active) && (
+        <div className="flex h-[50vh] flex-col items-center justify-center text-center">
+          <h2 className="text-2xl font-bold tracking-tight">Acceso Denegado</h2>
+          <p className="text-muted-foreground mt-2">No tienes permiso para ver esta sección.</p>
+        </div>
+      )}
+      {hasPermission(active) && (
+        <>
+          {active === "dashboard" && <DashboardModule />}
+          {active === "clientes" && <ClientesModule />}
+          {active === "catalogo" && <CatalogoModule />}
+          {active === "ventas" && <VentasModule />}
+          {active === "graficos" && <GraficosModule />}
+          {active === "estado-cuenta" && <EstadoCuentaModule />}
+          {active === "usuarios" && <UsuariosModule />}
+        </>
+      )}
     </AppShell>
   )
 }
