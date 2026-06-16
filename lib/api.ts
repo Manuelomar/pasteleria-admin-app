@@ -26,6 +26,12 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     throw new Error(`API Error: ${res.statusText}`);
   }
   
@@ -167,7 +173,15 @@ export const api = {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch(`${API_URL}/ventas`, { method: 'POST', body: JSON.stringify(data), headers });
-      if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+      if (!res.ok) {
+        if (res.status === 401 && typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
+        throw new Error(`API Error: ${res.statusText}`);
+      }
       const json = await res.json();
       return { data: mapVentaToFrontend(json.data), message: json.message };
     },
