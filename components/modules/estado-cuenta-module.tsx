@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { currency, type Venta } from "@/lib/data"
 import { api } from "@/lib/api"
+import { Loader } from "@/components/ui/loader"
 
 interface ResumenCaja {
   efectivo: number;
@@ -69,7 +70,8 @@ export function EstadoCuentaModule() {
     setIsLoadingCaja(true)
     Promise.all([
       api.ventas.getPaged(pageCaja, pageSizeCaja, selectedDate),
-      api.ventas.getResumenCaja(selectedDate)
+      api.ventas.getResumenCaja(selectedDate),
+      new Promise((resolve) => setTimeout(resolve, 1000))
     ]).then(([ventasPaged, resumen]) => {
       setVentasDelDia(ventasPaged.data)
       setTotalItemsCaja(ventasPaged.total)
@@ -88,7 +90,8 @@ export function EstadoCuentaModule() {
     setIsLoadingReporte(true)
     Promise.all([
       api.ventas.getReporteHistorico(),
-      api.ventas.getTopProductos(pageReporte, pageSizeReporte)
+      api.ventas.getTopProductos(pageReporte, pageSizeReporte),
+      new Promise((resolve) => setTimeout(resolve, 1000))
     ]).then(([historico, topPaged]) => {
       setVentasHistoricas(historico)
       setTopProducts(topPaged.data)
@@ -146,7 +149,9 @@ export function EstadoCuentaModule() {
           </div>
 
           {isLoadingCaja ? (
-            <div className="py-20 text-center text-muted-foreground">Cargando datos de caja...</div>
+            <div className="py-20 flex justify-center items-center">
+              <Loader />
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -259,7 +264,9 @@ export function EstadoCuentaModule() {
         {/* PESTAÑA 2: REPORTE DE VENTAS */}
         <TabsContent value="reporte" className="mt-6 flex flex-col gap-6">
           {isLoadingReporte ? (
-            <div className="py-20 text-center text-muted-foreground">Cargando reportes históricos...</div>
+            <div className="py-20 flex justify-center items-center">
+              <Loader />
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

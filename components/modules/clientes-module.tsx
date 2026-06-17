@@ -25,6 +25,7 @@ import { ActivoBadge } from "@/components/badges"
 import { ClienteDialog } from "@/components/dialogs/cliente-dialog"
 import { currency, type Cliente } from "@/lib/data"
 import { api } from "@/lib/api"
+import { Loader } from "@/components/ui/loader"
 
 export function ClientesModule() {
   const [search, setSearch] = useState("")
@@ -35,8 +36,11 @@ export function ClientesModule() {
 
   const fetchClientes = () => {
     setIsLoading(true)
-    api.clientes.getAll()
-      .then((data) => setItems(data))
+    Promise.all([
+      api.clientes.getAll(),
+      new Promise((resolve) => setTimeout(resolve, 1000))
+    ])
+      .then(([data]) => setItems(data))
       .catch((err) => {
         console.error("Error fetching clientes", err)
         toast.error("Error de conexión al cargar clientes")
@@ -56,6 +60,14 @@ export function ClientesModule() {
       c.correo.toLowerCase().includes(q)
     )
   })
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-5">

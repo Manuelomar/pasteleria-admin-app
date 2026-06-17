@@ -31,6 +31,7 @@ import {
 import { EstadoPagoBadge } from "@/components/badges"
 import { currency, type Venta, type Cliente, type Producto } from "@/lib/data"
 import { api } from "@/lib/api"
+import { Loader } from "@/components/ui/loader"
 
 export function DashboardModule() {
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -43,7 +44,8 @@ export function DashboardModule() {
     Promise.all([
       api.ventas.getAll(),
       api.clientes.getAll(),
-      api.productos.getAll()
+      api.productos.getAll(),
+      new Promise((resolve) => setTimeout(resolve, 1000))
     ]).then(([v, c, p]) => {
       setVentas(v)
       setClientes(c)
@@ -180,9 +182,8 @@ export function DashboardModule() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 text-muted-foreground">
-        <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p>Cargando panel de control...</p>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader />
       </div>
     )
   }

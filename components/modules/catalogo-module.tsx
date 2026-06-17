@@ -18,6 +18,7 @@ import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dia
 import { currency, type Producto, type Tipo } from "@/lib/data"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { Loader } from "@/components/ui/loader"
 
 export function CatalogoModule() {
   const [items, setItems] = useState<Producto[]>([])
@@ -36,8 +37,11 @@ export function CatalogoModule() {
 
   const fetchProductos = () => {
     setIsLoading(true)
-    api.productos.getPaged(currentPage, pageSize, search, tipo, disp)
-      .then((res) => {
+    Promise.all([
+      api.productos.getPaged(currentPage, pageSize, search, tipo, disp),
+      new Promise(resolve => setTimeout(resolve, 1000))
+    ])
+      .then(([res]) => {
         setItems(res.data)
         setTotalItems(res.total)
         setTotalPages(res.totalPages)
@@ -101,6 +105,14 @@ export function CatalogoModule() {
         toast.error("Error al actualizar el stock");
       }
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader />
+      </div>
+    )
   }
 
   return (

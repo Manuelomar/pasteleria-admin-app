@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Search, Plus, MoreHorizontal, Pencil, Shield, Power, KeyRound, Trash2 } from "lucide-react"
-import { toast } from "sonner"
 import Swal from "sweetalert2"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,6 +34,7 @@ import { UsuarioDialog } from "@/components/dialogs/usuario-dialog"
 import { rolLabel, type Usuario, type Rol } from "@/lib/data"
 import { api } from "@/lib/api"
 import { AppPagination } from "@/components/ui/app-pagination"
+import { Loader } from "@/components/ui/loader"
 
 export function UsuariosModule() {
   const [search, setSearch] = useState("")
@@ -52,15 +52,23 @@ export function UsuariosModule() {
 
   const fetchUsuarios = () => {
     setIsLoading(true)
-    api.usuarios.getPaged(currentPage, pageSize, search, rol, estado)
-      .then((res) => {
+    Promise.all([
+      api.usuarios.getPaged(currentPage, pageSize, search, rol, estado),
+      new Promise((resolve) => setTimeout(resolve, 1000))
+    ])
+      .then(([res]) => {
         setItems(res.data)
         setTotalItems(res.total)
         setTotalPages(res.totalPages)
       })
       .catch((err) => {
         console.error("Error fetching usuarios", err)
-        toast.error("Error de conexión al cargar usuarios")
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Error de conexión al cargar usuarios",
+          confirmButtonColor: "hsl(var(--primary))"
+        })
       })
       .finally(() => setIsLoading(false))
   }
@@ -89,7 +97,12 @@ export function UsuariosModule() {
   const handleToggleActivo = async (usuario: Usuario) => {
     try {
       await api.usuarios.update(usuario.id, { ...usuario, activo: !usuario.activo })
-      toast.success(`${usuario.nombre} ha sido ${!usuario.activo ? "activado" : "inactivado"}`)
+      Swal.fire({
+        icon: "success",
+        title: "Éxito",
+        text: `${usuario.nombre} ha sido ${!usuario.activo ? "activado" : "inactivado"}`,
+        confirmButtonColor: "hsl(var(--primary))"
+      })
       fetchUsuarios()
     } catch (err: any) {
       console.error(err)
@@ -118,7 +131,12 @@ export function UsuariosModule() {
 
     try {
       await api.usuarios.delete(usuario.id)
-      toast.success(`Usuario ${usuario.nombre} eliminado`)
+      Swal.fire({
+        icon: "success",
+        title: "Éxito",
+        text: `Usuario ${usuario.nombre} eliminado`,
+        confirmButtonColor: "hsl(var(--primary))"
+      })
       fetchUsuarios()
     } catch (err: any) {
       console.error(err)
@@ -132,6 +150,14 @@ export function UsuariosModule() {
   }
 
   const filtered = items
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -240,7 +266,13 @@ export function UsuariosModule() {
                             <Pencil className="size-4" />
                             Editar usuario
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.info(`Cambiar rol de ${u.nombre}`)}>
+                          <DropdownMenuItem onClick={() => Swal.fire({
+                             icon: "info",
+                             title: "Información",
+                             text: `Cambiar rol de ${u.nombre}`,
+                             confirmButtonColor: "hsl(var(--primary))"
+                           })}
+                          >
                             <Shield className="size-4" />
                             Cambiar rol
                           </DropdownMenuItem>
@@ -248,7 +280,14 @@ export function UsuariosModule() {
                             <Power className="size-4" />
                             {u.activo ? "Inactivar" : "Activar"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.success(`Contraseña restablecida para ${u.nombre}`)}>
+                          <DropdownMenuItem 
+                            onClick={() => Swal.fire({
+                              icon: "success",
+                              title: "Éxito",
+                              text: `Contraseña restablecida para ${u.nombre}`,
+                              confirmButtonColor: "hsl(var(--primary))"
+                            })}
+                          >
                             <KeyRound className="size-4" />
                             Restablecer contraseña
                           </DropdownMenuItem>

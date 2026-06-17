@@ -33,6 +33,7 @@ import {
 } from "@/lib/data"
 import { api } from "@/lib/api"
 import { AppPagination } from "@/components/ui/app-pagination"
+import { Loader } from "@/components/ui/loader"
 
 export function VentasModule() {
   const [search, setSearch] = useState("")
@@ -52,7 +53,7 @@ export function VentasModule() {
   const [fetchedClientes, setFetchedClientes] = useState<Cliente[]>([])
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(9)
+  const [pageSize, setPageSize] = useState(9)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -62,8 +63,11 @@ export function VentasModule() {
 
   const loadProductos = () => {
     setIsLoadingData(true)
-    api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible")
-      .then((res) => {
+    Promise.all([
+      api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible"),
+      new Promise(resolve => setTimeout(resolve, 1000))
+    ])
+      .then(([res]) => {
         setFetchedProductos(res.data)
         setTotalItems(res.total)
         setTotalPages(res.totalPages)
@@ -234,6 +238,14 @@ export function VentasModule() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isLoadingData) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader />
+      </div>
+    )
   }
 
   return (

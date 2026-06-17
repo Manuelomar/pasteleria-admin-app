@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -101,7 +100,12 @@ export function UsuarioDialog({
       
       if (usuario) {
         await api.usuarios.update(usuario.id, data)
-        toast.success("Usuario actualizado")
+        Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text: "Usuario actualizado",
+          confirmButtonColor: "hsl(var(--primary))"
+        })
       } else {
         if (!password) {
           Swal.fire({
@@ -114,7 +118,12 @@ export function UsuarioDialog({
           return
         }
         await api.usuarios.create(data)
-        toast.success("Usuario creado")
+        Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text: "Usuario creado",
+          confirmButtonColor: "hsl(var(--primary))"
+        })
       }
       
       if (onSaved) onSaved()
