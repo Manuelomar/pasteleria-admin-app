@@ -237,7 +237,7 @@ export const api = {
     delete: (id: string): Promise<void> => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
   },
   entregas: {
-    getAll: (): Promise<Entrega[]> => fetchAPI('/entregas'),
+    getAll: (filtro?: string): Promise<Entrega[]> => fetchAPI(`/entregas${filtro && filtro !== 'todos' ? `?filtro=${filtro}` : ''}`),
     create: (data: Partial<Entrega>): Promise<Entrega> => fetchAPI('/entregas', { method: 'POST', body: JSON.stringify(data) }),
     updateEstadoEntrega: (id: string, estado: string): Promise<Entrega> => fetchAPI(`/entregas/${id}/estado-entrega`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
     updateEstadoPago: (id: string, estado: string): Promise<Entrega> => fetchAPI(`/entregas/${id}/estado-pago`, { method: 'PATCH', body: JSON.stringify({ estado }) }),

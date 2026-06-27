@@ -5,6 +5,7 @@ import { Search, Plus, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import { currency, type Entrega, type Usuario } from "@/lib/data"
@@ -18,16 +19,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function EntregasModule() {
   const [entregas, setEntregas] = useState<Entrega[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [filtroEstado, setFiltroEstado] = useState("todos")
 
-  const fetchEntregas = () => {
+  const fetchEntregas = (filtro: string = filtroEstado) => {
     setIsLoading(true)
-    api.entregas.getAll()
+    api.entregas.getAll(filtro)
       .then(setEntregas)
       .catch((err) => {
         console.error("Error fetching entregas", err)
@@ -39,9 +43,12 @@ export function EntregasModule() {
   useEffect(() => {
     api.auth.getMe().then(user => {
       setCurrentUser(user)
-      fetchEntregas()
     }).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    fetchEntregas(filtroEstado)
+  }, [filtroEstado])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
     try {
@@ -74,6 +81,17 @@ export function EntregasModule() {
   const isProveedor = currentUser?.rol === "proveedor"
   const isAdmin = currentUser?.rol === "admin"
 
+  const entregasFiltradas = entregas.filter(e => {
+    if (search.trim()) {
+      const query = search.toLowerCase()
+      const provName = (e.proveedor?.nombre || (e.proveedor as any)?.name || "").toLowerCase()
+      const matchesProveedor = provName.includes(query)
+      const matchesProductos = e.items.some(i => i.producto?.nombre?.toLowerCase().includes(query))
+      return matchesProveedor || matchesProductos
+    }
+    return true
+  })
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
@@ -82,10 +100,25 @@ export function EntregasModule() {
         </p>
       </div>
 
+      <Tabs value={filtroEstado} onValueChange={setFiltroEstado} className="w-full">
+        <TabsList variant="line" className="w-full justify-start overflow-x-auto border-b border-border pb-0 mb-2 gap-4">
+          <TabsTrigger value="todos" className="px-1 py-3 text-sm font-medium">Todos los estados</TabsTrigger>
+          <TabsTrigger value="pendiente" className="px-1 py-3 text-sm font-medium">Pendientes</TabsTrigger>
+          <TabsTrigger value="pagado_no_entregado" className="px-1 py-3 text-sm font-medium">Pagado, no entregado</TabsTrigger>
+          <TabsTrigger value="entregado_no_pagado" className="px-1 py-3 text-sm font-medium">Entregado, no pagado</TabsTrigger>
+          <TabsTrigger value="finalizado" className="px-1 py-3 text-sm font-medium">Finalizados</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-sm">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar entrega..." className="pl-9" />
+          <Input 
+            placeholder="Buscar entrega o proveedor..." 
+            className="pl-9" 
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
         {(isProveedor || isAdmin) && (
           <Button onClick={() => setDialogOpen(true)}>
@@ -96,12 +129,12 @@ export function EntregasModule() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {entregas.length === 0 ? (
+        {entregasFiltradas.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-            No hay entregas programadas.
+            No hay entregas programadas que coincidan con los filtros.
           </div>
         ) : (
-          entregas.map((entrega) => (
+          entregasFiltradas.map((entrega) => (
             <Card key={entrega.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
@@ -112,7 +145,7 @@ export function EntregasModule() {
                     </div>
                     {isAdmin && entrega.proveedor && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Proveedor: <span className="font-semibold text-foreground">{entrega.proveedor.nombre}</span>
+                        Proveedor: <span className="font-semibold text-foreground">{entrega.proveedor.nombre || (entrega.proveedor as any).name}</span>
                       </p>
                     )}
                     <p className="mt-2 text-xl font-heading font-bold text-primary">
@@ -131,44 +164,56 @@ export function EntregasModule() {
                     </ul>
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-3 p-4 bg-muted/10 items-end justify-center">
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs text-muted-foreground">Estado Entrega</span>
-                      {isAdmin ? (
-                        <Select value={entrega.estadoEntrega} onValueChange={(val) => val && handleUpdateEstado(entrega.id, val)}>
-                          <SelectTrigger className="h-7 w-32 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="en_espera">En Espera</SelectItem>
-                            <SelectItem value="entregada">Entregada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant={entrega.estadoEntrega === 'entregada' ? 'default' : 'secondary'}>
-                          {entrega.estadoEntrega === 'entregada' ? 'Entregada' : 'En Espera'}
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col items-end gap-1 mt-2">
-                      <span className="text-xs text-muted-foreground">Estado Pago</span>
-                      {isAdmin ? (
-                        <Select value={entrega.estadoPago} onValueChange={(val) => val && handleUpdatePago(entrega.id, val)}>
-                          <SelectTrigger className="h-7 w-32 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendiente_pago">Pendiente</SelectItem>
-                            <SelectItem value="pagado">Pagado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant={entrega.estadoPago === 'pagado' ? 'default' : 'destructive'}>
-                          {entrega.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="flex flex-col gap-4 p-4 md:w-56 md:border-l md:border-border md:p-6 lg:w-72 bg-muted/10">
+                    {isAdmin ? (
+                      <>
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Entrega</Label>
+                          <Select 
+                            value={entrega.estadoEntrega} 
+                            onValueChange={(v) => v && handleUpdateEstado(entrega.id, v)}
+                          >
+                            <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en_espera">En espera</SelectItem>
+                              <SelectItem value="entregada">Entregada</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Pago</Label>
+                          <Select 
+                            value={entrega.estadoPago} 
+                            onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
+                          >
+                            <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendiente_pago">Pendiente</SelectItem>
+                              <SelectItem value="pagado">Pagado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase">Entrega</span>
+                          <Badge variant={entrega.estadoEntrega === 'entregada' ? 'default' : 'secondary'} className="w-fit">
+                            {entrega.estadoEntrega === 'entregada' ? 'Entregada' : 'En Espera'}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase">Pago</span>
+                          <Badge variant={entrega.estadoPago === 'pagado' ? 'default' : 'destructive'} className="w-fit">
+                            {entrega.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
