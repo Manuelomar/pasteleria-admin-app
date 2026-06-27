@@ -45,6 +45,7 @@ export function UsuarioDialog({
     dashboard: true,
     clientes: true,
     catalogo: true,
+    entregas: true,
     ventas: true,
     graficos: true,
     estadoCuenta: true,
@@ -63,6 +64,21 @@ export function UsuarioDialog({
       setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
   }, [open, usuario])
+
+  useEffect(() => {
+    if (rol === "proveedor") {
+      setPermisos({
+        dashboard: false,
+        clientes: false,
+        catalogo: true,
+        entregas: true,
+        ventas: false,
+        graficos: false,
+        estadoCuenta: false,
+        usuarios: false,
+      })
+    }
+  }, [rol])
 
   const handleSave = async () => {
     if (!nombre.trim()) {
@@ -176,6 +192,7 @@ export function UsuarioDialog({
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="usuario">Usuario</SelectItem>
+                <SelectItem value="proveedor">Proveedor</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -194,6 +211,7 @@ export function UsuarioDialog({
                 dashboard: "Dashboard",
                 clientes: "Clientes",
                 catalogo: "Catálogo",
+                entregas: "Entregas",
                 ventas: "Ventas",
                 graficos: "Gráficos",
                 estadoCuenta: "Finanzas y Caja",
@@ -205,6 +223,7 @@ export function UsuarioDialog({
                     id={`perm-${key}`} 
                     checked={permisos[key] ?? false} 
                     onCheckedChange={(checked) => setPermisos(p => ({ ...p, [key]: checked }))} 
+                    disabled={rol === "proveedor" && key !== "catalogo" && key !== "entregas"}
                   />
                 </Field>
               ))}

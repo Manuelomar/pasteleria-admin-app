@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Producto } from "@/lib/data"
+import type { Producto, Usuario } from "@/lib/data"
 import { api } from "@/lib/api"
 
 const categorias = [
@@ -49,16 +49,21 @@ export function ProductoDialog({
   onOpenChange,
   producto,
   onSaved,
+  currentUser,
+  defaultProveedorId,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   producto: Producto | null
   onSaved?: () => void
+  currentUser?: Usuario | null
+  defaultProveedorId?: string | null
 }) {
   const [nombre, setNombre] = useState("")
   const [categoria, setCategoria] = useState("Pasteles")
   const [tipo, setTipo] = useState("dulce")
   const [precio, setPrecio] = useState("")
+  const [precioCosto, setPrecioCosto] = useState("")
   const [cantidad, setCantidad] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [disponible, setDisponible] = useState(true)
@@ -69,7 +74,8 @@ export function ProductoDialog({
       setNombre(producto?.nombre ?? "")
       setCategoria(producto?.categoria ?? "Pasteles")
       setTipo(producto?.tipo ?? "dulce")
-      setPrecio(producto ? String(producto.precio) : "")
+      setPrecio(producto && producto.precio !== undefined ? String(producto.precio) : "")
+      setPrecioCosto(producto && producto.precioCosto !== undefined ? String(producto.precioCosto) : "")
       setCantidad(producto?.cantidad !== undefined ? String(producto.cantidad) : "0")
       setDescripcion(producto?.descripcion ?? "")
       setDisponible(producto?.disponible ?? true)
@@ -79,14 +85,19 @@ export function ProductoDialog({
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const data = {
+      const data: any = {
         nombre,
         categoria,
         tipo: tipo as "dulce" | "salado" | "bebida",
         precio: parseFloat(precio) || 0,
+        precioCosto: parseFloat(precioCosto) || 0,
         cantidad: parseInt(cantidad) || 0,
         descripcion,
         disponible,
+      }
+      
+      if (defaultProveedorId && !producto) {
+        data.proveedorId = defaultProveedorId
       }
       
       if (producto) {
@@ -157,17 +168,31 @@ export function ProductoDialog({
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Field>
-              <FieldLabel htmlFor="prod-precio">Precio</FieldLabel>
-              <Input
-                id="prod-precio"
-                type="number"
-                value={precio}
-                onChange={(e) => setPrecio(e.target.value)}
-                placeholder="0.00"
-              />
-            </Field>
-            <Field>
+            {(currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+              <Field>
+                <FieldLabel htmlFor="prod-precio">Precio de Venta</FieldLabel>
+                <Input
+                  id="prod-precio"
+                  type="number"
+                  value={precio}
+                  onChange={(e) => setPrecio(e.target.value)}
+                  placeholder="0.00"
+                />
+              </Field>
+            )}
+            {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
+              <Field>
+                <FieldLabel htmlFor="prod-precio-costo">Precio de Costo</FieldLabel>
+                <Input
+                  id="prod-precio-costo"
+                  type="number"
+                  value={precioCosto}
+                  onChange={(e) => setPrecioCosto(e.target.value)}
+                  placeholder="0.00"
+                />
+              </Field>
+            )}
+            <Field className={currentUser?.rol === "admin" ? "col-span-2" : ""}>
               <FieldLabel htmlFor="prod-cantidad">Cantidad</FieldLabel>
               <Input
                 id="prod-cantidad"

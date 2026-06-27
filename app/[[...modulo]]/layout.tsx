@@ -15,6 +15,7 @@ const titles: Record<ModuleId, string> = {
   ventas: "Ventas y Facturación",
   "estado-cuenta": "Finanzas y Caja",
   usuarios: "Usuarios",
+  entregas: "Entregas de Proveedores",
 }
 
 export default function ModuloLayout({ children }: { children: React.ReactNode }) {

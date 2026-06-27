@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Cake,
   Menu,
+  Truck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,7 @@ export type ModuleId =
   | "ventas"
   | "estado-cuenta"
   | "usuarios"
+  | "entregas"
 
 interface NavItem {
   id: ModuleId
@@ -35,6 +37,7 @@ const modulos: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "catalogo", label: "Catálogo", icon: BookOpen },
+  { id: "entregas", label: "Entregas", icon: Truck },
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
   { id: "estado-cuenta", label: "Finanzas y Caja", icon: Wallet },
 ]
@@ -92,9 +95,21 @@ function SidebarContent({
   currentUser?: Usuario | null
 }) {
   const isAdmin = currentUser?.rol === "admin"
+  const isProveedor = currentUser?.rol === "proveedor"
   const permisos = currentUser?.permisos || {}
 
-  const modulosVisibles = modulos.filter((m) => isAdmin || permisos[m.id] === true)
+  const modulosVisibles = modulos
+    .filter((m) => {
+      if (isAdmin) return true;
+      if (isProveedor && (m.id === 'catalogo' || m.id === 'entregas')) return true;
+      return permisos[m.id] === true;
+    })
+    .map(m => {
+      if (m.id === 'catalogo' && isProveedor) {
+        return { ...m, label: 'Mis Productos' };
+      }
+      return m;
+    })
   const administracionVisibles = administracion.filter((m) => isAdmin || permisos[m.id] === true)
   return (
     <div className="flex h-full flex-col p-4">

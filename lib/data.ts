@@ -12,6 +12,8 @@ export interface Producto {
   descripcion: string
   vendidos: number
   cantidad?: number
+  proveedorId?: string
+  precioCosto?: number
 }
 
 export interface Cliente {
@@ -71,7 +73,7 @@ export interface Movimiento {
   estado: EstadoPago
 }
 
-export type Rol = "admin" | "usuario"
+export type Rol = "admin" | "usuario" | "proveedor"
 
 export interface Usuario {
   id: string
@@ -100,6 +102,33 @@ export const tipoLabel: Record<Tipo, string> = {
 export const rolLabel: Record<Rol, string> = {
   admin: "Administrador",
   usuario: "Usuario",
+  proveedor: "Proveedor",
+}
+
+export type EstadoEntrega = "en_espera" | "entregada"
+export type EstadoPagoEntrega = "pendiente_pago" | "pagado"
+
+export interface EntregaItem {
+  id: string
+  entregaId: string
+  productoId: string
+  cantidad: number
+  precioCosto: number
+  producto?: Producto
+}
+
+export interface Entrega {
+  id: string
+  proveedorId: string
+  proveedor?: Usuario
+  items: EntregaItem[]
+  estadoEntrega: EstadoEntrega
+  estadoPago: EstadoPagoEntrega
+  fechaPrevista: string
+  fechaReal: string | null
+  totalCosto: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface PaginatedResponse<T> {

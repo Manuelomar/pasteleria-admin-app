@@ -1,4 +1,4 @@
-import { Producto, Cliente, Venta, Movimiento, Usuario, PaginatedResponse } from './data';
+import { Producto, Cliente, Venta, Movimiento, Usuario, PaginatedResponse, Entrega } from './data';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -60,7 +60,7 @@ const mapUsuarioToFrontend = (u: any): Usuario => {
     id: u.id,
     nombre: u.name || u.username || '',
     correo: u.username || '',
-    rol: (u.role === 'admin' || u.role === 'administrador') ? 'admin' : 'usuario',
+    rol: (u.role === 'admin' || u.role === 'administrador') ? 'admin' : (u.role === 'proveedor' ? 'proveedor' : 'usuario'),
     activo: u.activo ?? true,
     ultimoAcceso: u.createdAt || new Date().toISOString(),
     permisos: u.permissions || {},
@@ -136,7 +136,8 @@ export const api = {
       pageSize: number,
       search?: string,
       tipo?: string,
-      disponible?: string
+      disponible?: string,
+      proveedorId?: string
     ): Promise<PaginatedResponse<Producto>> => {
       let url = `/productos/paged?pageNumber=${page}&pageSize=${pageSize}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -144,6 +145,7 @@ export const api = {
       if (disponible && disponible !== 'todos') {
         url += `&disponible=${disponible === 'disponible' ? 'true' : 'false'}`;
       }
+      if (proveedorId) url += `&proveedorId=${proveedorId}`;
       return fetchAPI(url).then((res: any) => ({
         ...res,
         data: (res.data || []).map(mapProductoToFrontend)
@@ -233,5 +235,11 @@ export const api = {
     create: (data: Partial<Usuario>): Promise<Usuario> => fetchAPI('/users', { method: 'POST', body: JSON.stringify(mapUsuarioToBackend(data)) }).then(mapUsuarioToFrontend),
     update: (id: string, data: Partial<Usuario>): Promise<Usuario> => fetchAPI(`/users/${id}`, { method: 'PUT', body: JSON.stringify(mapUsuarioToBackend(data)) }).then(mapUsuarioToFrontend),
     delete: (id: string): Promise<void> => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
+  },
+  entregas: {
+    getAll: (): Promise<Entrega[]> => fetchAPI('/entregas'),
+    create: (data: Partial<Entrega>): Promise<Entrega> => fetchAPI('/entregas', { method: 'POST', body: JSON.stringify(data) }),
+    updateEstadoEntrega: (id: string, estado: string): Promise<Entrega> => fetchAPI(`/entregas/${id}/estado-entrega`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
+    updateEstadoPago: (id: string, estado: string): Promise<Entrega> => fetchAPI(`/entregas/${id}/estado-pago`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
   }
 };
