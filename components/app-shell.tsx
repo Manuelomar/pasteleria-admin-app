@@ -12,6 +12,7 @@ import {
   Cake,
   Menu,
   Truck,
+  FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,7 @@ export type ModuleId =
   | "estado-cuenta"
   | "usuarios"
   | "entregas"
+  | "reportes"
 
 interface NavItem {
   id: ModuleId
@@ -40,6 +42,7 @@ const modulos: NavItem[] = [
   { id: "entregas", label: "Entregas", icon: Truck },
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
   { id: "estado-cuenta", label: "Finanzas y Caja", icon: Wallet },
+  { id: "reportes", label: "Reportes", icon: FileText },
 ]
 
 const administracion: NavItem[] = [{ id: "usuarios", label: "Usuarios", icon: ShieldCheck }]

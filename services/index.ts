@@ -5,6 +5,7 @@ import { ventasService } from "./ventas.service";
 import { movimientosService } from "./movimientos.service";
 import { usuariosService } from "./usuarios.service";
 import { entregasService } from "./entregas.service";
+import { reportesService } from "./reportes.service";
 
 export const api = {
   auth: authService,
@@ -14,6 +15,7 @@ export const api = {
   movimientos: movimientosService,
   usuarios: usuariosService,
   entregas: entregasService,
+  reportes: reportesService,
 };
 
 export {
@@ -24,4 +26,5 @@ export {
   movimientosService,
   usuariosService,
   entregasService,
+  reportesService,
 };
