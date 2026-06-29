@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { api } from "@/lib/api"
+import { api } from "@/services"
 
 export function LoginModule({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [username, setUsername] = useState("")

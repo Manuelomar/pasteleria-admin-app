@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Usuario } from "@/lib/data"
+import type { Usuario } from "@/types"
 import Swal from "sweetalert2"
 
-import { api } from "@/lib/api"
+import { api } from "@/services"
 
 export function UsuarioDialog({
   open,
@@ -39,12 +39,14 @@ export function UsuarioDialog({
   const [nombre, setNombre] = useState("")
   const [correo, setCorreo] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [rol, setRol] = useState("usuario")
   const [activo, setActivo] = useState(true)
   const defaultPermisos = {
     dashboard: true,
     clientes: true,
     catalogo: true,
+    entregas: true,
     ventas: true,
     graficos: true,
     estadoCuenta: true,
@@ -58,11 +60,27 @@ export function UsuarioDialog({
       setNombre(usuario?.nombre ?? "")
       setCorreo(usuario?.correo ?? "")
       setPassword("")
+      setConfirmPassword("")
       setRol(usuario?.rol ?? "usuario")
       setActivo(usuario?.activo ?? true)
       setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
   }, [open, usuario])
+
+  useEffect(() => {
+    if (rol === "proveedor") {
+      setPermisos({
+        dashboard: false,
+        clientes: false,
+        catalogo: true,
+        entregas: true,
+        ventas: false,
+        graficos: false,
+        estadoCuenta: false,
+        usuarios: false,
+      })
+    }
+  }, [rol])
 
   const handleSave = async () => {
     if (!nombre.trim()) {
@@ -86,6 +104,38 @@ export function UsuarioDialog({
       return
     }
 
+    if (!usuario && !password) {
+      Swal.fire({
+        icon: "error",
+        title: "Error de validación",
+        text: "La contraseña es requerida para nuevos usuarios",
+        confirmButtonColor: "hsl(var(--primary))"
+      })
+      return
+    }
+
+    if (password) {
+      if (password !== confirmPassword) {
+        Swal.fire({
+          icon: "error",
+          title: "Error de validación",
+          text: "Las contraseñas no coinciden",
+          confirmButtonColor: "hsl(var(--primary))"
+        })
+        return
+      }
+      
+      if (!/[A-Z]/.test(password)) {
+        Swal.fire({
+          icon: "error",
+          title: "Error de validación",
+          text: "La contraseña debe contener al menos una letra mayúscula",
+          confirmButtonColor: "hsl(var(--primary))"
+        })
+        return
+      }
+    }
+
     setIsSaving(true)
     try {
       const data: any = {
@@ -107,16 +157,6 @@ export function UsuarioDialog({
           confirmButtonColor: "hsl(var(--primary))"
         })
       } else {
-        if (!password) {
-          Swal.fire({
-            icon: "error",
-            title: "Error de validación",
-            text: "La contraseña es requerida para nuevos usuarios",
-            confirmButtonColor: "hsl(var(--primary))"
-          })
-          setIsSaving(false)
-          return
-        }
         await api.usuarios.create(data)
         Swal.fire({
           icon: "success",
@@ -143,7 +183,7 @@ export function UsuarioDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{usuario ? "Editar usuario" : "Nuevo usuario"}</DialogTitle>
           <DialogDescription>Datos de acceso al sistema.</DialogDescription>
@@ -167,6 +207,18 @@ export function UsuarioDialog({
               placeholder={usuario ? "Dejar en blanco para mantener" : "••••••••"}
             />
           </Field>
+          {(password || !usuario) && (
+            <Field>
+              <FieldLabel htmlFor="usr-pass-confirm">Confirmar Contraseña</FieldLabel>
+              <Input
+                id="usr-pass-confirm"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repite la contraseña"
+              />
+            </Field>
+          )}
           <Field>
             <FieldLabel>Rol</FieldLabel>
             <Select value={rol} onValueChange={(val) => setRol(val ?? "")}>
@@ -176,6 +228,7 @@ export function UsuarioDialog({
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="usuario">Usuario</SelectItem>
+                <SelectItem value="proveedor">Proveedor</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -194,6 +247,7 @@ export function UsuarioDialog({
                 dashboard: "Dashboard",
                 clientes: "Clientes",
                 catalogo: "Catálogo",
+                entregas: "Entregas",
                 ventas: "Ventas",
                 graficos: "Gráficos",
                 estadoCuenta: "Finanzas y Caja",
@@ -205,6 +259,7 @@ export function UsuarioDialog({
                     id={`perm-${key}`} 
                     checked={permisos[key] ?? false} 
                     onCheckedChange={(checked) => setPermisos(p => ({ ...p, [key]: checked }))} 
+                    disabled={rol === "proveedor" && key !== "catalogo" && key !== "entregas"}
                   />
                 </Field>
               ))}

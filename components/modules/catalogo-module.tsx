@@ -15,10 +15,11 @@ import {
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
-import { currency, type Producto, type Tipo } from "@/lib/data"
-import { api } from "@/lib/api"
+import { currency, type Producto, type Tipo, type Usuario } from "@/types"
+import { api } from "@/services"
 import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
+import { Folder, ArrowLeft } from "lucide-react"
 
 export function CatalogoModule() {
   const [items, setItems] = useState<Producto[]>([])
@@ -34,11 +35,32 @@ export function CatalogoModule() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
   const [viewing, setViewing] = useState<Producto | null>(null)
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+  
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null)
+  const [providers, setProviders] = useState<Usuario[]>([])
+
+  const isAdmin = currentUser?.rol === "admin"
+
+  useEffect(() => {
+    api.auth.getMe().then(user => {
+      setCurrentUser(user)
+      if (user.rol === "admin") {
+        api.usuarios.getAll().then(users => {
+          setProviders(users.filter(u => u.rol === "proveedor"))
+        }).catch(console.error)
+      } else if (user.rol === "proveedor") {
+        setSelectedProviderId(user.id)
+      }
+    }).catch(console.error)
+  }, [])
 
   const fetchProductos = () => {
+    if (isAdmin && !selectedProviderId) return; // Don't fetch if viewing providers list
+
     setIsLoading(true)
     Promise.all([
-      api.productos.getPaged(currentPage, pageSize, search, tipo, disp),
+      api.productos.getPaged(currentPage, pageSize, search, tipo, disp, selectedProviderId === "internos" ? "internos" : selectedProviderId || undefined),
       new Promise(resolve => setTimeout(resolve, 1000))
     ])
       .then(([res]) => {
@@ -55,7 +77,7 @@ export function CatalogoModule() {
 
   useEffect(() => {
     fetchProductos()
-  }, [currentPage, search, tipo, disp])
+  }, [currentPage, search, tipo, disp, selectedProviderId, isAdmin])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -144,8 +166,45 @@ export function CatalogoModule() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <ToggleGroup
+      {isAdmin && !selectedProviderId ? (
+        <div className="mt-4 flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Seleccione una categoría para gestionar productos:</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedProviderId("internos")}>
+              <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                <div className="p-4 rounded-full bg-primary/10 text-primary">
+                  <PackagePlus className="size-8" />
+                </div>
+                <h3 className="font-heading text-lg font-semibold text-center">Productos Internos</h3>
+                <p className="text-sm text-muted-foreground text-center">Pastelería Bizcochao</p>
+              </CardContent>
+            </Card>
+
+            {providers.map(prov => (
+              <Card key={prov.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedProviderId(prov.id)}>
+                <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                  <div className="p-4 rounded-full bg-primary/10 text-primary">
+                    <Folder className="size-8" />
+                  </div>
+                  <h3 className="font-heading text-lg font-semibold text-center">{prov.nombre}</h3>
+                  <p className="text-sm text-muted-foreground text-center">Proveedor</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {isAdmin && (
+            <div className="mb-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedProviderId(null)}>
+                <ArrowLeft className="mr-2 size-4" />
+                Volver a Proveedores
+              </Button>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-4">
+            <ToggleGroup
           value={[tipo]}
           onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
           variant="outline"
@@ -189,9 +248,16 @@ export function CatalogoModule() {
                   <h3 className="font-medium leading-tight text-foreground">{p.nombre}</h3>
                   <span className="text-xs text-muted-foreground">{p.categoria}</span>
                 </div>
-                <span className="font-heading text-lg font-semibold text-primary">
-                  {currency(p.precio)}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="font-heading text-lg font-semibold text-primary">
+                    {currency(p.precio)}
+                  </span>
+                  {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Costo: {currency(p.precioCosto || 0)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between mt-1">
                 <DisponibleBadge disponible={p.disponible} />
@@ -255,12 +321,16 @@ export function CatalogoModule() {
         onPageChange={setCurrentPage}
         itemName="productos"
       />
+      </>
+      )}
 
       <ProductoDialog 
         open={dialogOpen} 
         onOpenChange={setDialogOpen} 
         producto={editing} 
         onSaved={fetchProductos}
+        currentUser={currentUser}
+        defaultProveedorId={selectedProviderId === "internos" ? undefined : selectedProviderId}
       />
 
       <DetalleProductoDialog

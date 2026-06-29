@@ -6,6 +6,8 @@ import { ClientesModule } from "@/components/modules/clientes-module"
 import { VentasModule } from "@/components/modules/ventas-module"
 import { EstadoCuentaModule } from "@/components/modules/estado-cuenta-module"
 import { UsuariosModule } from "@/components/modules/usuarios-module"
+import { EntregasModule } from "@/components/modules/entregas-module"
+import { ReportesModule } from "@/components/modules/reportes-module"
 import { useParams } from "next/navigation"
 
 export default function Page() {
@@ -20,6 +22,8 @@ export default function Page() {
       {currentModule === "ventas" && <VentasModule />}
       {currentModule === "estado-cuenta" && <EstadoCuentaModule />}
       {currentModule === "usuarios" && <UsuariosModule />}
+      {currentModule === "entregas" && <EntregasModule />}
+      {currentModule === "reportes" && <ReportesModule />}
     </>
   )
 }

@@ -30,9 +30,10 @@ import {
 } from "@/components/ui/select"
 import { ActivoBadge } from "@/components/badges"
 import { Badge } from "@/components/ui/badge"
+import { formatDateTime } from "@/lib/utils"
 import { UsuarioDialog } from "@/components/dialogs/usuario-dialog"
-import { rolLabel, type Usuario, type Rol } from "@/lib/data"
-import { api } from "@/lib/api"
+import { rolLabel, type Usuario, type Rol } from "@/types"
+import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
 
@@ -238,12 +239,7 @@ export function UsuariosModule() {
                     <ActivoBadge activo={u.activo} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(u.ultimoAcceso).toLocaleString("es-DO", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatDateTime(u.ultimoAcceso)}
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <DropdownMenu>

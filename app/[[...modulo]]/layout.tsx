@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { AppShell, type ModuleId } from "@/components/app-shell"
 import { LoginModule } from "@/components/modules/login-module"
-import { api } from "@/lib/api"
-import type { Usuario } from "@/lib/data"
+import { api } from "@/services"
+import type { Usuario } from "@/types"
 import { Loader } from "@/components/ui/loader"
 import { usePathname, useRouter } from "next/navigation"
 
@@ -15,6 +15,8 @@ const titles: Record<ModuleId, string> = {
   ventas: "Ventas y Facturación",
   "estado-cuenta": "Finanzas y Caja",
   usuarios: "Usuarios",
+  entregas: "Entregas de Proveedores",
+  reportes: "Reportes",
 }
 
 export default function ModuloLayout({ children }: { children: React.ReactNode }) {
@@ -62,6 +64,7 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
 
   const hasPermission = (moduloId: string) => {
     if (currentUser?.rol === "admin") return true
+    if (currentUser?.rol === "proveedor" && (moduloId === "catalogo" || moduloId === "entregas")) return true
     return currentUser?.permisos?.[moduloId] === true
   }
 

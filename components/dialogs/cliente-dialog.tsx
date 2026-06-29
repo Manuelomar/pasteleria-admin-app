@@ -15,9 +15,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import type { Cliente } from "@/lib/data"
+import type { Cliente } from "@/types"
 
-import { api } from "@/lib/api"
+import { api } from "@/services"
 
 export function ClienteDialog({
   open,

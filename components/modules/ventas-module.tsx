@@ -30,8 +30,8 @@ import {
   type VentaItem,
   type MetodoPago,
   type EstadoPago,
-} from "@/lib/data"
-import { api } from "@/lib/api"
+} from "@/types"
+import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
 
