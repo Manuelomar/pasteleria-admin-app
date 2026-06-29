@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select"
 import { currency, type Producto, type Usuario } from "@/types"
 import { api } from "@/services"
+import { API_URL } from "@/services/api.config"
 
 const categorias = [
   "Pasteles",
@@ -67,6 +68,8 @@ export function ProductoDialog({
   const [cantidad, setCantidad] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [disponible, setDisponible] = useState(true)
+  const [file, setFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -79,12 +82,20 @@ export function ProductoDialog({
       setCantidad(producto?.cantidad !== undefined ? String(producto.cantidad) : "0")
       setDescripcion(producto?.descripcion ?? "")
       setDisponible(producto?.disponible ?? true)
+      setFile(null)
+      setPreviewUrl(producto?.imagen ?? null)
     }
   }, [open, producto])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
+      let imagenUrl = producto?.imagen;
+      if (file) {
+        const uploadRes = await api.productos.uploadImage(file);
+        imagenUrl = uploadRes.url;
+      }
+
       const data: any = {
         nombre,
         categoria,
@@ -94,6 +105,7 @@ export function ProductoDialog({
         cantidad: parseInt(cantidad) || 0,
         descripcion,
         disponible,
+        imagen: imagenUrl,
       }
       
       if (defaultProveedorId && !producto) {
@@ -127,101 +139,127 @@ export function ProductoDialog({
             Completa la información del producto del catálogo.
           </DialogDescription>
         </DialogHeader>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="prod-nombre">Nombre</FieldLabel>
-            <Input
-              id="prod-nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Pastel de chocolate"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="max-h-[60vh] overflow-y-auto px-2 py-1">
+          <FieldGroup>
             <Field>
-              <FieldLabel>Categoría</FieldLabel>
-              <Select value={categoria} onValueChange={(v) => v !== null && setCategoria(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel>Tipo</FieldLabel>
-              <Select value={tipo} onValueChange={(v) => v !== null && setTipo(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dulce">Dulce</SelectItem>
-                  <SelectItem value="salado">Salado</SelectItem>
-                  <SelectItem value="bebida">Bebida</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {(currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
-              <Field>
-                <FieldLabel htmlFor="prod-precio">Precio de Venta</FieldLabel>
-                <Input
-                  id="prod-precio"
-                  type="number"
-                  value={precio}
-                  onChange={(e) => setPrecio(e.target.value)}
-                  placeholder="0.00"
-                />
-              </Field>
-            )}
-            {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
-              <Field>
-                <FieldLabel htmlFor="prod-precio-costo">Precio de Costo</FieldLabel>
-                <Input
-                  id="prod-precio-costo"
-                  type="number"
-                  value={precioCosto}
-                  onChange={(e) => setPrecioCosto(e.target.value)}
-                  placeholder="0.00"
-                />
-                {producto?.historialCostos && producto.historialCostos.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Costos anteriores: {producto.historialCostos.map(c => currency(c)).join(', ')}
-                  </div>
-                )}
-              </Field>
-            )}
-            <Field className={currentUser?.rol === "admin" ? "col-span-2" : ""}>
-              <FieldLabel htmlFor="prod-cantidad">Cantidad</FieldLabel>
+              <FieldLabel htmlFor="prod-nombre">Nombre</FieldLabel>
               <Input
-                id="prod-cantidad"
-                type="number"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                placeholder="0"
+                id="prod-nombre"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Pastel de chocolate"
               />
             </Field>
-          </div>
-          <Field>
-            <FieldLabel htmlFor="prod-desc">Descripción</FieldLabel>
-            <Textarea
-              id="prod-desc"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Breve descripción del producto"
-            />
-          </Field>
-          <Field orientation="horizontal" className="items-center justify-between">
-            <FieldLabel htmlFor="prod-disp">Disponible</FieldLabel>
-            <Switch id="prod-disp" checked={disponible} onCheckedChange={setDisponible} />
-          </Field>
-        </FieldGroup>
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel>Categoría</FieldLabel>
+                <Select value={categoria} onValueChange={(v) => v !== null && setCategoria(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Tipo</FieldLabel>
+                <Select value={tipo} onValueChange={(v) => v !== null && setTipo(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dulce">Dulce</SelectItem>
+                    <SelectItem value="salado">Salado</SelectItem>
+                    <SelectItem value="bebida">Bebida</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {(currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+                <Field>
+                  <FieldLabel htmlFor="prod-precio">Precio de Venta</FieldLabel>
+                  <Input
+                    id="prod-precio"
+                    type="number"
+                    value={precio}
+                    onChange={(e) => setPrecio(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </Field>
+              )}
+              {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
+                <Field>
+                  <FieldLabel htmlFor="prod-precio-costo">Precio de Costo</FieldLabel>
+                  <Input
+                    id="prod-precio-costo"
+                    type="number"
+                    value={precioCosto}
+                    onChange={(e) => setPrecioCosto(e.target.value)}
+                    placeholder="0.00"
+                  />
+                  {producto?.historialCostos && producto.historialCostos.length > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Costos anteriores: {producto.historialCostos.map(c => currency(c)).join(', ')}
+                    </div>
+                  )}
+                </Field>
+              )}
+              <Field className={currentUser?.rol === "admin" ? "col-span-2" : ""}>
+                <FieldLabel htmlFor="prod-cantidad">Cantidad</FieldLabel>
+                <Input
+                  id="prod-cantidad"
+                  type="number"
+                  value={cantidad}
+                  onChange={(e) => setCantidad(e.target.value)}
+                  placeholder="0"
+                />
+              </Field>
+            </div>
+            <Field>
+              <FieldLabel htmlFor="prod-desc">Descripción</FieldLabel>
+              <Textarea
+                id="prod-desc"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Breve descripción del producto"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="prod-imagen">Imagen (Opcional)</FieldLabel>
+              <Input
+                id="prod-imagen"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    setFile(f);
+                    setPreviewUrl(URL.createObjectURL(f));
+                  }
+                }}
+              />
+              {previewUrl && (
+                <div className="mt-2">
+                  <img 
+                    src={previewUrl.startsWith('blob:') ? previewUrl : API_URL.replace('/api', '') + previewUrl} 
+                    alt="Vista previa" 
+                    className="h-20 w-auto rounded object-cover border border-border" 
+                  />
+                </div>
+              )}
+            </Field>
+            <Field orientation="horizontal" className="items-center justify-between">
+              <FieldLabel htmlFor="prod-disp">Disponible</FieldLabel>
+              <Switch id="prod-disp" checked={disponible} onCheckedChange={setDisponible} />
+            </Field>
+          </FieldGroup>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar

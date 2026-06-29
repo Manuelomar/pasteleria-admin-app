@@ -6,9 +6,11 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     token = localStorage.getItem('token');
   }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  const headers: Record<string, string> = {};
+  
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (options.headers) {
     Object.assign(headers, options.headers);

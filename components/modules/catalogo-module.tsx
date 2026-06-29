@@ -17,6 +17,7 @@ import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
 import { currency, type Producto, type Tipo, type Usuario } from "@/types"
 import { api } from "@/services"
+import { API_URL } from "@/services/api.config"
 import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { Folder, ArrowLeft } from "lucide-react"
@@ -231,7 +232,7 @@ export function CatalogoModule() {
           <Card key={p.id} className="overflow-hidden pt-0">
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
               <img
-                src={p.imagen || "/placeholder.svg"}
+                src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                 alt={p.nombre}
                 className={cn(
                   "size-full object-cover transition",
