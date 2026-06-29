@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { api } from "@/services"
-import { currency, type Entrega, type Usuario } from "@/types"
+import { type Entrega, type Usuario } from "@/types"
+import { currency, formatDate } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { EntregaDialog } from "../dialogs/entrega-dialog"
 import {
@@ -198,11 +199,17 @@ export function EntregasModule() {
                             Entrega Programada
                           </h3>
                         )}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 capitalize">
-                          <Calendar className="size-4" />
-                          {new Date(entrega.fechaPrevista).toLocaleDateString('es-ES', {
-                            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                          })}
+                        <div className="flex flex-col space-y-1 mt-3">
+                          <span className="text-sm">
+                            <span className="font-semibold">Prevista:</span>{" "}
+                            {formatDate(entrega.fechaPrevista)}
+                          </span>
+                          {entrega.fechaReal && (
+                            <span className="text-sm">
+                              <span className="font-semibold">Real:</span>{" "}
+                              {formatDate(entrega.fechaReal)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="text-left sm:text-right">
