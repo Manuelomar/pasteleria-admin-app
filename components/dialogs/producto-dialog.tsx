@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Producto, Usuario } from "@/lib/data"
+import { currency, type Producto, type Usuario } from "@/lib/data"
 import { api } from "@/lib/api"
 
 const categorias = [
@@ -190,6 +190,11 @@ export function ProductoDialog({
                   onChange={(e) => setPrecioCosto(e.target.value)}
                   placeholder="0.00"
                 />
+                {producto?.historialCostos && producto.historialCostos.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Costos anteriores: {producto.historialCostos.map(c => currency(c)).join(', ')}
+                  </div>
+                )}
               </Field>
             )}
             <Field className={currentUser?.rol === "admin" ? "col-span-2" : ""}>
