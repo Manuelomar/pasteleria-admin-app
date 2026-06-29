@@ -34,6 +34,7 @@ import {
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
+import { API_URL } from "@/services/api.config"
 
 export function VentasModule() {
   const [search, setSearch] = useState("")
@@ -281,7 +282,7 @@ export function VentasModule() {
             >
               <div className="aspect-square w-full overflow-hidden bg-muted">
                 <img
-                  src={p.imagen || "/placeholder.svg"}
+                  src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                   alt={p.nombre}
                   className="size-full object-cover transition group-hover:scale-105"
                 />

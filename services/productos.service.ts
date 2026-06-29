@@ -28,4 +28,9 @@ export const productosService = {
   create: (data: Partial<Producto>): Promise<Producto> => fetchAPI('/productos', { method: 'POST', body: JSON.stringify(data) }).then(mapProductoToFrontend),
   update: (id: string, data: Partial<Producto>): Promise<Producto> => fetchAPI(`/productos/${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then(mapProductoToFrontend),
   delete: (id: string): Promise<void> => fetchAPI(`/productos/${id}`, { method: 'DELETE' }),
+  uploadImage: (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchAPI('/productos/upload', { method: 'POST', body: formData });
+  },
 };
