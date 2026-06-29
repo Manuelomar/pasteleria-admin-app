@@ -127,6 +127,7 @@ export interface Entrega {
   fechaPrevista: string
   fechaReal: string | null
   totalCosto: number
+  agregadoAlStock: boolean
   createdAt: string
   updatedAt: string
 }

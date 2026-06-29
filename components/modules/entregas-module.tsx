@@ -95,6 +95,28 @@ export function EntregasModule() {
     }
   }
 
+  const handleAddStock = async (id: string) => {
+    const result = await Swal.fire({
+      title: '¿Añadir a Stock?',
+      text: '¿Deseas añadir estos productos al inventario de la tienda? No se mezclarán con los del proveedor.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, añadir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444' // Match primary color style
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.entregas.addToStock(id)
+        toast.success("Productos añadidos al stock correctamente")
+        fetchEntregas()
+      } catch (e: any) {
+        toast.error(e.message || "Error al añadir al stock")
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -242,6 +264,16 @@ export function EntregasModule() {
                             </SelectContent>
                           </Select>
                         </div>
+                        {entrega.estadoEntrega === 'entregada' && !entrega.agregadoAlStock && (
+                          <Button onClick={() => handleAddStock(entrega.id)} className="mt-4 w-full">
+                            Añadir a Stock
+                          </Button>
+                        )}
+                        {entrega.agregadoAlStock && (
+                          <div className="mt-4 flex items-center justify-center rounded-md bg-green-500/10 text-green-600 text-xs py-2.5 font-semibold">
+                            Añadido al Stock
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="flex flex-col gap-3">
