@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ActivoBadge } from "@/components/badges"
 import { ClienteDialog } from "@/components/dialogs/cliente-dialog"
-import { currency, type Cliente } from "@/lib/data"
-import { api } from "@/lib/api"
+import { currency, type Cliente } from "@/types"
+import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
 
 export function ClientesModule() {

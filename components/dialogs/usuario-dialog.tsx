@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Usuario } from "@/lib/data"
+import type { Usuario } from "@/types"
 import Swal from "sweetalert2"
 
-import { api } from "@/lib/api"
+import { api } from "@/services"
 
 export function UsuarioDialog({
   open,

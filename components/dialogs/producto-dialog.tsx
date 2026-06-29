@@ -26,8 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currency, type Producto, type Usuario } from "@/lib/data"
-import { api } from "@/lib/api"
+import { currency, type Producto, type Usuario } from "@/types"
+import { api } from "@/services"
 
 const categorias = [
   "Pasteles",

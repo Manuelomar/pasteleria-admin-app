@@ -29,8 +29,8 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { EstadoPagoBadge } from "@/components/badges"
-import { currency, type Venta, type Cliente, type Producto } from "@/lib/data"
-import { api } from "@/lib/api"
+import { currency, type Venta, type Cliente, type Producto } from "@/types"
+import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
 
 export function DashboardModule() {

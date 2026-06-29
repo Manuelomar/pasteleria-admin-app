@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { type Usuario, rolLabel } from "@/lib/data"
+import { type Usuario, rolLabel } from "@/types"
 
 export type ModuleId =
   | "dashboard"

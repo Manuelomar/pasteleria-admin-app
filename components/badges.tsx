@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { Tipo, EstadoPago } from "@/lib/data"
-import { tipoLabel } from "@/lib/data"
+import type { Tipo, EstadoPago } from "@/types"
+import { tipoLabel } from "@/types"
 
 export function TipoBadge({ tipo }: { tipo: Tipo }) {
   const styles: Record<Tipo, string> = {

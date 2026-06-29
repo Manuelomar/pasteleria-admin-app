@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppPagination } from "@/components/ui/app-pagination"
-import { currency, type Venta } from "@/lib/data"
-import { api } from "@/lib/api"
+import { currency, type Venta } from "@/types"
+import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
 
 interface ResumenCaja {

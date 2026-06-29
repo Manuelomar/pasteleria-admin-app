@@ -31,8 +31,8 @@ import {
 import { ActivoBadge } from "@/components/badges"
 import { Badge } from "@/components/ui/badge"
 import { UsuarioDialog } from "@/components/dialogs/usuario-dialog"
-import { rolLabel, type Usuario, type Rol } from "@/lib/data"
-import { api } from "@/lib/api"
+import { rolLabel, type Usuario, type Rol } from "@/types"
+import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
 

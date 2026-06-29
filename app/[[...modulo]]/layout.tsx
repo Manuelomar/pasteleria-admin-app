@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { AppShell, type ModuleId } from "@/components/app-shell"
 import { LoginModule } from "@/components/modules/login-module"
-import { api } from "@/lib/api"
-import type { Usuario } from "@/lib/data"
+import { api } from "@/services"
+import type { Usuario } from "@/types"
 import { Loader } from "@/components/ui/loader"
 import { usePathname, useRouter } from "next/navigation"
 

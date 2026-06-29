@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
-import { currency, type Producto } from "@/lib/data"
+import { currency, type Producto } from "@/types"
 import { cn } from "@/lib/utils"
 
 export function DetalleProductoDialog({
