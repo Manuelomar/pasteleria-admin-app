@@ -69,11 +69,23 @@ export function EntregaDialog({
     if (!selectedProducto) return
     const prod = productos.find(p => p.id === selectedProducto)
     if (!prod) return
+    
+    const max = prod.cantidad || 0;
+    if (max <= 0) {
+      toast.error("El proveedor no tiene stock de este producto")
+      return
+    }
+
+    const existing = items.find(i => i.productoId === selectedProducto)
+    if (existing && existing.cantidad >= max) {
+      toast.error(`El proveedor solo tiene ${max} en stock`)
+      return
+    }
 
     setItems(prev => {
       const existing = prev.find(i => i.productoId === selectedProducto)
       if (existing) {
-        return prev.map(i => i.productoId === selectedProducto ? { ...i, cantidad: i.cantidad + 1 } : i)
+        return prev.map(i => i.productoId === selectedProducto ? { ...i, cantidad: Math.min(i.cantidad + 1, max) } : i)
       }
       return [...prev, { productoId: selectedProducto, cantidad: 1, nombre: prod.nombre }]
     })
@@ -81,10 +93,21 @@ export function EntregaDialog({
   }
 
   const updateQty = (id: string, delta: number) => {
+    const prod = productos.find(p => p.id === id)
+    const max = prod?.cantidad || 0
+
+    const currentItem = items.find(i => i.productoId === id)
+    if (!currentItem) return
+
+    if (delta > 0 && currentItem.cantidad >= max) {
+      toast.error(`El proveedor solo tiene ${max} en stock`)
+      return
+    }
+
     setItems((prev) =>
       prev
         .map((i) =>
-          i.productoId === id ? { ...i, cantidad: Math.max(1, i.cantidad + delta) } : i,
+          i.productoId === id ? { ...i, cantidad: Math.max(1, Math.min(i.cantidad + delta, max)) } : i,
         )
     )
   }
@@ -176,7 +199,9 @@ export function EntregaDialog({
               >
                 <option value="">-- Seleccione producto --</option>
                 {productos.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                  <option key={p.id} value={p.id} disabled={(p.cantidad || 0) <= 0}>
+                    {p.nombre} (Stock: {p.cantidad || 0})
+                  </option>
                 ))}
               </select>
               <Button type="button" onClick={handleAddItem} variant="secondary">Añadir</Button>

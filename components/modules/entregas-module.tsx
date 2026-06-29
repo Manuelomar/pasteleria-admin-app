@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Swal from "sweetalert2"
 
 export function EntregasModule() {
   const [entregas, setEntregas] = useState<Entrega[]>([])
@@ -27,10 +28,10 @@ export function EntregasModule() {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
-  const [filtroEstado, setFiltroEstado] = useState("todos")
+  const [filtroEstado, setFiltroEstado] = useState("pendiente")
 
   const fetchEntregas = (filtro: string = filtroEstado) => {
-    setIsLoading(true)
+    if (entregas.length === 0) setIsLoading(true)
     api.entregas.getAll(filtro)
       .then(setEntregas)
       .catch((err) => {
@@ -51,22 +52,46 @@ export function EntregasModule() {
   }, [filtroEstado])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
-    try {
-      await api.entregas.updateEstadoEntrega(id, estado)
-      toast.success("Estado de entrega actualizado")
-      fetchEntregas()
-    } catch (e) {
-      toast.error("Error al actualizar estado")
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Deseas cambiar el estado de entrega?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444' // Match primary color style
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.entregas.updateEstadoEntrega(id, estado)
+        toast.success("Estado de entrega actualizado")
+        fetchEntregas()
+      } catch (e) {
+        toast.error("Error al actualizar estado")
+      }
     }
   }
 
   const handleUpdatePago = async (id: string, estado: string) => {
-    try {
-      await api.entregas.updateEstadoPago(id, estado)
-      toast.success("Estado de pago actualizado")
-      fetchEntregas()
-    } catch (e) {
-      toast.error("Error al actualizar pago")
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Deseas cambiar el estado de pago?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444' // Match primary color style
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.entregas.updateEstadoPago(id, estado)
+        toast.success("Estado de pago actualizado")
+        fetchEntregas()
+      } catch (e) {
+        toast.error("Error al actualizar pago")
+      }
     }
   }
 
@@ -101,12 +126,12 @@ export function EntregasModule() {
       </div>
 
       <Tabs value={filtroEstado} onValueChange={setFiltroEstado} className="w-full">
-        <TabsList variant="line" className="w-full justify-start overflow-x-auto border-b border-border pb-0 mb-2 gap-4">
-          <TabsTrigger value="todos" className="px-1 py-3 text-sm font-medium">Todos los estados</TabsTrigger>
+        <TabsList variant="line" className="w-full flex-wrap justify-start border-b border-border pb-0 mb-2 gap-4 h-auto">
           <TabsTrigger value="pendiente" className="px-1 py-3 text-sm font-medium">Pendientes</TabsTrigger>
           <TabsTrigger value="pagado_no_entregado" className="px-1 py-3 text-sm font-medium">Pagado, no entregado</TabsTrigger>
           <TabsTrigger value="entregado_no_pagado" className="px-1 py-3 text-sm font-medium">Entregado, no pagado</TabsTrigger>
           <TabsTrigger value="finalizado" className="px-1 py-3 text-sm font-medium">Finalizados</TabsTrigger>
+          <TabsTrigger value="todos" className="px-1 py-3 text-sm font-medium">Todos los estados</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -138,30 +163,50 @@ export function EntregasModule() {
             <Card key={entrega.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  <div className="flex flex-1 flex-col justify-center border-b md:border-b-0 md:border-r border-border p-4 bg-muted/30">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Calendar className="size-4 text-primary" />
-                      {new Date(entrega.fechaPrevista).toLocaleDateString()}
+                  <div className="flex flex-1 flex-col p-6">
+                    {/* Encabezado con Proveedor, Fecha y Monto */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 pb-4 border-b border-border/50 gap-4">
+                      <div>
+                        {isAdmin && entrega.proveedor ? (
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {entrega.proveedor.nombre || (entrega.proveedor as any).name}
+                          </h3>
+                        ) : (
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Entrega Programada
+                          </h3>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 capitalize">
+                          <Calendar className="size-4" />
+                          {new Date(entrega.fechaPrevista).toLocaleDateString('es-ES', {
+                            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Total</p>
+                        <p className="text-2xl font-heading font-bold text-primary">
+                          {currency(entrega.totalCosto)}
+                        </p>
+                      </div>
                     </div>
-                    {isAdmin && entrega.proveedor && (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Proveedor: <span className="font-semibold text-foreground">{entrega.proveedor.nombre || (entrega.proveedor as any).name}</span>
-                      </p>
-                    )}
-                    <p className="mt-2 text-xl font-heading font-bold text-primary">
-                      {currency(entrega.totalCosto)}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-[2] flex-col gap-2 p-4">
-                    <p className="text-sm font-semibold">Productos a entregar:</p>
-                    <ul className="text-sm text-muted-foreground list-disc pl-5">
-                      {entrega.items.map(item => (
-                        <li key={item.id}>
-                          {item.cantidad}x {item.producto?.nombre || "Producto desconocido"}
-                        </li>
-                      ))}
-                    </ul>
+                    
+                    {/* Lista de Productos */}
+                    <div>
+                      <p className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Productos a entregar</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {entrega.items.map(item => (
+                          <div key={item.id} className="flex items-center gap-3 p-3 rounded-md bg-muted/20 border border-border/50 transition-colors hover:bg-muted/40">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary font-bold text-sm">
+                              {item.cantidad}
+                            </div>
+                            <p className="text-sm font-medium">
+                              {item.producto?.nombre || "Producto desconocido"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-4 p-4 md:w-56 md:border-l md:border-border md:p-6 lg:w-72 bg-muted/10">
