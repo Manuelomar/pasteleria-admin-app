@@ -63,7 +63,7 @@ export function LoginModule({ onLoginSuccess }: { onLoginSuccess: () => void }) 
                 <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="username"
-                  placeholder="ManuelOmar"
+                  placeholder="Email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-9"
@@ -79,7 +79,7 @@ export function LoginModule({ onLoginSuccess }: { onLoginSuccess: () => void }) 
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-9"

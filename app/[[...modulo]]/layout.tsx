@@ -37,9 +37,15 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
         const user = await api.auth.getMe()
         setCurrentUser(user)
         setIsAuthenticated(true)
+        
+        // Si es proveedor y está intentando entrar al dashboard, redirigir a entregas
+        if (user.rol === "proveedor" && (pathname === "/" || pathname === "")) {
+          router.push("/entregas")
+        }
       } catch (err) {
         localStorage.removeItem("token")
         setIsAuthenticated(false)
+        router.push("/")
       }
     } else {
       setIsAuthenticated(false)
@@ -83,6 +89,7 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
         localStorage.removeItem("token")
         setCurrentUser(null)
         setIsAuthenticated(false)
+        router.push("/")
       }}
       currentUser={currentUser}
     >

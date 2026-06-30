@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description:
     'Sistema administrativo para pastelería: facturación, ventas, clientes, catálogo y reportes.',
   generator: 'v0.app',
+  icons: {
+    icon: '/icon.svg'
+  }
 }
 
 export default function RootLayout({
