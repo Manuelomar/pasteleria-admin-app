@@ -105,6 +105,13 @@ export function VentasModule() {
     if (!prod) return
     setItems((prev) => {
       const existing = prev.find((i) => i.productoId === id)
+      const currentQty = existing ? existing.cantidad : 0
+      
+      if (currentQty + 1 > (prod.cantidad || 0)) {
+        toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
+        return prev
+      }
+
       if (existing) {
         return prev.map((i) =>
           i.productoId === id ? { ...i, cantidad: i.cantidad + 1 } : i,
@@ -118,13 +125,25 @@ export function VentasModule() {
   }
 
   const updateQty = (id: string, delta: number) => {
-    setItems((prev) =>
-      prev
+    const prod = fetchedProductos.find((p) => p.id === id)
+    if (!prod) return
+
+    setItems((prev) => {
+      const existing = prev.find((i) => i.productoId === id)
+      if (!existing) return prev
+
+      const newQty = existing.cantidad + delta
+      if (delta > 0 && newQty > (prod.cantidad || 0)) {
+        toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
+        return prev
+      }
+
+      return prev
         .map((i) =>
-          i.productoId === id ? { ...i, cantidad: Math.max(0, i.cantidad + delta) } : i,
+          i.productoId === id ? { ...i, cantidad: Math.max(0, newQty) } : i,
         )
-        .filter((i) => i.cantidad > 0),
-    )
+        .filter((i) => i.cantidad > 0)
+    })
   }
 
   const removeItem = (id: string) => {

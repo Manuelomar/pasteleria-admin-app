@@ -6,6 +6,7 @@ export interface VentaItem {
   nombre: string
   precio: number
   cantidad: number
+  precioCosto?: number
 }
 
 export interface Venta {
