@@ -21,9 +21,14 @@ export function ReportesModule() {
   const [noPagado, setNoPagado] = useState(false)
   const [finalizado, setFinalizado] = useState(false)
 
+  // Filtros Ventas
+  const [ventasFechaInicio, setVentasFechaInicio] = useState("")
+  const [ventasFechaFin, setVentasFechaFin] = useState("")
+  const [metodosPago, setMetodosPago] = useState<string[]>([])
+
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const handleQuickDate = (type: 'semana' | 'mes' | 'año') => {
+  const handleQuickDate = (type: 'semana' | 'mes' | 'año', isVentas: boolean = false) => {
     const end = new Date()
     const start = new Date()
 
@@ -35,8 +40,13 @@ export function ReportesModule() {
       start.setFullYear(end.getFullYear() - 1)
     }
 
-    setFechaInicio(start.toISOString().split('T')[0])
-    setFechaFin(end.toISOString().split('T')[0])
+    if (isVentas) {
+      setVentasFechaInicio(start.toISOString().split('T')[0])
+      setVentasFechaFin(end.toISOString().split('T')[0])
+    } else {
+      setFechaInicio(start.toISOString().split('T')[0])
+      setFechaFin(end.toISOString().split('T')[0])
+    }
   }
 
   const generarReporte = async () => {
@@ -52,6 +62,13 @@ export function ReportesModule() {
           finalizado,
         })
         setReportHtml(html)
+      } else if (activeTab === "ventas") {
+        const html = await api.reportes.getReporteVentas({
+          fechaInicio: ventasFechaInicio,
+          fechaFin: ventasFechaFin,
+          metodosPago,
+        })
+        setReportHtml(html)
       }
     } catch (error) {
       console.error("Error al generar reporte", error)
@@ -62,7 +79,15 @@ export function ReportesModule() {
 
   const imprimirReporte = () => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.print()
+      const originalTitle = document.title;
+      const timestamp = new Date().getTime();
+      document.title = activeTab === 'proveedor' 
+        ? `Reporte_Proveedores_${timestamp}` 
+        : `Reporte_Ventas_${timestamp}`;
+      
+      iframeRef.current.contentWindow.print();
+      
+      document.title = originalTitle;
     }
   }
 
@@ -78,7 +103,7 @@ export function ReportesModule() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="proveedor">Reporte de Proveedores</TabsTrigger>
-          <TabsTrigger value="ventas" disabled>Reporte de Ventas (Próximamente)</TabsTrigger>
+          <TabsTrigger value="ventas">Reporte de Ventas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="proveedor" className="space-y-4">
@@ -162,6 +187,120 @@ export function ReportesModule() {
                       />
                       <Label htmlFor="finalizado" className="font-normal">Finalizado (Entregado y Pagado)</Label>
                     </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <Button onClick={generarReporte} disabled={loading} className="w-full md:w-auto">
+                  {loading ? <Loader className="mr-2 h-4 w-4" /> : null}
+                  Generar Reporte
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {reportHtml && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Vista Previa del Reporte</CardTitle>
+                  <CardDescription>Revisa el reporte antes de imprimirlo o descargarlo.</CardDescription>
+                </div>
+                <Button variant="secondary" onClick={imprimirReporte}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimir
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-md bg-white shadow-sm" style={{ height: "600px", overflow: "hidden" }}>
+                  <iframe 
+                    ref={iframeRef}
+                    srcDoc={reportHtml} 
+                    style={{ width: "100%", height: "100%", border: "none" }}
+                    title="Reporte Generado"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="ventas" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtros del Reporte de Ventas</CardTitle>
+              <CardDescription>Configura los parámetros para generar el reporte de ventas del negocio.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Rango de Fechas</Label>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', true)}>
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        Última Semana
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', true)}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Último Mes
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', true)}>
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        Último Año
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setVentasFechaInicio("")
+                        setVentasFechaFin("")
+                      }}>
+                        Limpiar Fechas
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Fecha Inicio</Label>
+                        <Input 
+                          type="date" 
+                          value={ventasFechaInicio} 
+                          onChange={(e) => setVentasFechaInicio(e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fecha Fin</Label>
+                        <Input 
+                          type="date" 
+                          value={ventasFechaFin} 
+                          onChange={(e) => setVentasFechaFin(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold mb-3 block">Métodos de Pago</Label>
+                  <div className="flex flex-col space-y-3">
+                    {['efectivo', 'tarjeta', 'transferencia', 'uberEats'].map((metodo) => (
+                      <div key={metodo} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`metodo-${metodo}`}
+                          checked={metodosPago.includes(metodo)} 
+                          onCheckedChange={(c: boolean | "indeterminate") => {
+                            if (c) {
+                              setMetodosPago([...metodosPago, metodo])
+                            } else {
+                              setMetodosPago(metodosPago.filter(m => m !== metodo))
+                            }
+                          }} 
+                        />
+                        <Label htmlFor={`metodo-${metodo}`} className="font-normal capitalize">
+                          {metodo === 'uberEats' ? 'UberEats' : metodo}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

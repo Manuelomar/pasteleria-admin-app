@@ -160,9 +160,9 @@ export function VentasModule() {
     setClienteId("general")
   }
 
-  const imprimirFactura = (id: string) => {
+  const imprimirFactura = async (id: string) => {
     const iframeId = "print-invoice-iframe"
-    const existingIframe = document.getElementById(iframeId)
+    let existingIframe = document.getElementById(iframeId) as HTMLIFrameElement
     if (existingIframe) {
       existingIframe.remove()
     }
@@ -173,9 +173,27 @@ export function VentasModule() {
     iframe.style.width = "0px"
     iframe.style.height = "0px"
     iframe.style.border = "none"
-    iframe.src = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/ventas/${id}/print`
     
     document.body.appendChild(iframe)
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/ventas/${id}/print`);
+      const html = await res.text();
+      
+      iframe.onload = () => {
+        if (iframe.contentWindow) {
+          const originalTitle = document.title;
+          const timestamp = new Date().getTime();
+          document.title = `Factura_${id}_${timestamp}`;
+          iframe.contentWindow.print();
+          document.title = originalTitle;
+        }
+      };
+      
+      iframe.srcdoc = html;
+    } catch (error) {
+      console.error("Error al imprimir la factura", error);
+    }
   }
 
   const guardar = async () => {
