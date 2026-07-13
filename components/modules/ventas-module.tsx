@@ -132,8 +132,15 @@ export function VentasModule() {
   }
 
   const subtotal = useMemo(
-    () => items.reduce((s, i) => s + i.precio * i.cantidad, 0),
-    [items],
+    () => items.reduce((s, i) => {
+      const prod = fetchedProductos.find(p => p.id === i.productoId)
+      let itemPrecio = i.precio
+      if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+        itemPrecio = prod.precioUber
+      }
+      return s + itemPrecio * i.cantidad
+    }, 0),
+    [items, fetchedProductos, metodoPago],
   )
   const desc = Number(descuento) || 0
   const imp = aplicarItbis ? (subtotal - desc) * 0.18 : 0
@@ -198,6 +205,15 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
+      const payloadItems = items.map(i => {
+        const prod = fetchedProductos.find(p => p.id === i.productoId)
+        let finalPrice = i.precio
+        if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+          finalPrice = prod.precioUber
+        }
+        return { ...i, precio: finalPrice }
+      })
+
       const res = await api.ventas.create({
         clienteId: esCredito ? clienteId : undefined,
         cajeroId: "d69d45cc-d820-4e55-9a8c-a1112b32f22b", // Todo: real session user
@@ -209,7 +225,7 @@ export function VentasModule() {
         estadoPago,
         montoPagado: pagado,
         balance,
-        items
+        items: payloadItems
       })
       
       if (res && res.data && res.data.id) {
@@ -282,8 +298,11 @@ export function VentasModule() {
             >
               <div className="aspect-square w-full overflow-hidden bg-muted">
                 <img
-                  src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
+                  src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                   alt={p.nombre}
+                  onError={(e) => {
+                    e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
+                  }}
                   className="size-full object-cover transition group-hover:scale-105"
                 />
               </div>
@@ -341,29 +360,36 @@ export function VentasModule() {
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              {items.map((i) => (
-                <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
-                  <div className="flex flex-1 flex-col">
-                    <span className="text-sm font-medium text-foreground">{i.nombre}</span>
-                    <span className="text-xs text-muted-foreground">{currency(i.precio)} c/u</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
-                      <Minus className="size-3" />
+              {items.map((i) => {
+                const prod = fetchedProductos.find(p => p.id === i.productoId)
+                let displayPrice = i.precio
+                if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+                  displayPrice = prod.precioUber
+                }
+                return (
+                  <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                    <div className="flex flex-1 flex-col">
+                      <span className="text-sm font-medium text-foreground">{i.nombre}</span>
+                      <span className="text-xs text-muted-foreground">{currency(displayPrice)} c/u</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
+                        <Minus className="size-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">{i.cantidad}</span>
+                      <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, 1)}>
+                        <Plus className="size-3" />
+                      </Button>
+                    </div>
+                    <span className="w-16 text-right text-sm font-semibold text-foreground">
+                      {currency(displayPrice * i.cantidad)}
+                    </span>
+                    <Button variant="ghost" size="icon" className="size-7 text-primary" onClick={() => removeItem(i.productoId)}>
+                      <Trash2 className="size-3.5" />
                     </Button>
-                    <span className="w-6 text-center text-sm font-medium">{i.cantidad}</span>
-                    <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, 1)}>
-                      <Plus className="size-3" />
-                    </Button>
                   </div>
-                  <span className="w-16 text-right text-sm font-semibold text-foreground">
-                    {currency(i.precio * i.cantidad)}
-                  </span>
-                  <Button variant="ghost" size="icon" className="size-7 text-primary" onClick={() => removeItem(i.productoId)}>
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -412,6 +438,7 @@ export function VentasModule() {
                   <SelectItem value="efectivo">Efectivo</SelectItem>
                   <SelectItem value="tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="uberEats">UberEats</SelectItem>
                 </SelectContent>
               </Select>
             </Field>

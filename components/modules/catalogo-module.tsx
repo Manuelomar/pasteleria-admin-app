@@ -232,8 +232,11 @@ export function CatalogoModule() {
           <Card key={p.id} className="overflow-hidden pt-0">
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
               <img
-                src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
+                src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                 alt={p.nombre}
+                onError={(e) => {
+                  e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
+                }}
                 className={cn(
                   "size-full object-cover transition",
                   !p.disponible && "opacity-60 grayscale",
