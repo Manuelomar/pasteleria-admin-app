@@ -31,6 +31,7 @@ import {
 import { EstadoPagoBadge } from "@/components/badges"
 import { currency, type Venta, type Cliente, type Producto } from "@/types"
 import { api } from "@/services"
+import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
 
 export function DashboardModule() {
@@ -428,9 +429,12 @@ export function DashboardModule() {
                   {i + 1}
                 </span>
                 <img
-                  src={p.imagen || "/placeholder.svg"}
+                  src={p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' ? (API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}
                   alt={p.nombre}
                   className="size-10 rounded-md object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
                 />
                 <div className="flex flex-1 flex-col">
                   <span className="text-sm font-medium text-foreground">{p.nombre}</span>

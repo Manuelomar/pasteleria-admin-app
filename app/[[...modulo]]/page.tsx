@@ -18,7 +18,7 @@ export default function Page() {
     <>
       {currentModule === "dashboard" && <DashboardModule />}
       {currentModule === "clientes" && <ClientesModule />}
-      {currentModule === "catalogo" && <CatalogoModule />}
+      {currentModule === "catalogo" && <CatalogoModule subModule={params.modulo?.[1]} />}
       {currentModule === "ventas" && <VentasModule />}
       {currentModule === "estado-cuenta" && <EstadoCuentaModule />}
       {currentModule === "usuarios" && <UsuariosModule />}
