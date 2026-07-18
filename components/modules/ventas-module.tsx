@@ -105,6 +105,13 @@ export function VentasModule() {
     if (!prod) return
     setItems((prev) => {
       const existing = prev.find((i) => i.productoId === id)
+      const currentQty = existing ? existing.cantidad : 0
+      
+      if (currentQty + 1 > (prod.cantidad || 0)) {
+        toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
+        return prev
+      }
+
       if (existing) {
         return prev.map((i) =>
           i.productoId === id ? { ...i, cantidad: i.cantidad + 1 } : i,
@@ -118,13 +125,25 @@ export function VentasModule() {
   }
 
   const updateQty = (id: string, delta: number) => {
-    setItems((prev) =>
-      prev
+    const prod = fetchedProductos.find((p) => p.id === id)
+    if (!prod) return
+
+    setItems((prev) => {
+      const existing = prev.find((i) => i.productoId === id)
+      if (!existing) return prev
+
+      const newQty = existing.cantidad + delta
+      if (delta > 0 && newQty > (prod.cantidad || 0)) {
+        toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
+        return prev
+      }
+
+      return prev
         .map((i) =>
-          i.productoId === id ? { ...i, cantidad: Math.max(0, i.cantidad + delta) } : i,
+          i.productoId === id ? { ...i, cantidad: Math.max(0, newQty) } : i,
         )
-        .filter((i) => i.cantidad > 0),
-    )
+        .filter((i) => i.cantidad > 0)
+    })
   }
 
   const removeItem = (id: string) => {
@@ -132,8 +151,15 @@ export function VentasModule() {
   }
 
   const subtotal = useMemo(
-    () => items.reduce((s, i) => s + i.precio * i.cantidad, 0),
-    [items],
+    () => items.reduce((s, i) => {
+      const prod = fetchedProductos.find(p => p.id === i.productoId)
+      let itemPrecio = i.precio
+      if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+        itemPrecio = prod.precioUber
+      }
+      return s + itemPrecio * i.cantidad
+    }, 0),
+    [items, fetchedProductos, metodoPago],
   )
   const desc = Number(descuento) || 0
   const imp = aplicarItbis ? (subtotal - desc) * 0.18 : 0
@@ -153,9 +179,9 @@ export function VentasModule() {
     setClienteId("general")
   }
 
-  const imprimirFactura = (id: string) => {
+  const imprimirFactura = async (id: string) => {
     const iframeId = "print-invoice-iframe"
-    const existingIframe = document.getElementById(iframeId)
+    let existingIframe = document.getElementById(iframeId) as HTMLIFrameElement
     if (existingIframe) {
       existingIframe.remove()
     }
@@ -166,9 +192,27 @@ export function VentasModule() {
     iframe.style.width = "0px"
     iframe.style.height = "0px"
     iframe.style.border = "none"
-    iframe.src = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/ventas/${id}/print`
     
     document.body.appendChild(iframe)
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/ventas/${id}/print`);
+      const html = await res.text();
+      
+      iframe.onload = () => {
+        if (iframe.contentWindow) {
+          const originalTitle = document.title;
+          const timestamp = new Date().getTime();
+          document.title = `Factura_${id}_${timestamp}`;
+          iframe.contentWindow.print();
+          document.title = originalTitle;
+        }
+      };
+      
+      iframe.srcdoc = html;
+    } catch (error) {
+      console.error("Error al imprimir la factura", error);
+    }
   }
 
   const guardar = async () => {
@@ -198,6 +242,15 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
+      const payloadItems = items.map(i => {
+        const prod = fetchedProductos.find(p => p.id === i.productoId)
+        let finalPrice = i.precio
+        if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+          finalPrice = prod.precioUber
+        }
+        return { ...i, precio: finalPrice }
+      })
+
       const res = await api.ventas.create({
         clienteId: esCredito ? clienteId : undefined,
         cajeroId: "d69d45cc-d820-4e55-9a8c-a1112b32f22b", // Todo: real session user
@@ -209,7 +262,7 @@ export function VentasModule() {
         estadoPago,
         montoPagado: pagado,
         balance,
-        items
+        items: payloadItems
       })
       
       if (res && res.data && res.data.id) {
@@ -282,8 +335,11 @@ export function VentasModule() {
             >
               <div className="aspect-square w-full overflow-hidden bg-muted">
                 <img
-                  src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
+                  src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                   alt={p.nombre}
+                  onError={(e) => {
+                    e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
+                  }}
                   className="size-full object-cover transition group-hover:scale-105"
                 />
               </div>
@@ -341,29 +397,36 @@ export function VentasModule() {
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              {items.map((i) => (
-                <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
-                  <div className="flex flex-1 flex-col">
-                    <span className="text-sm font-medium text-foreground">{i.nombre}</span>
-                    <span className="text-xs text-muted-foreground">{currency(i.precio)} c/u</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
-                      <Minus className="size-3" />
+              {items.map((i) => {
+                const prod = fetchedProductos.find(p => p.id === i.productoId)
+                let displayPrice = i.precio
+                if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
+                  displayPrice = prod.precioUber
+                }
+                return (
+                  <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                    <div className="flex flex-1 flex-col">
+                      <span className="text-sm font-medium text-foreground">{i.nombre}</span>
+                      <span className="text-xs text-muted-foreground">{currency(displayPrice)} c/u</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
+                        <Minus className="size-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">{i.cantidad}</span>
+                      <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, 1)}>
+                        <Plus className="size-3" />
+                      </Button>
+                    </div>
+                    <span className="w-16 text-right text-sm font-semibold text-foreground">
+                      {currency(displayPrice * i.cantidad)}
+                    </span>
+                    <Button variant="ghost" size="icon" className="size-7 text-primary" onClick={() => removeItem(i.productoId)}>
+                      <Trash2 className="size-3.5" />
                     </Button>
-                    <span className="w-6 text-center text-sm font-medium">{i.cantidad}</span>
-                    <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, 1)}>
-                      <Plus className="size-3" />
-                    </Button>
                   </div>
-                  <span className="w-16 text-right text-sm font-semibold text-foreground">
-                    {currency(i.precio * i.cantidad)}
-                  </span>
-                  <Button variant="ghost" size="icon" className="size-7 text-primary" onClick={() => removeItem(i.productoId)}>
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -412,6 +475,7 @@ export function VentasModule() {
                   <SelectItem value="efectivo">Efectivo</SelectItem>
                   <SelectItem value="tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="uberEats">UberEats</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
