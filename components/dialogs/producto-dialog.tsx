@@ -31,18 +31,11 @@ import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 
 const categorias = [
-  "Pasteles",
-  "Bizcochos",
-  "Tres leches",
-  "Galletas",
-  "Brownies",
   "Postres",
-  "Empanadas",
-  "Quipes",
-  "Croquetas",
-  "Café",
-  "Batidas",
-  "Malteadas",
+  "Salados",
+  "Bebidas",
+  "Bizcochos",
+  "Combos",
 ]
 
 export function ProductoDialog({
@@ -75,8 +68,7 @@ export function ProductoDialog({
   useEffect(() => {
     if (open) {
       setNombre(producto?.nombre ?? "")
-      setCategoria(producto?.categoria ?? "Pasteles")
-      setTipo(producto?.tipo ?? "dulce")
+      setCategoria(producto?.categoria ?? "Postres")
       setPrecio(producto && producto.precio !== undefined ? String(producto.precio) : "")
       setPrecioCosto(producto && producto.precioCosto !== undefined ? String(producto.precioCosto) : "")
       setCantidad(producto?.cantidad !== undefined ? String(producto.cantidad) : "0")
@@ -96,10 +88,14 @@ export function ProductoDialog({
         imagenUrl = uploadRes.url;
       }
 
+      let derivedTipo = "dulce";
+      if (categoria === "Salados") derivedTipo = "salado";
+      if (categoria === "Bebidas") derivedTipo = "bebida";
+
       const data: any = {
         nombre,
         categoria,
-        tipo: tipo as "dulce" | "salado" | "bebida",
+        tipo: derivedTipo,
         precio: parseFloat(precio) || 0,
         precioCosto: parseFloat(precioCosto) || 0,
         cantidad: parseInt(cantidad) || 0,
@@ -150,7 +146,7 @@ export function ProductoDialog({
                 placeholder="Pastel de chocolate"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4">
               <Field>
                 <FieldLabel>Categoría</FieldLabel>
                 <Select value={categoria} onValueChange={(v) => v !== null && setCategoria(v)}>
@@ -163,19 +159,6 @@ export function ProductoDialog({
                         {c}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Tipo</FieldLabel>
-                <Select value={tipo} onValueChange={(v) => v !== null && setTipo(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dulce">Dulce</SelectItem>
-                    <SelectItem value="salado">Salado</SelectItem>
-                    <SelectItem value="bebida">Bebida</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
