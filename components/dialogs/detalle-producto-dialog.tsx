@@ -9,17 +9,19 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
-import { currency, type Producto } from "@/types"
+import { currency, type Producto, type Usuario } from "@/types"
 import { cn } from "@/lib/utils"
 
 export function DetalleProductoDialog({
   open,
   onOpenChange,
   producto,
+  currentUser,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   producto: Producto | null
+  currentUser?: Usuario | null
 }) {
   if (!producto) return null
 
@@ -60,9 +62,11 @@ export function DetalleProductoDialog({
           {/* Grid de Precio e Inventario */}
           <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/50 p-3 border border-border/50">
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Precio</span>
+              <span className="text-xs text-muted-foreground">
+                {currentUser?.rol === "proveedor" ? "Precio Costo" : "Precio Venta"}
+              </span>
               <span className="text-lg font-bold text-primary">
-                {currency(producto.precio)}
+                {currentUser?.rol === "proveedor" ? currency(producto.precioCosto || 0) : currency(producto.precio)}
               </span>
             </div>
             <div className="flex flex-col">

@@ -4,6 +4,7 @@ import { Venta, PaginatedResponse } from "@/types";
 
 export const ventasService = {
   getAll: (): Promise<Venta[]> => fetchAPI('/ventas').then((list: any[]) => list.map(mapVentaToFrontend)),
+  getPendientes: (): Promise<Venta[]> => fetchAPI('/ventas/pendientes').then((list: any[]) => list.map(mapVentaToFrontend)),
   getPaged: (
     page: number,
     pageSize: number,

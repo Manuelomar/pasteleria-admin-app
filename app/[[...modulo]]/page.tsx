@@ -4,6 +4,7 @@ import { DashboardModule } from "@/components/modules/dashboard-module"
 import { CatalogoModule } from "@/components/modules/catalogo-module"
 import { ClientesModule } from "@/components/modules/clientes-module"
 import { VentasModule } from "@/components/modules/ventas-module"
+import { CuentasCobrarModule } from "@/components/modules/cuentas-cobrar-module"
 import { EstadoCuentaModule } from "@/components/modules/estado-cuenta-module"
 import { UsuariosModule } from "@/components/modules/usuarios-module"
 import { EntregasModule } from "@/components/modules/entregas-module"
@@ -18,8 +19,9 @@ export default function Page() {
     <>
       {currentModule === "dashboard" && <DashboardModule />}
       {currentModule === "clientes" && <ClientesModule />}
-      {currentModule === "catalogo" && <CatalogoModule />}
+      {currentModule === "catalogo" && <CatalogoModule subModule={params.modulo?.[1]} />}
       {currentModule === "ventas" && <VentasModule />}
+      {currentModule === "cuentas-cobrar" && <CuentasCobrarModule />}
       {currentModule === "estado-cuenta" && <EstadoCuentaModule />}
       {currentModule === "usuarios" && <UsuariosModule />}
       {currentModule === "entregas" && <EntregasModule />}

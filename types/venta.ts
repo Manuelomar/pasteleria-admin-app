@@ -1,4 +1,4 @@
-export type MetodoPago = "efectivo" | "tarjeta" | "transferencia"
+export type MetodoPago = "efectivo" | "tarjeta" | "transferencia" | "uberEats"
 export type EstadoPago = "pagado" | "pendiente" | "parcial"
 
 export interface VentaItem {
@@ -6,6 +6,7 @@ export interface VentaItem {
   nombre: string
   precio: number
   cantidad: number
+  precioCosto?: number
 }
 
 export interface Venta {

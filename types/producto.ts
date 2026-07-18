@@ -14,6 +14,7 @@ export interface Producto {
   cantidad?: number
   proveedorId?: string
   precioCosto?: number
+  precioUber?: number
   historialCostos?: number[]
 }
 

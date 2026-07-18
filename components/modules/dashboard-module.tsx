@@ -31,7 +31,77 @@ import {
 import { EstadoPagoBadge } from "@/components/badges"
 import { currency, type Venta, type Cliente, type Producto } from "@/types"
 import { api } from "@/services"
+import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
+
+const MetricsRow = ({ title, data }: { title: string, data: any }) => (
+  <div className="mb-8">
+    <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">{title}</h2>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <DollarSign className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">Ventas Totales</span>
+            <div className="flex items-end gap-2">
+              <span className="font-heading text-lg font-bold text-foreground">{currency(data.ventas)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <DollarSign className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">Ganancia Neta</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(data.ganancia)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <TrendingUp className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">Ventas Sin ITBIS</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(data.sinItbis)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <Percent className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">ITBIS Recaudado</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(data.itbis)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Wallet className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">Ticket Promedio</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(data.ordenes > 0 ? data.ventas / data.ordenes : 0)}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+)
 
 export function DashboardModule() {
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -58,48 +128,75 @@ export function DashboardModule() {
     })
   }, [])
 
-  // Computed Stats - Hoy
-  const ventasDia = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0]
-    return ventas.filter(v => new Date(v.fecha).toISOString().split("T")[0] === today).reduce((s, v) => s + v.total, 0)
-  }, [ventas])
-
-  const ordenesDia = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0]
-    return ventas.filter(v => new Date(v.fecha).toISOString().split("T")[0] === today).length
-  }, [ventas])
-
-  const clientesReg = clientes.length
-  const productosDisp = productos.filter((p) => p.disponible).length
-  const porCobrar = clientes.reduce((s, c) => s + c.balance, 0)
-
-  // Computed Stats - Globales y Financieras
-  const { totalVentasAnio, subtotalAnio, impuestoAnio, promedioOrden } = useMemo(() => {
+  // Computed Stats - Agrupados por tiempo
+  const stats = useMemo(() => {
     const today = new Date()
+    today.setHours(23, 59, 59, 999)
+    const startOfDay = new Date(today)
+    startOfDay.setHours(0, 0, 0, 0)
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - 7)
+    startOfWeek.setHours(0, 0, 0, 0)
     const currentYear = today.getFullYear()
-    
-    let sumTotal = 0
-    let anio = 0
-    let subtotalA = 0
-    let impuestoA = 0
+    const currentMonth = today.getMonth()
+
+    const createEmptyStats = () => ({ ventas: 0, ganancia: 0, itbis: 0, sinItbis: 0, ordenes: 0 })
+    const hoy = createEmptyStats()
+    const semana = createEmptyStats()
+    const mes = createEmptyStats()
+    const anio = createEmptyStats()
 
     ventas.forEach(v => {
       const date = new Date(v.fecha)
-      sumTotal += v.total
-      if (date.getFullYear() === currentYear) {
-        anio += v.total
-        subtotalA += (v.subtotal || 0)
-        impuestoA += (v.impuesto || 0)
+      const isHoy = date >= startOfDay && date <= today
+      const isSemana = date >= startOfWeek && date <= today
+      const isMes = date.getFullYear() === currentYear && date.getMonth() === currentMonth
+      const isAnio = date.getFullYear() === currentYear
+
+      let ventaCosto = 0
+      v.items.forEach(item => {
+        ventaCosto += (Number(item.precioCosto) || 0) * item.cantidad
+      })
+      const ingresoVenta = Number(v.subtotal) - Number(v.descuento || 0)
+      const ganancia = ingresoVenta - ventaCosto
+      const sub = Number(v.subtotal) || 0
+      const imp = Number(v.impuesto) || 0
+
+      if (isHoy) {
+        hoy.ventas += v.total
+        hoy.ganancia += ganancia
+        hoy.itbis += imp
+        hoy.sinItbis += sub
+        hoy.ordenes += 1
+      }
+      if (isSemana) {
+        semana.ventas += v.total
+        semana.ganancia += ganancia
+        semana.itbis += imp
+        semana.sinItbis += sub
+        semana.ordenes += 1
+      }
+      if (isMes) {
+        mes.ventas += v.total
+        mes.ganancia += ganancia
+        mes.itbis += imp
+        mes.sinItbis += sub
+        mes.ordenes += 1
+      }
+      if (isAnio) {
+        anio.ventas += v.total
+        anio.ganancia += ganancia
+        anio.itbis += imp
+        anio.sinItbis += sub
+        anio.ordenes += 1
       }
     })
 
-    return {
-      totalVentasAnio: anio,
-      promedioOrden: ventas.length > 0 ? sumTotal / ventas.length : 0,
-      subtotalAnio: subtotalA,
-      impuestoAnio: impuestoA
-    }
+    return { hoy, semana, mes, anio }
   }, [ventas])
+
+  const productosDisp = productos.filter((p) => p.disponible).length
+  const porCobrar = clientes.reduce((s, c) => s + c.balance, 0)
 
   const masVendidos = useMemo(() => {
     return [...productos].sort((a, b) => b.vendidos - a.vendidos).slice(0, 5)
@@ -190,72 +287,16 @@ export function DashboardModule() {
 
   return (
     <div className="flex flex-col gap-8">
-      
-      {/* SECCIÓN: Hoy y Operativo */}
+      <MetricsRow title="Métricas de Hoy" data={stats.hoy} />
+      <MetricsRow title="Métricas de la Semana" data={stats.semana} />
+      <MetricsRow title="Métricas del Mes" data={stats.mes} />
+      <MetricsRow title="Métricas del Año" data={stats.anio} />
+
+      {/* SECCIÓN: Cuentas por Cobrar */}
       <div>
-        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Operativo Hoy</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Ventas del día" value={currency(ventasDia)} icon={DollarSign} accent="primary" hint="Actualizado hoy" />
-          <StatCard title="Órdenes del día" value={String(ordenesDia)} icon={ShoppingBag} accent="orange" />
-          <StatCard title="Cuentas por cobrar" value={currency(porCobrar)} icon={AlertCircle} accent="primary" />
-          <StatCard title="Clientes registrados" value={String(clientesReg)} icon={Users} accent="muted" />
-        </div>
-      </div>
-
-      {/* SECCIÓN: Finanzas e Impuestos */}
-      <div>
-        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Métricas Financieras (Año)</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-border bg-card/50 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <DollarSign className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-muted-foreground">Total Facturado</span>
-                <div className="flex items-end gap-2">
-                  <span className="font-heading text-lg font-bold text-foreground">{currency(totalVentasAnio)}</span>
-                  <span className="text-[10px] text-muted-foreground mb-1">con ITBIS</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex size-11 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <TrendingUp className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-muted-foreground">Ventas Sin ITBIS</span>
-                <span className="font-heading text-lg font-bold text-foreground">{currency(subtotalAnio)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex size-11 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                <Percent className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-muted-foreground">ITBIS Recaudado</span>
-                <span className="font-heading text-lg font-bold text-foreground">{currency(impuestoAnio)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card/50 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex size-11 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                <Wallet className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-muted-foreground">Ticket Promedio</span>
-                <span className="font-heading text-lg font-bold text-foreground">{currency(promedioOrden)}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Global</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StatCard title="Cuentas por cobrar" value={currency(porCobrar)} icon={AlertCircle} accent="orange" />
         </div>
       </div>
 
@@ -428,9 +469,12 @@ export function DashboardModule() {
                   {i + 1}
                 </span>
                 <img
-                  src={p.imagen || "/placeholder.svg"}
+                  src={p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' ? (API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}
                   alt={p.nombre}
                   className="size-10 rounded-md object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
                 />
                 <div className="flex flex-1 flex-col">
                   <span className="text-sm font-medium text-foreground">{p.nombre}</span>

@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { Folder, ArrowLeft } from "lucide-react"
 
-export function CatalogoModule() {
+export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [items, setItems] = useState<Producto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -48,13 +48,26 @@ export function CatalogoModule() {
       setCurrentUser(user)
       if (user.rol === "admin") {
         api.usuarios.getAll().then(users => {
-          setProviders(users.filter(u => u.rol === "proveedor"))
+          const provs = users.filter(u => u.rol === "proveedor")
+          setProviders(provs)
+          
+          if (subModule) {
+            const decodedName = decodeURIComponent(subModule)
+            if (decodedName === "internos") {
+              setSelectedProviderId("internos")
+            } else {
+              const matched = provs.find(p => p.nombre === decodedName)
+              if (matched) {
+                setSelectedProviderId(matched.id)
+              }
+            }
+          }
         }).catch(console.error)
       } else if (user.rol === "proveedor") {
         setSelectedProviderId(user.id)
       }
     }).catch(console.error)
-  }, [])
+  }, [subModule])
 
   const fetchProductos = () => {
     if (isAdmin && !selectedProviderId) return; // Don't fetch if viewing providers list
@@ -146,32 +159,37 @@ export function CatalogoModule() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar producto..."
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
-          />
+      {(!isAdmin || selectedProviderId) && (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-sm">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar producto..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            onClick={() => {
+              setEditing(null)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus data-icon="inline-start" />
+            Nuevo producto
+          </Button>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus data-icon="inline-start" />
-          Nuevo producto
-        </Button>
-      </div>
+      )}
 
       {isAdmin && !selectedProviderId ? (
         <div className="mt-4 flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Seleccione una categoría para gestionar productos:</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedProviderId("internos")}>
+            <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => {
+              setSelectedProviderId("internos")
+              window.history.pushState(null, '', '/catalogo/internos')
+            }}>
               <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
                 <div className="p-4 rounded-full bg-primary/10 text-primary">
                   <PackagePlus className="size-8" />
@@ -182,7 +200,10 @@ export function CatalogoModule() {
             </Card>
 
             {providers.map(prov => (
-              <Card key={prov.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedProviderId(prov.id)}>
+              <Card key={prov.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => {
+                setSelectedProviderId(prov.id)
+                window.history.pushState(null, '', `/catalogo/${encodeURIComponent(prov.nombre)}`)
+              }}>
                 <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
                   <div className="p-4 rounded-full bg-primary/10 text-primary">
                     <Folder className="size-8" />
@@ -198,7 +219,10 @@ export function CatalogoModule() {
         <>
           {isAdmin && (
             <div className="mb-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedProviderId(null)}>
+              <Button variant="outline" size="sm" onClick={() => {
+                setSelectedProviderId(null)
+                window.history.pushState(null, '', '/catalogo')
+              }}>
                 <ArrowLeft className="mr-2 size-4" />
                 Volver a Proveedores
               </Button>
@@ -232,8 +256,11 @@ export function CatalogoModule() {
           <Card key={p.id} className="overflow-hidden pt-0">
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
               <img
-                src={p.imagen ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
+                src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
                 alt={p.nombre}
+                onError={(e) => {
+                  e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
+                }}
                 className={cn(
                   "size-full object-cover transition",
                   !p.disponible && "opacity-60 grayscale",
@@ -250,12 +277,20 @@ export function CatalogoModule() {
                   <span className="text-xs text-muted-foreground">{p.categoria}</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="font-heading text-lg font-semibold text-primary">
-                    {currency(p.precio)}
-                  </span>
+                  {currentUser?.rol !== "proveedor" && (
+                    <span className="font-heading text-lg font-semibold text-primary">
+                      {currency(p.precio)}
+                    </span>
+                  )}
                   {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Costo: {currency(p.precioCosto || 0)}
+                    <span className={cn(
+                      currentUser?.rol === "proveedor" 
+                        ? "font-heading text-lg font-semibold text-primary" 
+                        : "text-xs font-medium text-muted-foreground"
+                    )}>
+                      {currentUser?.rol === "proveedor" 
+                        ? currency(p.precioCosto || 0) 
+                        : `Costo: ${currency(p.precioCosto || 0)}`}
                     </span>
                   )}
                 </div>
@@ -338,6 +373,7 @@ export function CatalogoModule() {
         open={!!viewing}
         onOpenChange={(open) => !open && setViewing(null)}
         producto={viewing}
+        currentUser={currentUser}
       />
     </div>
   )

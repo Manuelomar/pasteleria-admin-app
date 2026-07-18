@@ -13,6 +13,7 @@ const titles: Record<ModuleId, string> = {
   clientes: "Clientes",
   catalogo: "Catálogo",
   ventas: "Ventas y Facturación",
+  "cuentas-cobrar": "Cuentas por Cobrar",
   "estado-cuenta": "Finanzas y Caja",
   usuarios: "Usuarios",
   entregas: "Entregas de Proveedores",
