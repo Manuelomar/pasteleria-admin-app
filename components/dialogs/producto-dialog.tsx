@@ -124,9 +124,39 @@ export function ProductoDialog({
     try {
       let imagenUrl = producto?.imagen;
       if (file) {
+        // Comprimir y redimensionar la imagen antes de convertirla a Base64
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const MAX_DIMENSION = 800; // Redimensionar a max 800px
+
+              if (width > height && width > MAX_DIMENSION) {
+                height *= MAX_DIMENSION / width;
+                width = MAX_DIMENSION;
+              } else if (height > MAX_DIMENSION) {
+                width *= MAX_DIMENSION / height;
+                height = MAX_DIMENSION;
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                resolve(event.target?.result as string); // Fallback si no hay canvas
+                return;
+              }
+              ctx.drawImage(img, 0, 0, width, height);
+              // Comprimir como JPEG al 70% de calidad
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.onerror = error => reject(error);
+            img.src = event.target?.result as string;
+          };
           reader.onerror = error => reject(error);
           reader.readAsDataURL(file);
         });
