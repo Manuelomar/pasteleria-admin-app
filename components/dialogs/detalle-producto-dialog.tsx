@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { currency, type Producto, type Usuario } from "@/types"
 import { cn } from "@/lib/utils"
+import { API_URL } from "@/services/api.config"
 
 export function DetalleProductoDialog({
   open,
@@ -36,7 +37,7 @@ export function DetalleProductoDialog({
           {/* Imagen de producto */}
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-muted border border-border">
             <img
-              src={producto.imagen || "/placeholder.svg"}
+              src={producto.imagen ? (producto.imagen.startsWith('data:') ? producto.imagen : API_URL.replace('/api', '') + producto.imagen) : "/placeholder.svg"}
               alt={producto.nombre}
               className={cn(
                 "size-full object-cover",

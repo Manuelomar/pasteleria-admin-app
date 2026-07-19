@@ -124,8 +124,13 @@ export function ProductoDialog({
     try {
       let imagenUrl = producto?.imagen;
       if (file) {
-        const uploadRes = await api.productos.uploadImage(file);
-        imagenUrl = uploadRes.url;
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
+          reader.readAsDataURL(file);
+        });
+        imagenUrl = base64;
       }
 
       let derivedTipo = "dulce";
@@ -304,7 +309,7 @@ export function ProductoDialog({
               {(previewUrl && previewUrl.trim() !== '' && previewUrl !== 'null' && previewUrl !== 'undefined') && (
                 <div className="mt-2">
                   <img 
-                    src={previewUrl.startsWith('blob:') ? previewUrl : API_URL.replace('/api', '') + previewUrl} 
+                    src={previewUrl.startsWith('data:') || previewUrl.startsWith('blob:') ? previewUrl : API_URL.replace('/api', '') + previewUrl} 
                     alt="Vista previa" 
                     className="h-20 w-auto rounded object-cover border border-border" 
                   />

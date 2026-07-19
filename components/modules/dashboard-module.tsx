@@ -469,7 +469,7 @@ export function DashboardModule() {
                   {i + 1}
                 </span>
                 <img
-                  src={p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' ? (API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}
+                  src={p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}
                   alt={p.nombre}
                   className="size-10 rounded-md object-cover"
                   onError={(e) => {
