@@ -376,7 +376,11 @@ export function VentasModule() {
             <FieldLabel>Cliente</FieldLabel>
             <Select value={clienteId} onValueChange={(v) => v !== null && setClienteId(v)}>
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {clienteId === "general"
+                    ? "Venta sin cliente registrado"
+                    : fetchedClientes.find((c) => c.id === clienteId)?.nombre || "Seleccione un cliente"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="general">Venta sin cliente registrado</SelectItem>

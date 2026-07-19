@@ -32,7 +32,7 @@ import { Loader } from "@/components/ui/loader"
 export function CuentasCobrarModule() {
   const [pendientes, setPendientes] = useState<Venta[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null)
+  const [selectedCliente, setSelectedCliente] = useState<any | null>(null)
   
   // Modal state
   const [montoPago, setMontoPago] = useState<number | "">("")
@@ -53,7 +53,7 @@ export function CuentasCobrarModule() {
   }
 
   const imprimirFactura = async (id: string) => {
-    const iframeId = "print-invoice-iframe"
+    const iframeId = `print-invoice-iframe-${id}`
     let existingIframe = document.getElementById(iframeId) as HTMLIFrameElement
     if (existingIframe) {
       existingIframe.remove()
@@ -92,46 +92,57 @@ export function CuentasCobrarModule() {
     loadPendientes()
   }, [])
 
-  const handleOpenPayment = (venta: Venta) => {
-    setSelectedVenta(venta)
-    setMontoPago(venta.balance)
+  const handleOpenPayment = (cliente: any) => {
+    setSelectedCliente(cliente)
+    setMontoPago(cliente.balanceTotal)
     setMetodoPago("efectivo")
   }
 
   const handleProcessPayment = async () => {
-    if (!selectedVenta) return
+    if (!selectedCliente) return
     const amount = Number(montoPago)
     if (isNaN(amount) || amount <= 0) {
       toast.error("Ingrese un monto válido")
       return
     }
 
-    if (amount > selectedVenta.balance) {
-      toast.error("El monto no puede ser mayor al balance pendiente")
+    if (amount > selectedCliente.balanceTotal) {
+      toast.error("El monto no puede ser mayor al balance pendiente total")
       return
     }
 
     setIsPaying(true)
     try {
-      const nuevoBalance = selectedVenta.balance - amount
-      const nuevoMontoPagado = (Number(selectedVenta.montoPagado) || 0) + amount
-      const nuevoEstado = nuevoBalance <= 0 ? "pagado" : "parcial"
+      let montoRestante = amount;
+      const facturasOrdenadas = [...selectedCliente.facturas].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      
+      const facturasAfectadas: string[] = [];
 
-      await api.ventas.update(selectedVenta.id, {
-        montoPagado: nuevoMontoPagado,
-        balance: nuevoBalance,
-        estadoPago: nuevoEstado,
-        // Opcional: si quisieran registrar el metodo del abono, 
-        // normalmente se guarda en un historial, pero actualizamos el principal por ahora
-        metodoPago: metodoPago as any
-      })
+      for (const factura of facturasOrdenadas) {
+        if (montoRestante <= 0) break;
+        
+        const abonoAFactura = Math.min(montoRestante, factura.balance);
+        const nuevoBalance = factura.balance - abonoAFactura;
+        const nuevoMontoPagado = (Number(factura.montoPagado) || 0) + abonoAFactura;
+        const nuevoEstado = nuevoBalance <= 0 ? "pagado" : "parcial";
 
-      setSelectedVenta(null)
+        await api.ventas.update(factura.id, {
+          montoPagado: nuevoMontoPagado,
+          balance: nuevoBalance,
+          estadoPago: nuevoEstado,
+          metodoPago: metodoPago as any
+        });
+
+        facturasAfectadas.push(factura.id);
+        montoRestante -= abonoAFactura;
+      }
+
+      setSelectedCliente(null)
       loadPendientes()
 
       const printConfirm = await Swal.fire({
         title: "¡Pago Registrado!",
-        text: `El pago de ${currency(amount)} se ha procesado.\n\n¿Desea imprimir el comprobante/factura?`,
+        text: `El pago de ${currency(amount)} se ha procesado y distribuido en las facturas pendientes.\n\n¿Desea imprimir los comprobantes?`,
         icon: "success",
         showCancelButton: true,
         confirmButtonText: "Sí, imprimir",
@@ -141,7 +152,11 @@ export function CuentasCobrarModule() {
       })
 
       if (printConfirm.isConfirmed) {
-        imprimirFactura(selectedVenta.id)
+        for (let i = 0; i < facturasAfectadas.length; i++) {
+          setTimeout(() => {
+            imprimirFactura(facturasAfectadas[i])
+          }, i * 1500);
+        }
       }
 
     } catch (error) {
@@ -152,7 +167,28 @@ export function CuentasCobrarModule() {
     }
   }
 
-  // Agrupación opcional o totales
+  // Agrupación por cliente
+  const clientesAgrupados = pendientes.reduce((acc, venta) => {
+    const nombre = ((venta as any).cliente?.nombre) || venta.clienteNombre || "Cliente de Paso";
+    if (!acc[nombre]) {
+      acc[nombre] = {
+        clienteNombre: nombre,
+        clienteId: venta.clienteId,
+        facturas: [],
+        balanceTotal: 0,
+        montoPagadoTotal: 0,
+        totalFacturado: 0
+      };
+    }
+    acc[nombre].facturas.push(venta);
+    acc[nombre].balanceTotal += Number(venta.balance || 0);
+    acc[nombre].montoPagadoTotal += Number(venta.montoPagado || 0);
+    acc[nombre].totalFacturado += Number(venta.total || 0);
+    return acc;
+  }, {} as Record<string, any>);
+
+  const clientesList = Object.values(clientesAgrupados).sort((a: any, b: any) => b.balanceTotal - a.balanceTotal);
+
   const totalPorCobrar = pendientes.reduce((acc, v) => acc + Number(v.balance || 0), 0)
   const totalFacturas = pendientes.length
 
@@ -198,35 +234,25 @@ export function CuentasCobrarModule() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Factura</TableHead>
-                    <TableHead>Fecha</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead className="text-right">Total Factura</TableHead>
+                    <TableHead className="text-center">Cant. Facturas</TableHead>
+                    <TableHead className="text-right">Total Facturado</TableHead>
                     <TableHead className="text-right">Monto Pagado</TableHead>
                     <TableHead className="text-right text-amber-600">Balance Pendiente</TableHead>
-                    <TableHead className="text-center">Estado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendientes.map((venta) => {
-                    const fecha = new Date(venta.fecha).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    const isParcial = venta.estadoPago === 'parcial'
+                  {clientesList.map((cliente: any) => {
                     return (
-                      <TableRow key={venta.id}>
-                        <TableCell className="font-mono text-sm font-medium">{venta.factura}</TableCell>
-                        <TableCell className="text-sm">{fecha}</TableCell>
-                        <TableCell className="text-sm font-semibold">{((venta as any).cliente?.nombre) || venta.clienteNombre || "Cliente de Paso"}</TableCell>
-                        <TableCell className="text-right">{currency(venta.total)}</TableCell>
-                        <TableCell className="text-right">{currency(venta.montoPagado)}</TableCell>
-                        <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(venta.balance)}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isParcial ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                            {venta.estadoPago.toUpperCase()}
-                          </span>
-                        </TableCell>
+                      <TableRow key={cliente.clienteNombre}>
+                        <TableCell className="text-sm font-semibold">{cliente.clienteNombre}</TableCell>
+                        <TableCell className="text-center font-medium">{cliente.facturas.length}</TableCell>
+                        <TableCell className="text-right">{currency(cliente.totalFacturado)}</TableCell>
+                        <TableCell className="text-right">{currency(cliente.montoPagadoTotal)}</TableCell>
+                        <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(cliente.balanceTotal)}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="default" onClick={() => handleOpenPayment(venta)}>
+                          <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>
                             Saldar Deuda
                           </Button>
                         </TableCell>
@@ -246,18 +272,18 @@ export function CuentasCobrarModule() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedVenta} onOpenChange={(open) => !open && setSelectedVenta(null)}>
+      <Dialog open={!!selectedCliente} onOpenChange={(open) => !open && setSelectedCliente(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Procesar Pago</DialogTitle>
             <DialogDescription>
-              Factura: {selectedVenta?.factura} - {((selectedVenta as any)?.cliente?.nombre) || selectedVenta?.clienteNombre}
+              Cliente: {selectedCliente?.clienteNombre} ({selectedCliente?.facturas.length} facturas)
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-1 rounded-md bg-amber-50 dark:bg-amber-900/10 p-3 border border-amber-200 dark:border-amber-900/50">
-              <span className="text-xs font-semibold text-amber-800 dark:text-amber-400 uppercase">Balance Pendiente</span>
-              <span className="text-xl font-bold text-amber-600 dark:text-amber-500">{selectedVenta ? currency(selectedVenta.balance) : ''}</span>
+              <span className="text-xs font-semibold text-amber-800 dark:text-amber-400 uppercase">Balance Pendiente Total</span>
+              <span className="text-xl font-bold text-amber-600 dark:text-amber-500">{selectedCliente ? currency(selectedCliente.balanceTotal) : ''}</span>
             </div>
             
             <div className="grid gap-2">
@@ -270,7 +296,7 @@ export function CuentasCobrarModule() {
                 value={montoPago}
                 onChange={(e) => setMontoPago(e.target.value === "" ? "" : Number(e.target.value))}
                 min={0}
-                max={selectedVenta?.balance}
+                max={selectedCliente?.balanceTotal}
                 step={0.01}
                 autoFocus
               />
@@ -291,7 +317,7 @@ export function CuentasCobrarModule() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedVenta(null)} disabled={isPaying}>
+            <Button variant="outline" onClick={() => setSelectedCliente(null)} disabled={isPaying}>
               Cancelar
             </Button>
             <Button onClick={handleProcessPayment} disabled={isPaying || !montoPago || montoPago <= 0}>
