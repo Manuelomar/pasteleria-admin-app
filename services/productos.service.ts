@@ -1,4 +1,4 @@
-import { fetchAPI } from "./api.config";
+import { fetchAPI, fetchPublicAPI } from "./api.config";
 import { mapProductoToFrontend } from "./mappers";
 import { Producto, PaginatedResponse } from "@/types";
 
@@ -20,6 +20,20 @@ export const productosService = {
     }
     if (proveedorId) url += `&proveedorId=${proveedorId}`;
     return fetchAPI(url).then((res: any) => ({
+      ...res,
+      data: (res.data || []).map(mapProductoToFrontend)
+    }));
+  },
+  getPublicPaged: (
+    page: number,
+    pageSize: number,
+    search?: string,
+    tipo?: string
+  ): Promise<PaginatedResponse<Producto>> => {
+    let url = `/productos/public/paged?pageNumber=${page}&pageSize=${pageSize}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (tipo && tipo !== 'todos') url += `&tipo=${tipo}`;
+    return fetchPublicAPI(url).then((res: any) => ({
       ...res,
       data: (res.data || []).map(mapProductoToFrontend)
     }));

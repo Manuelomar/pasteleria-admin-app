@@ -52,3 +52,40 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   }
   return json;
 }
+
+export async function fetchPublicAPI(endpoint: string, options: RequestInit = {}) {
+  const headers: Record<string, string> = {};
+  
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (options.headers) {
+    Object.assign(headers, options.headers);
+  }
+
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    cache: 'no-store',
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    let errorMsg = `API Error: ${res.statusText}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.message) {
+        errorMsg = Array.isArray(errJson.message) ? errJson.message.join(', ') : errJson.message;
+      }
+    } catch (e) {}
+    throw new Error(errorMsg);
+  }
+  
+  if (res.status === 204) return null;
+  
+  const json = await res.json();
+  if (json && json.success !== undefined && json.data !== undefined) {
+    return json.data;
+  }
+  return json;
+}
