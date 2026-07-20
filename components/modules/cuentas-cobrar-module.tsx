@@ -116,7 +116,7 @@ export function CuentasCobrarModule() {
       let montoRestante = amount;
       const facturasOrdenadas = [...selectedCliente.facturas].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
       
-      const facturasAfectadas: string[] = [];
+      const facturasAfectadas: { id: string, numero: string }[] = [];
 
       for (const factura of facturasOrdenadas) {
         if (montoRestante <= 0) break;
@@ -133,7 +133,7 @@ export function CuentasCobrarModule() {
           metodoPago: metodoPago as any
         });
 
-        facturasAfectadas.push(factura.id);
+        facturasAfectadas.push({ id: factura.id, numero: factura.factura });
         montoRestante -= abonoAFactura;
       }
 
@@ -142,20 +142,56 @@ export function CuentasCobrarModule() {
 
       const printConfirm = await Swal.fire({
         title: "¡Pago Registrado!",
-        text: `El pago de ${currency(amount)} se ha procesado y distribuido en las facturas pendientes.\n\n¿Desea imprimir los comprobantes?`,
+        text: `El pago de ${currency(amount)} se ha procesado y distribuido en las facturas pendientes.\n\n¿Qué desea hacer con los comprobantes?`,
         icon: "success",
         showCancelButton: true,
-        confirmButtonText: "Sí, imprimir",
-        cancelButtonText: "No, cerrar",
+        showDenyButton: true,
+        confirmButtonText: "Imprimir",
+        denyButtonText: "WhatsApp",
+        cancelButtonText: "Cerrar",
         confirmButtonColor: "#e11d48",
+        denyButtonColor: "#25D366",
         cancelButtonColor: "#6b7280",
       })
 
       if (printConfirm.isConfirmed) {
         for (let i = 0; i < facturasAfectadas.length; i++) {
           setTimeout(() => {
-            imprimirFactura(facturasAfectadas[i])
+            imprimirFactura(facturasAfectadas[i].id)
           }, i * 1500);
+        }
+      } else if (printConfirm.isDenied) {
+        toast.info("Generando facturas en PDF, un momento...");
+        
+        try {
+          const html2pdf = (await import('html2pdf.js')).default;
+          
+          for (const factura of facturasAfectadas) {
+            const res = await fetch(`${API_URL.replace('/api', '')}/api/ventas/${factura.id}/print`);
+            const htmlContent = await res.text();
+            
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+            document.body.appendChild(element);
+            
+            const opt = {
+              margin:       10,
+              filename:     `Factura-${factura.numero}.pdf`,
+              image:        { type: 'jpeg' as const, quality: 0.98 },
+              html2canvas:  { scale: 2, useCORS: true },
+              jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+            };
+
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+          }
+          
+          toast.success("PDFs descargados. Puedes adjuntarlos en WhatsApp.");
+          const text = encodeURIComponent(`Hola, adjunto los comprobantes de su pago:\n\n` + facturasAfectadas.map(f => `📄 ${f.numero}`).join('\n'));
+          window.open(`https://wa.me/?text=${text}`, '_blank');
+        } catch (error) {
+          console.error("Error al generar PDF:", error);
+          toast.error("Hubo un error al generar los PDFs");
         }
       }
 

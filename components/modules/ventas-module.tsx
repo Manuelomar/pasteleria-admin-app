@@ -151,15 +151,8 @@ export function VentasModule() {
   }
 
   const subtotal = useMemo(
-    () => items.reduce((s, i) => {
-      const prod = fetchedProductos.find(p => p.id === i.productoId)
-      let itemPrecio = i.precio
-      if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
-        itemPrecio = prod.precioUber
-      }
-      return s + itemPrecio * i.cantidad
-    }, 0),
-    [items, fetchedProductos, metodoPago],
+    () => items.reduce((s, i) => s + i.precio * i.cantidad, 0),
+    [items],
   )
   const desc = Number(descuento) || 0
   const imp = aplicarItbis ? (subtotal - desc) * 0.18 : 0
@@ -242,14 +235,7 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
-      const payloadItems = items.map(i => {
-        const prod = fetchedProductos.find(p => p.id === i.productoId)
-        let finalPrice = i.precio
-        if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
-          finalPrice = prod.precioUber
-        }
-        return { ...i, precio: finalPrice }
-      })
+      const payloadItems = items.map(i => ({ ...i }))
 
       const res = await api.ventas.create({
         clienteId: esCredito ? clienteId : undefined,
