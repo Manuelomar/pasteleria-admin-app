@@ -4,16 +4,14 @@ export const reportesService = {
   getReporteProveedor: async (filtros: {
     fechaInicio?: string;
     fechaFin?: string;
-    entregado?: boolean;
-    noPagado?: boolean;
-    finalizado?: boolean;
+    pagoPendiente?: boolean;
+    pagoPagado?: boolean;
   }) => {
     const params = new URLSearchParams();
     if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
     if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
-    if (filtros.entregado) params.append('entregado', 'true');
-    if (filtros.noPagado) params.append('noPagado', 'true');
-    if (filtros.finalizado) params.append('finalizado', 'true');
+    if (filtros.pagoPendiente) params.append('pagoPendiente', 'true');
+    if (filtros.pagoPagado) params.append('pagoPagado', 'true');
 
     let token = null;
     if (typeof window !== 'undefined') {

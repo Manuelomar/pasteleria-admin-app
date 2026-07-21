@@ -17,9 +17,8 @@ export function ReportesModule() {
   // Filtros
   const [fechaInicio, setFechaInicio] = useState("")
   const [fechaFin, setFechaFin] = useState("")
-  const [entregado, setEntregado] = useState(false)
-  const [noPagado, setNoPagado] = useState(false)
-  const [finalizado, setFinalizado] = useState(false)
+  const [pagoPendiente, setPagoPendiente] = useState(false)
+  const [pagoPagado, setPagoPagado] = useState(false)
 
   // Filtros Ventas
   const [ventasFechaInicio, setVentasFechaInicio] = useState("")
@@ -64,9 +63,8 @@ export function ReportesModule() {
         const html = await api.reportes.getReporteProveedor({
           fechaInicio,
           fechaFin,
-          entregado,
-          noPagado,
-          finalizado,
+          pagoPendiente,
+          pagoPagado,
         })
         setReportHtml(html)
       } else if (activeTab === "ventas") {
@@ -175,31 +173,23 @@ export function ReportesModule() {
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-base font-semibold mb-3 block">Estados</Label>
+                  <Label className="text-base font-semibold mb-3 block">Estado de Pago</Label>
                   <div className="flex flex-col space-y-3">
                     <div className="flex items-center space-x-2">
                       <Checkbox 
-                        id="entregado" 
-                        checked={entregado} 
-                        onCheckedChange={(c: boolean | "indeterminate") => setEntregado(!!c)} 
+                        id="pagoPendiente" 
+                        checked={pagoPendiente} 
+                        onCheckedChange={(c: boolean | "indeterminate") => setPagoPendiente(!!c)} 
                       />
-                      <Label htmlFor="entregado" className="font-normal">Entregado</Label>
+                      <Label htmlFor="pagoPendiente" className="font-normal">Pendiente</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox 
-                        id="noPagado" 
-                        checked={noPagado} 
-                        onCheckedChange={(c: boolean | "indeterminate") => setNoPagado(!!c)} 
+                        id="pagoPagado" 
+                        checked={pagoPagado} 
+                        onCheckedChange={(c: boolean | "indeterminate") => setPagoPagado(!!c)} 
                       />
-                      <Label htmlFor="noPagado" className="font-normal">No Pagado</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="finalizado" 
-                        checked={finalizado} 
-                        onCheckedChange={(c: boolean | "indeterminate") => setFinalizado(!!c)} 
-                      />
-                      <Label htmlFor="finalizado" className="font-normal">Finalizado (Entregado y Pagado)</Label>
+                      <Label htmlFor="pagoPagado" className="font-normal">Pagado</Label>
                     </div>
                   </div>
                 </div>
