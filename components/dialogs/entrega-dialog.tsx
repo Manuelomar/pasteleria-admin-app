@@ -16,6 +16,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { api } from "@/services"
 import type { Producto, Usuario } from "@/types"
 import { Plus, Minus, Trash2 } from "lucide-react"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 export function EntregaDialog({
   open,
@@ -35,8 +36,11 @@ export function EntregaDialog({
   const [selectedProducto, setSelectedProducto] = useState("")
   const [proveedores, setProveedores] = useState<Usuario[]>([])
   const [selectedProveedor, setSelectedProveedor] = useState("")
+  const [tipoItem, setTipoItem] = useState<"productos" | "materiales" | "">("")
 
   const isAdmin = currentUser?.rol === "admin"
+  const selectedProviderObj = isAdmin ? proveedores.find(p => p.id === selectedProveedor) : currentUser;
+  const vendeMateriales = selectedProviderObj?.vendeMateriales;
 
   useEffect(() => {
     if (open) {
@@ -49,11 +53,13 @@ export function EntregaDialog({
         api.usuarios.getAll().then(users => {
           setProveedores(users.filter((u: any) => u.rol === 'proveedor'))
         }).catch(console.error)
-      } else {
-        api.productos.getAll().then(setProductos).catch(console.error)
+      } else if (currentUser) {
+        api.productos.getAll().then(prods => {
+          setProductos(prods.filter(p => p.proveedorId === currentUser.id))
+        }).catch(console.error)
       }
     }
-  }, [open, isAdmin])
+  }, [open, isAdmin, currentUser])
 
   useEffect(() => {
     if (isAdmin && selectedProveedor) {
@@ -179,6 +185,7 @@ export function EntregaDialog({
                   setSelectedProveedor(e.target.value)
                   setItems([])
                   setSelectedProducto("")
+                  setTipoItem("")
                 }}
               >
                 <option value="">-- Seleccione proveedor --</option>
@@ -189,24 +196,52 @@ export function EntregaDialog({
             </Field>
           )}
 
-          <div className="flex flex-col gap-2 mt-4 border-t pt-4">
-            <FieldLabel>Añadir Productos</FieldLabel>
-            <div className="flex gap-2">
-              <select 
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedProducto}
-                onChange={e => setSelectedProducto(e.target.value)}
-              >
-                <option value="">-- Seleccione producto --</option>
-                {productos.map(p => (
-                  <option key={p.id} value={p.id} disabled={(p.cantidad || 0) <= 0}>
-                    {p.nombre} (Stock: {p.cantidad || 0})
-                  </option>
-                ))}
-              </select>
-              <Button type="button" onClick={handleAddItem} variant="secondary">Añadir</Button>
+          {(!isAdmin || selectedProveedor) && (
+            <div className="flex flex-col gap-2 mt-4 border-t pt-4">
+              {vendeMateriales && (
+                <div className="flex items-center justify-between">
+                  <FieldLabel>¿Qué deseas añadir?</FieldLabel>
+                  <ToggleGroup 
+                    value={tipoItem ? [tipoItem] : []} 
+                    onValueChange={(v) => {
+                      if (v && v.length > 0) {
+                        setTipoItem(v[0] as any)
+                        setSelectedProducto("")
+                      }
+                    }} 
+                    size="sm"
+                    variant="outline"
+                  >
+                    <ToggleGroupItem value="productos">Productos</ToggleGroupItem>
+                    <ToggleGroupItem value="materiales">Materiales</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+              )}
+              
+              {(!vendeMateriales || tipoItem !== "") && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <FieldLabel>Añadir {tipoItem === "materiales" ? "Material" : "Producto"}</FieldLabel>
+                  <div className="flex gap-2">
+                    <select 
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedProducto}
+                      onChange={e => setSelectedProducto(e.target.value)}
+                    >
+                      <option value="">-- Seleccione {tipoItem === "materiales" ? "material" : "producto"} --</option>
+                      {productos
+                        .filter(p => (vendeMateriales && tipoItem === "materiales") ? p.tipo === "material" : p.tipo !== "material")
+                        .map(p => (
+                        <option key={p.id} value={p.id} disabled={(p.cantidad || 0) <= 0}>
+                          {p.nombre} (Stock: {p.cantidad || 0})
+                        </option>
+                      ))}
+                    </select>
+                    <Button type="button" onClick={handleAddItem} variant="secondary">Añadir</Button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           <div className="mt-4 flex flex-col gap-2">
             {items.map(item => (

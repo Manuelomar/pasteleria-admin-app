@@ -26,4 +26,5 @@ export const usuariosService = {
   create: (data: Partial<Usuario>): Promise<Usuario> => fetchAPI('/users', { method: 'POST', body: JSON.stringify(mapUsuarioToBackend(data)) }).then(mapUsuarioToFrontend),
   update: (id: string, data: Partial<Usuario>): Promise<Usuario> => fetchAPI(`/users/${id}`, { method: 'PUT', body: JSON.stringify(mapUsuarioToBackend(data)) }).then(mapUsuarioToFrontend),
   delete: (id: string): Promise<void> => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
+  enableMaterials: (id: string): Promise<Usuario> => fetchAPI(`/users/${id}/enable-materials`, { method: 'PATCH' }).then(mapUsuarioToFrontend),
 };

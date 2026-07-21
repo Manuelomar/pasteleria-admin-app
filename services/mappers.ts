@@ -10,6 +10,7 @@ export const mapUsuarioToFrontend = (u: any): Usuario => {
     activo: u.activo ?? true,
     ultimoAcceso: u.createdAt || new Date().toISOString(),
     permisos: u.permissions || {},
+    vendeMateriales: u.vendeMateriales || false,
   };
 };
 

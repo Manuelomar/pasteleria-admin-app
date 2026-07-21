@@ -8,6 +8,7 @@ export interface Usuario {
   activo: boolean
   ultimoAcceso: string
   permisos?: Record<string, boolean>
+  vendeMateriales?: boolean
 }
 
 export const rolLabel: Record<Rol, string> = {

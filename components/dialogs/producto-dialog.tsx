@@ -38,6 +38,7 @@ export function ProductoDialog({
   onSaved,
   currentUser,
   defaultProveedorId,
+  defaultTipo,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -45,6 +46,7 @@ export function ProductoDialog({
   onSaved?: () => void
   currentUser?: Usuario | null
   defaultProveedorId?: string | null
+  defaultTipo?: string
 }) {
   const [nombre, setNombre] = useState("")
   const [categoria, setCategoria] = useState("Pasteles")
@@ -84,7 +86,13 @@ export function ProductoDialog({
     if (open) {
       fetchCategorias()
       setNombre(producto?.nombre ?? "")
-      setCategoria(producto?.categoria ?? "Postres")
+      if (defaultTipo === 'material') {
+         setCategoria(producto?.categoria ?? "Materiales")
+         setTipo(producto?.tipo ?? "material")
+      } else {
+         setCategoria(producto?.categoria ?? "Postres")
+         setTipo(producto?.tipo ?? "dulce")
+      }
       setPrecio(producto && producto.precio !== undefined ? String(producto.precio) : "")
       setPrecioCosto(producto && producto.precioCosto !== undefined ? String(producto.precioCosto) : "")
       setPrecioUber(producto && producto.precioUber !== undefined ? String(producto.precioUber) : "")
@@ -94,7 +102,7 @@ export function ProductoDialog({
       setFile(null)
       setPreviewUrl(producto?.imagen ?? null)
     }
-  }, [open, producto])
+  }, [open, producto, defaultTipo])
 
   const handleSaveCat = async () => {
     if (!newCatNombre.trim()) {
@@ -163,13 +171,21 @@ export function ProductoDialog({
         imagenUrl = base64;
       }
 
-      let derivedTipo = "dulce";
-      if (categoria === "Salados") derivedTipo = "salado";
-      if (categoria === "Bebidas") derivedTipo = "bebida";
+      let derivedTipo = tipo;
+      if (defaultTipo !== 'material') {
+        derivedTipo = "dulce";
+        if (categoria === "Salados") derivedTipo = "salado";
+        if (categoria === "Bebidas") derivedTipo = "bebida";
+        // Or if they selected it manually from category
+        const selectedCat = categorias.find(c => c.nombre === categoria)
+        if (selectedCat) derivedTipo = selectedCat.tipo
+      } else {
+        derivedTipo = "material";
+      }
 
       const data: any = {
         nombre,
-        categoria,
+        categoria: defaultTipo === 'material' ? 'Materiales' : categoria,
         tipo: derivedTipo,
         precio: parseFloat(precio) || 0,
         precioCosto: parseFloat(precioCosto) || 0,
@@ -223,6 +239,7 @@ export function ProductoDialog({
                 placeholder="Pastel de chocolate"
               />
             </Field>
+            {defaultTipo !== 'material' && (
             <div className="grid gap-4">
               <Field>
                 <FieldLabel>Categoría</FieldLabel>
@@ -260,8 +277,9 @@ export function ProductoDialog({
                 </div>
               </Field>
             </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
-              {(currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+              {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
                 <Field>
                   <FieldLabel htmlFor="prod-precio">Precio de Venta</FieldLabel>
                   <Input
@@ -273,7 +291,7 @@ export function ProductoDialog({
                   />
                 </Field>
               )}
-              {(currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+              {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
                 <Field>
                   <FieldLabel htmlFor="prod-precio-uber">Precio UberEats</FieldLabel>
                   <Input
@@ -285,9 +303,9 @@ export function ProductoDialog({
                   />
                 </Field>
               )}
-              {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
-                <Field>
-                  <FieldLabel htmlFor="prod-precio-costo">Precio de Costo</FieldLabel>
+              {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor" || defaultTipo === 'material') && (
+                <Field className={defaultTipo === 'material' ? "col-span-1" : ""}>
+                  <FieldLabel htmlFor="prod-precio-costo">{defaultTipo === 'material' ? 'Precio' : 'Precio de Costo'}</FieldLabel>
                   <Input
                     id="prod-precio-costo"
                     type="number"
@@ -302,7 +320,7 @@ export function ProductoDialog({
                   )}
                 </Field>
               )}
-              <Field className={currentUser?.rol === "admin" ? "" : "col-span-2"}>
+              <Field className={defaultTipo === 'material' || currentUser?.rol !== "admin" ? "col-span-1" : "col-span-2"}>
                 <FieldLabel htmlFor="prod-cantidad">Cantidad</FieldLabel>
                 <Input
                   id="prod-cantidad"
@@ -313,6 +331,7 @@ export function ProductoDialog({
                 />
               </Field>
             </div>
+            {defaultTipo !== 'material' && (
             <Field>
               <FieldLabel htmlFor="prod-desc">Descripción</FieldLabel>
               <Textarea
@@ -322,6 +341,7 @@ export function ProductoDialog({
                 placeholder="Breve descripción del producto"
               />
             </Field>
+            )}
             <Field>
               <FieldLabel htmlFor="prod-imagen">Imagen (Opcional)</FieldLabel>
               <Input

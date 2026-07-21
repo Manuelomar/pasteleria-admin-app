@@ -1,4 +1,4 @@
-export type Tipo = "dulce" | "salado" | "bebida"
+export type Tipo = "dulce" | "salado" | "bebida" | "material"
 export type Disponibilidad = "disponible" | "no-disponible"
 
 export interface Producto {
@@ -22,4 +22,5 @@ export const tipoLabel: Record<Tipo, string> = {
   dulce: "Dulce",
   salado: "Salado",
   bebida: "Bebida",
+  material: "Material",
 }

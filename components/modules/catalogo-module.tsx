@@ -39,6 +39,8 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null)
+  const [providerCategory, setProviderCategory] = useState<"productos" | "materiales" | null>(null)
+  const [enablingMaterials, setEnablingMaterials] = useState(false)
   const [providers, setProviders] = useState<Usuario[]>([])
 
   const isAdmin = currentUser?.rol === "admin"
@@ -72,9 +74,27 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const fetchProductos = () => {
     if (isAdmin && !selectedProviderId) return; // Don't fetch if viewing providers list
 
+    const selectedProvider = providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null);
+    if (selectedProviderId && selectedProviderId !== "internos" && selectedProvider?.vendeMateriales && !providerCategory) {
+      setItems([]);
+      return; 
+    }
+
     setIsLoading(true)
+    let effectiveTipo: any = tipo;
+    if (selectedProviderId && selectedProviderId !== "internos") {
+       if (selectedProvider?.vendeMateriales) {
+         if (providerCategory === 'materiales') effectiveTipo = 'materiales';
+         else if (providerCategory === 'productos' && tipo === 'todos') effectiveTipo = 'productos';
+       } else {
+         if (tipo === 'todos') effectiveTipo = 'productos';
+       }
+    } else if (selectedProviderId === "internos" && tipo === 'todos') {
+       effectiveTipo = 'productos';
+    }
+
     Promise.all([
-      api.productos.getPaged(currentPage, pageSize, search, tipo, disp, selectedProviderId === "internos" ? "internos" : selectedProviderId || undefined),
+      api.productos.getPaged(currentPage, pageSize, search, effectiveTipo, disp, selectedProviderId === "internos" ? "internos" : selectedProviderId || undefined),
       new Promise(resolve => setTimeout(resolve, 1000))
     ])
       .then(([res]) => {
@@ -91,7 +111,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
   useEffect(() => {
     fetchProductos()
-  }, [currentPage, search, tipo, disp, selectedProviderId, isAdmin])
+  }, [currentPage, search, tipo, disp, selectedProviderId, isAdmin, providerCategory, currentUser])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -111,6 +131,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const filtered = items;
 
   const handleAddStock = async (p: Producto) => {
+    // ... [Content unchanged but to keep file correct I need to match the previous handleAddStock completely or just add after it]
     const { value: amount } = await Swal.fire({
       title: `Añadir stock`,
       text: `Producto: ${p.nombre}`,
@@ -143,6 +164,26 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
     }
   }
 
+  const handleEnableMaterials = async () => {
+    const pId = currentUser?.rol === 'proveedor' ? currentUser.id : selectedProviderId;
+    if (!pId || pId === "internos") return;
+    setEnablingMaterials(true);
+    try {
+      await api.usuarios.enableMaterials(pId);
+      toast.success("Venta de materiales habilitada");
+      if (isAdmin) {
+        setProviders(providers.map(p => p.id === pId ? { ...p, vendeMateriales: true } : p));
+      } else if (currentUser) {
+        setCurrentUser({ ...currentUser, vendeMateriales: true });
+      }
+      setProviderCategory('productos');
+    } catch (e: any) {
+      toast.error(e.message || "Error al habilitar materiales");
+    } finally {
+      setEnablingMaterials(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -159,26 +200,33 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         </p>
       </div>
 
-      {(!isAdmin || selectedProviderId) && (
+      {(!isAdmin || selectedProviderId) && (selectedProviderId === "internos" || providerCategory || !(providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null))?.vendeMateriales) && (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full lg:max-w-sm">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar producto..."
+              placeholder="Buscar..."
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
             />
           </div>
-          <Button
-            onClick={() => {
-              setEditing(null)
-              setDialogOpen(true)
-            }}
-          >
-            <Plus data-icon="inline-start" />
-            Nuevo producto
-          </Button>
+          <div className="flex gap-2">
+            {(!isAdmin || selectedProviderId) && selectedProviderId !== "internos" && !(providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null))?.vendeMateriales && (
+               <Button variant="outline" onClick={handleEnableMaterials} disabled={enablingMaterials}>
+                 Habilitar Venta de Materiales
+               </Button>
+            )}
+            <Button
+              onClick={() => {
+                setEditing(null)
+                setDialogOpen(true)
+              }}
+            >
+              <Plus data-icon="inline-start" />
+              {providerCategory === 'materiales' ? 'Nuevo material' : 'Nuevo producto'}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -220,25 +268,75 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
           {isAdmin && (
             <div className="mb-2">
               <Button variant="outline" size="sm" onClick={() => {
-                setSelectedProviderId(null)
-                window.history.pushState(null, '', '/catalogo')
+                if (providerCategory) {
+                   setProviderCategory(null);
+                } else {
+                   setSelectedProviderId(null);
+                   window.history.pushState(null, '', '/catalogo');
+                }
               }}>
                 <ArrowLeft className="mr-2 size-4" />
-                Volver a Proveedores
+                {providerCategory ? "Volver a Opciones" : "Volver a Proveedores"}
               </Button>
             </div>
           )}
+
+          {(!isAdmin && providerCategory) && (
+            <div className="mb-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                setProviderCategory(null);
+              }}>
+                <ArrowLeft className="mr-2 size-4" />
+                Volver a Opciones
+              </Button>
+            </div>
+          )}
+          
+          {selectedProviderId !== "internos" && (() => {
+             const selectedProvider = providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null);
+             if (selectedProvider?.vendeMateriales && !providerCategory) {
+               return (
+                  <div className="mt-4 flex flex-col gap-4">
+                    <h2 className="text-lg font-semibold">Seleccione una categoría:</h2>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setProviderCategory('productos')}>
+                        <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                          <div className="p-4 rounded-full bg-primary/10 text-primary">
+                            <PackagePlus className="size-8" />
+                          </div>
+                          <h3 className="font-heading text-lg font-semibold text-center">Productos</h3>
+                        </CardContent>
+                      </Card>
+                      <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setProviderCategory('materiales')}>
+                        <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                          <div className="p-4 rounded-full bg-amber-500/10 text-amber-500">
+                            <Folder className="size-8" />
+                          </div>
+                          <h3 className="font-heading text-lg font-semibold text-center">Materiales</h3>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+               )
+             }
+             return null;
+          })()}
+
+          {(selectedProviderId === "internos" || providerCategory || !(providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null))?.vendeMateriales) && (
+          <>
           <div className="flex flex-wrap items-center gap-4">
-            <ToggleGroup
-          value={[tipo]}
-          onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
-          variant="outline"
-        >
-          <ToggleGroupItem value="todos">Todos</ToggleGroupItem>
-          <ToggleGroupItem value="dulce">Dulce</ToggleGroupItem>
-          <ToggleGroupItem value="salado">Salado</ToggleGroupItem>
-          <ToggleGroupItem value="bebida">Bebida</ToggleGroupItem>
-        </ToggleGroup>
+            {providerCategory !== 'materiales' && (
+              <ToggleGroup
+                value={[tipo]}
+                onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
+                variant="outline"
+              >
+                <ToggleGroupItem value="todos">Todos</ToggleGroupItem>
+                <ToggleGroupItem value="dulce">Dulce</ToggleGroupItem>
+                <ToggleGroupItem value="salado">Salado</ToggleGroupItem>
+                <ToggleGroupItem value="bebida">Bebida</ToggleGroupItem>
+              </ToggleGroup>
+            )}
 
         <ToggleGroup
           value={[disp]}
@@ -357,7 +455,9 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         onPageChange={setCurrentPage}
         itemName="productos"
       />
-      </>
+          </>
+          )}
+        </>
       )}
 
       <ProductoDialog 
@@ -366,7 +466,8 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         producto={editing} 
         onSaved={fetchProductos}
         currentUser={currentUser}
-        defaultProveedorId={selectedProviderId === "internos" ? undefined : selectedProviderId}
+        defaultProveedorId={selectedProviderId === "internos" ? undefined : selectedProviderId || undefined}
+        defaultTipo={providerCategory === 'materiales' ? 'material' : undefined}
       />
 
       <DetalleProductoDialog
