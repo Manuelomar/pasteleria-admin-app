@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Calendar } from "lucide-react"
+import { Search, Plus, Calendar, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -114,6 +114,28 @@ export function EntregasModule() {
         fetchEntregas()
       } catch (e: any) {
         toast.error(e.message || "Error al añadir al stock")
+      }
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: '¿Descartar entrega?',
+      text: 'Esta acción no se puede deshacer. Se eliminará la entrega programada.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, descartar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444' // Match primary color style
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.entregas.remove(id)
+        toast.success("Entrega descartada correctamente")
+        fetchEntregas()
+      } catch (e: any) {
+        toast.error(e.message || "Error al descartar la entrega")
       }
     }
   }
@@ -280,6 +302,12 @@ export function EntregasModule() {
                           <div className="mt-4 flex items-center justify-center rounded-md bg-green-500/10 text-green-600 text-xs py-2.5 font-semibold">
                             Añadido al Stock
                           </div>
+                        )}
+                        {!entrega.agregadoAlStock && (
+                          <Button variant="outline" className="mt-4 w-full border-red-500/50 text-red-600 hover:bg-red-500/10" onClick={() => handleDelete(entrega.id)}>
+                            <Trash2 className="size-4 mr-2" />
+                            Descartar
+                          </Button>
                         )}
                       </>
                     ) : (
