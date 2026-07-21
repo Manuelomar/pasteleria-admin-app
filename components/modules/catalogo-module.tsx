@@ -15,6 +15,7 @@ import {
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
+import { SelectExistingProductDialog } from "@/components/dialogs/select-existing-product-dialog"
 import { currency, type Producto, type Tipo, type Usuario } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
@@ -34,6 +35,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [tipo, setTipo] = useState<"todos" | Tipo>("todos")
   const [disp, setDisp] = useState<"todos" | "disponible" | "no-disponible">("todos")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [existingDialogOpen, setExistingDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
   const [viewing, setViewing] = useState<Producto | null>(null)
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
@@ -130,6 +132,29 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
   const filtered = items;
 
+  const handleAddExisting = async (p: Partial<Producto>) => {
+    try {
+      const data: any = {
+        ...p,
+        cantidad: 0,
+        proveedorId: selectedProviderId === "internos" ? undefined : selectedProviderId || undefined,
+      }
+      
+      // If the catalog is strictly for materials, make sure it is set as material
+      if (providerCategory === 'materiales') {
+        data.tipo = 'material';
+        data.categoria = 'Materiales';
+      }
+
+      await api.productos.create(data);
+      toast.success("Producto añadido al catálogo");
+      fetchProductos();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Error al añadir el producto");
+    }
+  }
+
   const handleAddStock = async (p: Producto) => {
     // ... [Content unchanged but to keep file correct I need to match the previous handleAddStock completely or just add after it]
     const { value: amount } = await Swal.fire({
@@ -217,6 +242,12 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                  Habilitar Venta de Materiales
                </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setExistingDialogOpen(true)}
+            >
+              Añadir existente
+            </Button>
             <Button
               onClick={() => {
                 setEditing(null)
@@ -468,6 +499,12 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         currentUser={currentUser}
         defaultProveedorId={selectedProviderId === "internos" ? undefined : selectedProviderId || undefined}
         defaultTipo={providerCategory === 'materiales' ? 'material' : undefined}
+      />
+
+      <SelectExistingProductDialog
+        open={existingDialogOpen}
+        onOpenChange={setExistingDialogOpen}
+        onSelect={handleAddExisting}
       />
 
       <DetalleProductoDialog

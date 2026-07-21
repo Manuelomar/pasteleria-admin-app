@@ -196,11 +196,11 @@ export function ProductoDialog({
         imagen: imagenUrl,
       }
       
-      if (defaultProveedorId && !producto) {
+      if (defaultProveedorId && (!producto || !producto.id)) {
         data.proveedorId = defaultProveedorId
       }
       
-      if (producto) {
+      if (producto && producto.id) {
         await api.productos.update(producto.id, data)
         toast.success("Producto actualizado")
       } else {
@@ -210,9 +210,9 @@ export function ProductoDialog({
       
       if (onSaved) onSaved()
       onOpenChange(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      toast.error("Error al guardar el producto")
+      toast.error(error.message || "Error al guardar el producto")
     } finally {
       setIsSaving(false)
     }
@@ -223,7 +223,7 @@ export function ProductoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{producto ? "Editar producto" : "Nuevo producto"}</DialogTitle>
+          <DialogTitle>{(producto && producto.id) ? "Editar producto" : "Nuevo producto"}</DialogTitle>
           <DialogDescription>
             Completa la información del producto del catálogo.
           </DialogDescription>

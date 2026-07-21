@@ -39,6 +39,7 @@ export const productosService = {
     }));
   },
   getById: (id: string): Promise<Producto> => fetchAPI(`/productos/${id}`).then(mapProductoToFrontend),
+  getUniqueNames: (): Promise<Partial<Producto>[]> => fetchAPI('/productos/unique'),
   create: (data: Partial<Producto>): Promise<Producto> => fetchAPI('/productos', { method: 'POST', body: JSON.stringify(data) }).then(mapProductoToFrontend),
   update: (id: string, data: Partial<Producto>): Promise<Producto> => fetchAPI(`/productos/${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then(mapProductoToFrontend),
   delete: (id: string): Promise<void> => fetchAPI(`/productos/${id}`, { method: 'DELETE' }),
