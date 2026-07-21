@@ -270,7 +270,9 @@ export function EntregasModule() {
                             onValueChange={(v) => v && handleUpdateEstado(entrega.id, v)}
                           >
                             <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                              <SelectValue />
+                              <SelectValue>
+                                {entrega.estadoEntrega === 'entregada' ? 'Entregada' : 'En espera'}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="en_espera">En espera</SelectItem>
@@ -285,7 +287,9 @@ export function EntregasModule() {
                             onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
                           >
                             <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                              <SelectValue />
+                              <SelectValue>
+                                {entrega.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="pendiente_pago">Pendiente</SelectItem>
