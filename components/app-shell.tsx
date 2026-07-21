@@ -14,6 +14,7 @@ import {
   Truck,
   FileText,
   Banknote,
+  Package,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,7 @@ export type ModuleId =
   | "estado-cuenta"
   | "usuarios"
   | "entregas"
+  | "inventario"
   | "reportes"
 
 interface NavItem {
@@ -41,6 +43,7 @@ const modulos: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "catalogo", label: "Catálogo", icon: BookOpen },
+  { id: "inventario", label: "Inventario", icon: Package },
   { id: "entregas", label: "Entregas", icon: Truck },
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
   { id: "cuentas-cobrar", label: "Cuentas por Cobrar", icon: Banknote },

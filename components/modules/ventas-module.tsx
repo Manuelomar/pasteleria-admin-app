@@ -38,7 +38,7 @@ import { API_URL } from "@/services/api.config"
 
 export function VentasModule() {
   const [search, setSearch] = useState("")
-  const [tipo, setTipo] = useState<"todos" | Tipo>("todos")
+  const [tipo, setTipo] = useState<"productos" | Tipo>("productos")
   const [items, setItems] = useState<VentaItem[]>([])
   const [clienteId, setClienteId] = useState<string>("general")
   const [descuento, setDescuento] = useState("0")
@@ -93,7 +93,7 @@ export function VentasModule() {
     setCurrentPage(1)
   }
 
-  const handleTipoChange = (val: "todos" | Tipo) => {
+  const handleTipoChange = (val: "productos" | Tipo) => {
     setTipo(val)
     setCurrentPage(1)
   }
@@ -306,7 +306,7 @@ export function VentasModule() {
           onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
           variant="outline"
         >
-          <ToggleGroupItem value="todos">Todos</ToggleGroupItem>
+          <ToggleGroupItem value="productos">Todos</ToggleGroupItem>
           <ToggleGroupItem value="dulce">Dulce</ToggleGroupItem>
           <ToggleGroupItem value="salado">Salado</ToggleGroupItem>
           <ToggleGroupItem value="bebida">Bebida</ToggleGroupItem>

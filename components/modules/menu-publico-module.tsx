@@ -10,7 +10,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { TipoBadge } from "@/components/badges"
-import { currency, type Producto } from "@/types"
+import { currency, type Producto, type Tipo } from "@/types"
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
@@ -18,7 +18,7 @@ import { API_URL } from "@/services/api.config"
 
 export function MenuPublicoModule() {
   const [search, setSearch] = useState("")
-  const [tipo, setTipo] = useState<string>("todos")
+  const [tipo, setTipo] = useState<"productos" | Tipo>("productos")
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
 
@@ -54,7 +54,7 @@ export function MenuPublicoModule() {
     setCurrentPage(1)
   }
 
-  const handleTipoChange = (val: string) => {
+  const handleTipoChange = (val: "productos" | Tipo) => {
     setTipo(val)
     setCurrentPage(1)
   }
@@ -83,9 +83,9 @@ export function MenuPublicoModule() {
               />
             </div>
             <ToggleGroup value={[tipo]} onValueChange={(val) => {
-              if (val && val.length > 0) handleTipoChange(val[0])
+              if (val && val.length > 0) handleTipoChange(val[0] as any)
             }} className="justify-start bg-white p-1 rounded-md shadow-sm border border-input">
-              <ToggleGroupItem value="todos" aria-label="Todos">Todos</ToggleGroupItem>
+              <ToggleGroupItem value="productos" aria-label="Todos">Todos</ToggleGroupItem>
               <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
               <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
               <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
