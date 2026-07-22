@@ -119,7 +119,17 @@ function SidebarContent({
       }
       return m;
     })
-  const administracionVisibles = administracion.filter((m) => isAdmin || permisos[m.id] === true)
+  const administracionVisibles = administracion
+    .filter((m) => {
+      if (m.id === "usuarios") return true
+      return isAdmin || permisos[m.id] === true
+    })
+    .map((m) => {
+      if (m.id === "usuarios" && !isAdmin && permisos.usuarios !== true) {
+        return { ...m, label: "Mi Perfil" }
+      }
+      return m
+    })
   return (
     <div className="flex h-full flex-col p-4">
       <div className="flex items-center gap-3 px-2 py-3">

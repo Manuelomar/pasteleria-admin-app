@@ -45,6 +45,7 @@ export function UsuariosModule() {
   const [editing, setEditing] = useState<Usuario | null>(null)
   const [items, setItems] = useState<Usuario[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(10)
@@ -55,12 +56,24 @@ export function UsuariosModule() {
     setIsLoading(true)
     Promise.all([
       api.usuarios.getPaged(currentPage, pageSize, search, rol, estado),
+      api.auth.getMe(),
       new Promise((resolve) => setTimeout(resolve, 1000))
     ])
-      .then(([res]) => {
-        setItems(res.data)
-        setTotalItems(res.total)
-        setTotalPages(res.totalPages)
+      .then(([res, user]) => {
+        setCurrentUser(user)
+        const isAdmin = user.rol === "admin" || user.permisos?.usuarios === true
+        
+        if (isAdmin) {
+          setItems(res.data)
+          setTotalItems(res.total)
+          setTotalPages(res.totalPages)
+        } else {
+          // If not admin, only show themselves
+          const myUser = res.data.find(u => u.id === user.id) || user
+          setItems([myUser])
+          setTotalItems(1)
+          setTotalPages(1)
+        }
       })
       .catch((err) => {
         console.error("Error fetching usuarios", err)
@@ -151,6 +164,7 @@ export function UsuariosModule() {
   }
 
   const filtered = items
+  const isAdminUser = currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
 
   if (isLoading) {
     return (
@@ -163,10 +177,13 @@ export function UsuariosModule() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
-        Administra los usuarios del sistema, sus roles y accesos.
+        {isAdminUser 
+          ? "Administra los usuarios del sistema, sus roles y accesos." 
+          : "Visualiza y edita la información de tu perfil."}
       </p>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {isAdminUser && (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-sm">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -208,6 +225,7 @@ export function UsuariosModule() {
           </Button>
         </div>
       </div>
+      )}
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
@@ -260,37 +278,41 @@ export function UsuariosModule() {
                             }}
                           >
                             <Pencil className="size-4" />
-                            Editar usuario
+                            Editar {isAdminUser ? "usuario" : "perfil"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => Swal.fire({
-                             icon: "info",
-                             title: "Información",
-                             text: `Cambiar rol de ${u.nombre}`,
-                             confirmButtonColor: "hsl(var(--primary))"
-                           })}
-                          >
-                            <Shield className="size-4" />
-                            Cambiar rol
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleActivo(u)}>
-                            <Power className="size-4" />
-                            {u.activo ? "Inactivar" : "Activar"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => Swal.fire({
-                              icon: "success",
-                              title: "Éxito",
-                              text: `Contraseña restablecida para ${u.nombre}`,
-                              confirmButtonColor: "hsl(var(--primary))"
-                            })}
-                          >
-                            <KeyRound className="size-4" />
-                            Restablecer contraseña
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteUsuario(u)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20">
-                            <Trash2 className="size-4" />
-                            Eliminar usuario
-                          </DropdownMenuItem>
+                          {isAdminUser && (
+                            <>
+                              <DropdownMenuItem onClick={() => Swal.fire({
+                                 icon: "info",
+                                 title: "Información",
+                                 text: `Cambiar rol de ${u.nombre}`,
+                                 confirmButtonColor: "hsl(var(--primary))"
+                               })}
+                              >
+                                <Shield className="size-4" />
+                                Cambiar rol
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleActivo(u)}>
+                                <Power className="size-4" />
+                                {u.activo ? "Inactivar" : "Activar"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => Swal.fire({
+                                  icon: "success",
+                                  title: "Éxito",
+                                  text: `Contraseña restablecida para ${u.nombre}`,
+                                  confirmButtonColor: "hsl(var(--primary))"
+                                })}
+                              >
+                                <KeyRound className="size-4" />
+                                Restablecer contraseña
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteUsuario(u)} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20">
+                                <Trash2 className="size-4" />
+                                Eliminar usuario
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -302,17 +324,18 @@ export function UsuariosModule() {
         </div>
       </Card>
 
-      {/* Paginación */}
-      <AppPagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        itemName="usuarios"
-      />
+      {isAdminUser && (
+        <AppPagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemName="usuarios"
+        />
+      )}
 
-      <UsuarioDialog open={dialogOpen} onOpenChange={setDialogOpen} usuario={editing} onSaved={fetchUsuarios} />
+      <UsuarioDialog open={dialogOpen} onOpenChange={setDialogOpen} usuario={editing} onSaved={fetchUsuarios} currentUser={currentUser} />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Package, PackageMinus } from "lucide-react"
+import { Search, Plus, Package, PackageMinus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -120,6 +120,28 @@ export function InventarioModule() {
     }
   }
 
+  const handleDeleteProduct = async (p: Producto) => {
+    const confirm = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Se eliminará el material "${p.nombre}" permanentemente del sistema. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await api.productos.delete(p.id);
+        toast.success(`Material "${p.nombre}" eliminado con éxito`);
+        fetchMateriales();
+      } catch (err: any) {
+        toast.error(err.message || "Error al eliminar el material");
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -203,6 +225,9 @@ export function InventarioModule() {
                   </Button>
                   <Button variant="outline" size="sm" className="flex-none px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => handleDiscardStock(p)} title="Descartar stock" disabled={(p.cantidad ?? 0) <= 0}>
                     <PackageMinus size={16} />
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-none px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => handleDeleteProduct(p)} title="Eliminar material">
+                    <Trash2 size={16} />
                   </Button>
                 </div>
               </CardContent>

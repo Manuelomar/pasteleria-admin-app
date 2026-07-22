@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Eye, Pencil, ShoppingCart, PackagePlus, PackageMinus } from "lucide-react"
+import { Search, Plus, Eye, Pencil, ShoppingCart, PackagePlus, PackageMinus, Trash2 } from "lucide-react"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { toast } from "sonner"
 import Swal from "sweetalert2"
@@ -221,6 +221,28 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         fetchProductos();
       } catch (err) {
         toast.error("Error al descartar el stock");
+      }
+    }
+  }
+
+  const handleDeleteProduct = async (p: Producto) => {
+    const confirm = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `Se eliminará el producto "${p.nombre}" permanentemente del sistema. Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await api.productos.delete(p.id);
+        toast.success(`Producto "${p.nombre}" eliminado con éxito`);
+        fetchProductos();
+      } catch (err: any) {
+        toast.error(err.message || "Error al eliminar el producto");
       }
     }
   }
@@ -506,6 +528,16 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               >
                 <PackageMinus />
                 <span className="sr-only">Descartar stock</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 px-2"
+                onClick={() => handleDeleteProduct(p)}
+                title="Eliminar producto"
+              >
+                <Trash2 size={16} />
+                <span className="sr-only">Eliminar producto</span>
               </Button>
               {/* <Button
                 size="sm"
