@@ -107,32 +107,29 @@ export function MenuPublicoModule() {
                 const stockAgotado = (p.cantidad || 0) <= 0;
 
                 return (
-                  <Card key={p.id} className="overflow-hidden transition-all hover:shadow-md border-border/50 bg-white">
-                    <div className="relative aspect-[4/3] w-full bg-muted">
+                  <Card key={p.id} className="flex flex-col overflow-hidden transition-all hover:shadow-md border-border/50 bg-white h-full">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted shrink-0">
                       <img
                         src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}
                         alt={p.nombre}
-                        className={`size-full object-cover transition-transform duration-300 hover:scale-105 ${stockAgotado ? 'opacity-60 grayscale' : ''}`}
+                        className={`absolute inset-0 size-full object-cover transition-transform duration-300 hover:scale-105 ${stockAgotado ? 'opacity-60 grayscale' : ''}`}
                         onError={(e) => {
                           e.currentTarget.src = "/placeholder.svg";
                         }}
                       />
-                      <div className="absolute right-2 top-2 flex flex-col gap-1">
+                      <div className="absolute right-2 top-2 flex flex-col gap-1 z-10">
                         <TipoBadge tipo={p.tipo} />
                       </div>
                       {stockAgotado && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                           <span className="rounded-md bg-destructive px-3 py-1 text-sm font-bold text-white shadow-sm">AGOTADO</span>
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-4">
+                    <CardContent className="flex flex-col flex-grow p-4">
                       <h3 className="font-medium leading-tight line-clamp-2 min-h-[2.5rem]">{p.nombre}</h3>
-                      <div className="mt-3 flex items-end justify-between">
+                      <div className="mt-auto pt-3 flex items-end justify-between">
                         <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground">
-                            Stock: {p.cantidad ?? 0}
-                          </span>
                           <span className="font-heading text-lg font-bold text-primary">
                             {currency(p.precio)}
                           </span>

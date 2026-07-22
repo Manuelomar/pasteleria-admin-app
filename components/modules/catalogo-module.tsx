@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Eye, Pencil, ShoppingCart, PackagePlus } from "lucide-react"
+import { Search, Plus, Eye, Pencil, ShoppingCart, PackagePlus, PackageMinus } from "lucide-react"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { toast } from "sonner"
 import Swal from "sweetalert2"
@@ -185,6 +185,42 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         fetchProductos();
       } catch (err) {
         toast.error("Error al actualizar el stock");
+      }
+    }
+  }
+
+  const handleDiscardStock = async (p: Producto) => {
+    const { value: amount } = await Swal.fire({
+      title: `Descartar stock`,
+      text: `Producto: ${p.nombre}`,
+      input: 'number',
+      inputLabel: 'Cantidad a descartar (rotura, vencimiento):',
+      inputPlaceholder: 'Ej. 1',
+      showCancelButton: true,
+      confirmButtonText: 'Descartar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      inputValidator: (value) => {
+        if (!value || parseInt(value) <= 0) {
+          return 'Ingresa una cantidad válida mayor a 0'
+        }
+        if (p.cantidad !== undefined && parseInt(value) > p.cantidad) {
+          return 'No puedes descartar más del stock actual'
+        }
+        return null;
+      }
+    });
+
+    if (amount) {
+      const discarded = parseInt(amount);
+      const newCantidad = Math.max(0, (p.cantidad ?? 0) - discarded);
+      const newDisponible = newCantidad > 0;
+      try {
+        await api.productos.update(p.id, { cantidad: newCantidad, disponible: newDisponible });
+        toast.success(`Se descartaron ${discarded} unidades de ${p.nombre}. Stock: ${newCantidad}`);
+        fetchProductos();
+      } catch (err) {
+        toast.error("Error al descartar el stock");
       }
     }
   }
@@ -460,6 +496,17 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                 <PackagePlus />
                 <span className="sr-only">Añadir stock</span>
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                onClick={() => handleDiscardStock(p)}
+                title="Descartar stock"
+                disabled={(p.cantidad ?? 0) <= 0}
+              >
+                <PackageMinus />
+                <span className="sr-only">Descartar stock</span>
+              </Button>
               {/* <Button
                 size="sm"
                 onClick={() => toast.success(`${p.nombre} agregado a la venta`)}
@@ -505,6 +552,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         open={existingDialogOpen}
         onOpenChange={setExistingDialogOpen}
         onSelect={handleAddExisting}
+        providerCategory={providerCategory || undefined}
       />
 
       <DetalleProductoDialog

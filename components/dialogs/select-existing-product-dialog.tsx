@@ -21,10 +21,12 @@ export function SelectExistingProductDialog({
   open,
   onOpenChange,
   onSelect,
+  providerCategory
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   onSelect: (producto: Partial<Producto>) => void
+  providerCategory?: 'productos' | 'materiales'
 }) {
   const [items, setItems] = useState<Partial<Producto>[]>([])
   const [loading, setLoading] = useState(false)
@@ -43,7 +45,15 @@ export function SelectExistingProductDialog({
     }
   }, [open])
 
-  const filtered = items.filter(i => i.nombre && i.nombre.toLowerCase().includes(search.toLowerCase()))
+  const filtered = items.filter(i => {
+    if (!i.nombre || !i.nombre.toLowerCase().includes(search.toLowerCase())) return false;
+    
+    if (providerCategory === 'materiales') {
+      return i.tipo === 'material';
+    } else {
+      return i.tipo !== 'material';
+    }
+  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

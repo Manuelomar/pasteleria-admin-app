@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Package } from "lucide-react"
+import { Search, Plus, Package, PackageMinus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -80,6 +80,42 @@ export function InventarioModule() {
         fetchMateriales();
       } catch (err) {
         toast.error("Error al actualizar el stock");
+      }
+    }
+  }
+
+  const handleDiscardStock = async (p: Producto) => {
+    const { value: amount } = await Swal.fire({
+      title: `Descartar stock`,
+      text: `Material: ${p.nombre}`,
+      input: 'number',
+      inputLabel: 'Cantidad a descartar (rotura, vencimiento):',
+      inputPlaceholder: 'Ej. 1',
+      showCancelButton: true,
+      confirmButtonText: 'Descartar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      inputValidator: (value) => {
+        if (!value || parseInt(value) <= 0) {
+          return 'Ingresa una cantidad válida mayor a 0'
+        }
+        if (p.cantidad !== undefined && parseInt(value) > p.cantidad) {
+          return 'No puedes descartar más del stock actual'
+        }
+        return null;
+      }
+    });
+
+    if (amount) {
+      const discarded = parseInt(amount);
+      const newCantidad = Math.max(0, (p.cantidad ?? 0) - discarded);
+      const newDisponible = newCantidad > 0;
+      try {
+        await api.productos.update(p.id, { cantidad: newCantidad, disponible: newDisponible });
+        toast.success(`Se descartaron ${discarded} unidades de ${p.nombre}. Stock: ${newCantidad}`);
+        fetchMateriales();
+      } catch (err) {
+        toast.error("Error al descartar el stock");
       }
     }
   }
@@ -164,6 +200,9 @@ export function InventarioModule() {
                   </Button>
                   <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleAddStock(p)}>
                     Añadir stock
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-none px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => handleDiscardStock(p)} title="Descartar stock" disabled={(p.cantidad ?? 0) <= 0}>
+                    <PackageMinus size={16} />
                   </Button>
                 </div>
               </CardContent>
