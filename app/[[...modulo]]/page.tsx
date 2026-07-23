@@ -10,6 +10,7 @@ import { UsuariosModule } from "@/components/modules/usuarios-module"
 import { EntregasModule } from "@/components/modules/entregas-module"
 import { ReportesModule } from "@/components/modules/reportes-module"
 import { InventarioModule } from "@/components/modules/inventario-module"
+import { HistorialModule } from "@/components/modules/historial-module"
 import { useParams } from "next/navigation"
 
 export default function Page() {
@@ -27,6 +28,7 @@ export default function Page() {
       {currentModule === "usuarios" && <UsuariosModule />}
       {currentModule === "entregas" && <EntregasModule />}
       {currentModule === "inventario" && <InventarioModule />}
+      {currentModule === "historial" && <HistorialModule />}
       {currentModule === "reportes" && <ReportesModule />}
     </>
   )

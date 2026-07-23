@@ -18,6 +18,7 @@ const titles: Record<ModuleId, string> = {
   usuarios: "Usuarios",
   entregas: "Entregas de Proveedores",
   inventario: "Inventario de Materiales",
+  historial: "Historial de Ventas",
   reportes: "Reportes",
 }
 

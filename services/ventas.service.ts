@@ -21,6 +21,16 @@ export const ventasService = {
     fetchAPI(`/ventas/resumen-caja?fecha=${fecha}`),
   getReporteHistorico: (): Promise<{ total: number, cantidad: number }> => 
     fetchAPI('/ventas/reporte-historico'),
+  getHistorialProductos: (desde?: string, hasta?: string, productoId?: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<any>> => {
+    let url = `/ventas/historial-productos?`;
+    const params = new URLSearchParams();
+    if (desde) params.append('desde', desde);
+    if (hasta) params.append('hasta', hasta);
+    if (productoId && productoId !== 'all') params.append('productoId', productoId);
+    params.append('pageNumber', page.toString());
+    params.append('pageSize', pageSize.toString());
+    return fetchAPI(url + params.toString());
+  },
   getTopProductos: (page: number, pageSize: number): Promise<PaginatedResponse<{ nombre: string, productoId: string, cantidad: number, total: number }>> => 
     fetchAPI(`/ventas/top-productos?pageNumber=${page}&pageSize=${pageSize}`),
   getById: (id: string): Promise<Venta> => fetchAPI(`/ventas/${id}`).then(mapVentaToFrontend),
