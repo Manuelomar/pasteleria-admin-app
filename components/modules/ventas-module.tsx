@@ -34,6 +34,7 @@ import {
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { API_URL } from "@/services/api.config"
 
 export function VentasModule() {
@@ -280,16 +281,11 @@ export function VentasModule() {
     }
   }
 
-  if (isLoadingData) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr] relative min-h-[400px]">
+      <LoadingOverlay active={isLoadingData} />
       {/* Columna izquierda: productos */}
       <div className="flex flex-col gap-4">
         <div className="relative">

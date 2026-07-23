@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { api } from "@/services"
 import { currency, type Producto, type Usuario } from "@/types"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
@@ -142,16 +143,11 @@ export function InventarioModule() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
           Gestiona el inventario de materiales e insumos internos de la pastelería.

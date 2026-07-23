@@ -11,6 +11,7 @@ import { api } from "@/services"
 import { type Entrega, type Usuario } from "@/types"
 import { currency, formatDate } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { EntregaDialog } from "../dialogs/entrega-dialog"
 import {
   Select,
@@ -140,13 +141,7 @@ export function EntregasModule() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   const isProveedor = currentUser?.rol === "proveedor"
   const isAdmin = currentUser?.rol === "admin"
@@ -163,7 +158,8 @@ export function EntregasModule() {
   })
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
           {isProveedor ? "Gestiona tus entregas programadas." : "Revisa y administra las entregas de los proveedores."}

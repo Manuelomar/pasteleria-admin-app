@@ -26,6 +26,7 @@ import { ClienteDialog } from "@/components/dialogs/cliente-dialog"
 import { currency, type Cliente } from "@/types"
 import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 
 export function ClientesModule() {
   const [search, setSearch] = useState("")
@@ -61,16 +62,11 @@ export function ClientesModule() {
     )
   })
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <p className="text-sm text-muted-foreground">
         Administra la información de tus clientes y sus balances pendientes.
       </p>

@@ -67,18 +67,6 @@ export function Loader({ className }: { className?: string }) {
         <div className="absolute -bottom-1 left-1/2 h-1.5 w-16 -translate-x-1/2 rounded-full bg-black/10 blur-[2px] animate-pulse" />
       </div>
 
-      {/* Animated Text */}
-      <div className="flex flex-col items-center">
-        <span 
-          className="font-heading text-lg font-bold tracking-[0.25em] text-[#a2414f] uppercase animate-pulse select-none"
-          style={{ animationDuration: "1.8s" }}
-        >
-          Bizcochao
-        </span>
-        <span className="text-[10px] tracking-wider text-muted-foreground uppercase mt-0.5">
-          Cargando...
-        </span>
-      </div>
     </div>
   )
 }

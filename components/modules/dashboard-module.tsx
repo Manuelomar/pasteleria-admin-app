@@ -33,6 +33,7 @@ import { currency, type Venta, type Cliente, type Producto } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 
 const MetricsRow = ({ title, data }: { title: string, data: any }) => (
   <div className="mb-8">
@@ -277,16 +278,11 @@ export function DashboardModule() {
     })).filter(x => x.valor > 0)
   }, [ventas])
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <MetricsRow title="Métricas de Hoy" data={stats.hoy} />
       <MetricsRow title="Métricas de la Semana" data={stats.semana} />
       <MetricsRow title="Métricas del Mes" data={stats.mes} />

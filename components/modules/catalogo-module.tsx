@@ -21,6 +21,7 @@ import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { Folder, ArrowLeft } from "lucide-react"
 
 export function CatalogoModule({ subModule }: { subModule?: string }) {
@@ -267,16 +268,11 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
           Gestiona los productos de la pastelería: dulces, salados y bebidas.

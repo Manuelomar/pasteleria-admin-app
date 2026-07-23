@@ -36,6 +36,7 @@ import { rolLabel, type Usuario, type Rol } from "@/types"
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 
 export function UsuariosModule() {
   const [search, setSearch] = useState("")
@@ -166,16 +167,11 @@ export function UsuariosModule() {
   const filtered = items
   const isAdminUser = currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader />
-      </div>
-    )
-  }
+  
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 relative min-h-[400px]">
+      <LoadingOverlay active={isLoading} />
       <p className="text-sm text-muted-foreground">
         {isAdminUser 
           ? "Administra los usuarios del sistema, sus roles y accesos." 
