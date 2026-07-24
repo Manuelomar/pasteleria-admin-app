@@ -107,7 +107,7 @@ export function HistorialModule() {
 
       <Card className="border-border bg-card/50 shadow-sm">
         <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Desde
@@ -198,7 +198,7 @@ export function HistorialModule() {
 
       <Card className="overflow-hidden p-0 relative min-h-[300px]">
         <LoadingOverlay active={isLoadingFiltro && !isLoading} />
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <Table>
             <TableHeader>
               <TableRow>
