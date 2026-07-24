@@ -43,6 +43,7 @@ export function VentasModule() {
   const [items, setItems] = useState<VentaItem[]>([])
   const [clienteId, setClienteId] = useState<string>("general")
   const [descuento, setDescuento] = useState("0")
+  const [descuentoPorcentaje, setDescuentoPorcentaje] = useState("0")
   const [aplicarItbis, setAplicarItbis] = useState(false)
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo")
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pagado")
@@ -156,9 +157,12 @@ export function VentasModule() {
     () => items.reduce((s, i) => s + i.precio * i.cantidad, 0),
     [items],
   )
-  const desc = Number(descuento) || 0
-  const imp = aplicarItbis ? (subtotal - desc) * 0.18 : 0
-  const total = Math.max(0, subtotal - desc + imp)
+  const descMonto = Number(descuento) || 0
+  const descPorcentaje = Number(descuentoPorcentaje) || 0
+  const descPorcentajeMonto = (subtotal * descPorcentaje) / 100
+  const descTotal = descMonto + descPorcentajeMonto
+  const imp = aplicarItbis ? (subtotal - descTotal) * 0.18 : 0
+  const total = Math.max(0, subtotal - descTotal + imp)
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
   const devuelta = metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
@@ -170,6 +174,7 @@ export function VentasModule() {
   const limpiar = () => {
     setItems([])
     setDescuento("0")
+    setDescuentoPorcentaje("0")
     setAplicarItbis(false)
     setMontoPagado("")
     setEfectivoRecibido("")
@@ -247,7 +252,7 @@ export function VentasModule() {
         clienteId: esCredito ? clienteId : undefined,
         cajeroId: "d69d45cc-d820-4e55-9a8c-a1112b32f22b", // Todo: real session user
         subtotal,
-        descuento: desc,
+        descuento: descTotal,
         impuesto: imp,
         total,
         metodoPago,
@@ -429,12 +434,24 @@ export function VentasModule() {
               <span className="font-medium">{currency(subtotal)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Descuento</span>
+              <span className="text-muted-foreground">Descuento ($)</span>
               <Input
                 type="number"
                 value={descuento}
                 onChange={(e) => setDescuento(e.target.value)}
                 className="h-8 w-24 text-right"
+                min="0"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">Descuento (%)</span>
+              <Input
+                type="number"
+                value={descuentoPorcentaje}
+                onChange={(e) => setDescuentoPorcentaje(e.target.value)}
+                className="h-8 w-24 text-right"
+                min="0"
+                max="100"
               />
             </div>
             <div className="flex items-center justify-between gap-2">
