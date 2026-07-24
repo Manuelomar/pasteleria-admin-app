@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, History, CalendarIcon } from "lucide-react"
+import { Search, History, CalendarIcon, TrendingUp } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +32,7 @@ export function HistorialModule() {
   
   const [totalCantidad, setTotalCantidad] = useState(0)
   const [totalGenerado, setTotalGenerado] = useState(0)
+  const [totalGanancia, setTotalGanancia] = useState(0)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -56,6 +57,7 @@ export function HistorialModule() {
         setCurrentPage(res.page)
         setTotalCantidad(res.overallCantidad)
         setTotalGenerado(res.overallTotal)
+        setTotalGanancia(res.overallGanancia || 0)
       })
       .catch((err) => {
         console.error("Error al cargar el historial", err)
@@ -178,6 +180,17 @@ export function HistorialModule() {
             <div className="flex flex-col">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ingresos</span>
               <span className="font-heading text-2xl font-bold text-foreground">{currency(totalGenerado)}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border bg-card/50 shadow-sm">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="size-6" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ganancia</span>
+              <span className="font-heading text-2xl font-bold text-foreground">{currency(totalGanancia)}</span>
             </div>
           </CardContent>
         </Card>
