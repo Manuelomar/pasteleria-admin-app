@@ -472,7 +472,7 @@ export function VentasModule() {
 
           <Separator />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field>
               <FieldLabel>Método de pago</FieldLabel>
               <Select value={metodoPago} onValueChange={(v) => v !== null && setMetodoPago(v as MetodoPago)}>
@@ -550,7 +550,7 @@ export function VentasModule() {
               <Save data-icon="inline-start" />
               {isLoading ? "Procesando..." : "Procesar Pago"}
             </Button>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 variant="outline"
                 onClick={() => {

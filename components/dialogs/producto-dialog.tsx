@@ -278,7 +278,7 @@ export function ProductoDialog({
               </Field>
             </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
                 <Field>
                   <FieldLabel htmlFor="prod-precio">Precio de Venta</FieldLabel>

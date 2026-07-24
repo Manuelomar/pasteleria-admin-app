@@ -91,7 +91,7 @@ export function ClienteDialog({
             <FieldLabel htmlFor="cli-nombre">Nombre completo</FieldLabel>
             <Input id="cli-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field>
               <FieldLabel htmlFor="cli-tel">Teléfono</FieldLabel>
               <Input id="cli-tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} />

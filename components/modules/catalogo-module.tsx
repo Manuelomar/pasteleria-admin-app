@@ -483,7 +483,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                 <span className="text-xs font-medium text-muted-foreground">Stock: {p.cantidad ?? 0}</span>
               </div>
             </CardContent>
-            <CardFooter className="flex gap-2">
+            <CardFooter className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"

@@ -61,7 +61,7 @@ export function DetalleProductoDialog({
           </div>
 
           {/* Grid de Precio e Inventario */}
-          <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/50 p-3 border border-border/50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg bg-muted/50 p-3 border border-border/50">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">
                 {currentUser?.rol === "proveedor" ? "Precio Costo" : "Precio Venta"}

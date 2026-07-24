@@ -295,7 +295,7 @@ export function UsuarioDialog({
         {isAdminUser && rol !== "admin" && (
           <div className="mt-6 flex flex-col gap-3">
             <h4 className="text-sm font-medium leading-none">Permisos de Módulos</h4>
-            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border p-4">
               {Object.entries({
                 dashboard: "Dashboard",
                 clientes: "Clientes",
