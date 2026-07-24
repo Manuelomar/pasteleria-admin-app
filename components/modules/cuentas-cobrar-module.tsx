@@ -272,8 +272,8 @@ export function CuentasCobrarModule() {
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="text-center">Cant. Facturas</TableHead>
-                    <TableHead className="text-right">Total Facturado</TableHead>
-                    <TableHead className="text-right">Monto Pagado</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Total Facturado</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Monto Pagado</TableHead>
                     <TableHead className="text-right text-amber-600">Balance Pendiente</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -284,8 +284,8 @@ export function CuentasCobrarModule() {
                       <TableRow key={cliente.clienteNombre}>
                         <TableCell className="text-sm font-semibold">{cliente.clienteNombre}</TableCell>
                         <TableCell className="text-center font-medium">{cliente.facturas.length}</TableCell>
-                        <TableCell className="text-right">{currency(cliente.totalFacturado)}</TableCell>
-                        <TableCell className="text-right">{currency(cliente.montoPagadoTotal)}</TableCell>
+                        <TableCell className="text-right hidden md:table-cell">{currency(cliente.totalFacturado)}</TableCell>
+                        <TableCell className="text-right hidden md:table-cell">{currency(cliente.montoPagadoTotal)}</TableCell>
                         <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(cliente.balanceTotal)}</TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>

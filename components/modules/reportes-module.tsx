@@ -130,23 +130,23 @@ export function ReportesModule() {
                   <div>
                     <Label className="text-base font-semibold mb-3 block">Rango de Fechas</Label>
                     
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana')}>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana')} className="w-full sm:w-auto">
                         <CalendarDays className="mr-2 h-4 w-4" />
                         Última Semana
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes')} className="w-full sm:w-auto">
                         <Calendar className="mr-2 h-4 w-4" />
                         Último Mes
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año')} className="w-full sm:w-auto">
                         <CalendarRange className="mr-2 h-4 w-4" />
                         Último Año
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
                         setFechaInicio("")
                         setFechaFin("")
-                      }}>
+                      }} className="w-full sm:w-auto">
                         Limpiar Fechas
                       </Button>
                     </div>
@@ -242,23 +242,23 @@ export function ReportesModule() {
                   <div>
                     <Label className="text-base font-semibold mb-3 block">Rango de Fechas</Label>
                     
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', 'ventas')}>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', 'ventas')} className="w-full sm:w-auto">
                         <CalendarDays className="mr-2 h-4 w-4" />
                         Última Semana
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', 'ventas')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', 'ventas')} className="w-full sm:w-auto">
                         <Calendar className="mr-2 h-4 w-4" />
                         Último Mes
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', 'ventas')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', 'ventas')} className="w-full sm:w-auto">
                         <CalendarRange className="mr-2 h-4 w-4" />
                         Último Año
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
                         setVentasFechaInicio("")
                         setVentasFechaFin("")
-                      }}>
+                      }} className="w-full sm:w-auto">
                         Limpiar Fechas
                       </Button>
                     </div>
@@ -356,23 +356,23 @@ export function ReportesModule() {
                   <div>
                     <Label className="text-base font-semibold mb-3 block">Rango de Fechas</Label>
                     
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', 'ganancias')}>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', 'ganancias')} className="w-full sm:w-auto">
                         <CalendarDays className="mr-2 h-4 w-4" />
                         Última Semana
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', 'ganancias')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', 'ganancias')} className="w-full sm:w-auto">
                         <Calendar className="mr-2 h-4 w-4" />
                         Último Mes
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', 'ganancias')}>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', 'ganancias')} className="w-full sm:w-auto">
                         <CalendarRange className="mr-2 h-4 w-4" />
                         Último Año
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
                         setGananciasFechaInicio("")
                         setGananciasFechaFin("")
-                      }}>
+                      }} className="w-full sm:w-auto">
                         Limpiar Fechas
                       </Button>
                     </div>

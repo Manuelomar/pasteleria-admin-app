@@ -148,11 +148,11 @@ export function HistorialModule() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-              <Button onClick={handleLimpiar} variant="outline" className="flex-1 sm:flex-none">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+              <Button onClick={handleLimpiar} variant="outline" className="w-full sm:w-auto">
                 Limpiar
               </Button>
-              <Button onClick={handleFiltrar} className="flex-1 sm:flex-none" disabled={isLoadingFiltro}>
+              <Button onClick={handleFiltrar} className="w-full sm:w-auto" disabled={isLoadingFiltro}>
                 {isLoadingFiltro ? "Cargando..." : "Filtrar"}
               </Button>
             </div>
@@ -203,11 +203,11 @@ export function HistorialModule() {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
-                <TableHead>Factura</TableHead>
+                <TableHead className="hidden md:table-cell">Factura</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead className="text-center">Cantidad</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
+                <TableHead className="text-right hidden md:table-cell">Precio</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -225,17 +225,20 @@ export function HistorialModule() {
                         hour12: false
                       }).replace(",", "") : "-"}
                     </TableCell>
-                    <TableCell className="font-medium">{item.factura}</TableCell>
+                    <TableCell className="hidden md:table-cell font-medium">{item.factura}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{item.clienteNombre}</TableCell>
                     <TableCell className="font-semibold text-primary">{item.producto}</TableCell>
                     <TableCell className="text-center font-bold">{item.cantidad}</TableCell>
-                    <TableCell className="text-right">{currency(item.precio)}</TableCell>
+                    <TableCell className="text-right hidden md:table-cell">{currency(item.precio)}</TableCell>
                     <TableCell className="text-right font-bold">{currency(item.total)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="md:hidden h-32 text-center text-muted-foreground">
+                    No se encontraron registros.
+                  </TableCell>
+                  <TableCell colSpan={7} className="hidden md:table-cell h-32 text-center text-muted-foreground">
                     No se encontraron registros de ventas con los filtros seleccionados.
                   </TableCell>
                 </TableRow>

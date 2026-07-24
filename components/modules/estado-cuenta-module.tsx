@@ -119,7 +119,7 @@ export function EstadoCuentaModule() {
             <TabsTrigger value="reporte">Reporte de Ventas</TabsTrigger>
           </TabsList>
 
-          <Button variant="outline" onClick={() => toast.success("Exportando datos a Excel...")}>
+          <Button variant="outline" onClick={() => toast.success("Exportando datos a Excel...")} className="w-full sm:w-auto">
             <Download className="mr-2 size-4" />
             Exportar General
           </Button>
@@ -143,7 +143,7 @@ export function EstadoCuentaModule() {
               </div>
             </div>
 
-            <Button onClick={handleImprimirCierre}>
+            <Button onClick={handleImprimirCierre} className="w-full sm:w-auto">
               Cerrar Caja
             </Button>
           </div>
@@ -215,10 +215,10 @@ export function EstadoCuentaModule() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Factura</TableHead>
+                            <TableHead className="hidden md:table-cell">Factura</TableHead>
                             <TableHead>Hora</TableHead>
                             <TableHead>Cliente</TableHead>
-                            <TableHead>Método de Pago</TableHead>
+                            <TableHead className="hidden sm:table-cell">Método de Pago</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -227,10 +227,10 @@ export function EstadoCuentaModule() {
                             const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             return (
                               <TableRow key={v.id}>
-                                <TableCell className="font-mono text-sm">{v.factura}</TableCell>
+                                <TableCell className="hidden md:table-cell font-mono text-sm">{v.factura}</TableCell>
                                 <TableCell className="text-sm">{hora}</TableCell>
-                                <TableCell className="text-sm">{v.clienteNombre || "Cliente de Paso"}</TableCell>
-                                <TableCell className="text-sm capitalize">{v.metodoPago}</TableCell>
+                                <TableCell className="text-sm max-w-[120px] truncate">{v.clienteNombre || "Cliente de Paso"}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-sm capitalize">{v.metodoPago}</TableCell>
                                 <TableCell className="text-right font-semibold">{currency(v.total)}</TableCell>
                               </TableRow>
                             )
