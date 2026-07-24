@@ -47,6 +47,7 @@ export function VentasModule() {
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo")
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pagado")
   const [montoPagado, setMontoPagado] = useState("")
+  const [efectivoRecibido, setEfectivoRecibido] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [lastVentaId, setLastVentaId] = useState<string | null>(null)
 
@@ -160,6 +161,9 @@ export function VentasModule() {
   const total = Math.max(0, subtotal - desc + imp)
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
+  const devuelta = metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
+    ? Number(efectivoRecibido) - total 
+    : 0
 
   const esCredito = clienteId !== "general"
 
@@ -168,6 +172,7 @@ export function VentasModule() {
     setDescuento("0")
     setAplicarItbis(false)
     setMontoPagado("")
+    setEfectivoRecibido("")
     setEstadoPago("pagado")
     setMetodoPago("efectivo")
     setClienteId("general")
@@ -479,6 +484,26 @@ export function VentasModule() {
               </Select>
             </Field>
           </div>
+
+          {estadoPago === "pagado" && metodoPago === "efectivo" ? (
+            <div className="flex flex-col gap-3">
+              <Field>
+                <FieldLabel>Efectivo recibido (Calcula devuelta)</FieldLabel>
+                <Input
+                  type="number"
+                  value={efectivoRecibido}
+                  onChange={(e) => setEfectivoRecibido(e.target.value)}
+                  placeholder="0.00"
+                />
+              </Field>
+              {Number(efectivoRecibido) > 0 && (
+                <div className="flex items-center justify-between rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                  <span className="font-semibold uppercase tracking-wider text-xs">Devuelta</span>
+                  <span className="font-bold text-xl">{currency(devuelta)}</span>
+                </div>
+              )}
+            </div>
+          ) : null}
 
           {estadoPago !== "pagado" ? (
             <>
