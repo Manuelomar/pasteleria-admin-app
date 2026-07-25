@@ -12,6 +12,13 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
@@ -423,15 +430,19 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               </ToggleGroup>
             )}
 
-        <ToggleGroup
-          value={[disp]}
-          onValueChange={(v) => v.length > 0 && handleDispChange(v[0] as typeof disp)}
-          variant="outline"
+        <Select
+          value={disp}
+          onValueChange={(v) => handleDispChange(v as typeof disp)}
         >
-          <ToggleGroupItem value="todos">Disponibilidad</ToggleGroupItem>
-          <ToggleGroupItem value="disponible">Disponible</ToggleGroupItem>
-          <ToggleGroupItem value="no-disponible">No disponible</ToggleGroupItem>
-        </ToggleGroup>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Disponibilidad" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="disponible">Disponible</SelectItem>
+            <SelectItem value="no-disponible">No disponible</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
