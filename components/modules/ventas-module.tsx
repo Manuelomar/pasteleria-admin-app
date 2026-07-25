@@ -103,18 +103,90 @@ export function VentasModule() {
 
   const filtered = fetchedProductos
 
-  const addItem = (id: string) => {
+  const handleAddStockPrompt = async (prod: Producto) => {
+    const ask = await Swal.fire({
+      title: 'Stock agotado',
+      text: `El producto "${prod.nombre}" no tiene suficiente stock. ¿Deseas añadir más stock ahora?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, añadir stock',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e11d48'
+    });
+
+    if (ask.isConfirmed) {
+      const { value: amount } = await Swal.fire({
+        title: `Añadir stock`,
+        text: `Producto: ${prod.nombre}`,
+        input: 'number',
+        inputLabel: 'Cantidad a ingresar:',
+        inputPlaceholder: 'Ej. 10',
+        showCancelButton: true,
+        confirmButtonText: 'Añadir',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#e11d48',
+        inputValidator: (value) => {
+          if (!value || parseInt(value) <= 0) {
+            return 'Ingresa una cantidad válida mayor a 0'
+          }
+          return null;
+        }
+      });
+
+      if (amount) {
+        const added = parseInt(amount);
+        const newCantidad = (prod.cantidad ?? 0) + added;
+        const newDisponible = newCantidad > 0 ? true : prod.disponible;
+        try {
+          setIsLoadingData(true);
+          await api.productos.update(prod.id, { cantidad: newCantidad, disponible: newDisponible });
+          toast.success(`Stock de ${prod.nombre} actualizado a ${newCantidad}`);
+          
+          setFetchedProductos(prev => prev.map(p => p.id === prod.id ? { ...p, cantidad: newCantidad, disponible: newDisponible } : p));
+          loadProductos();
+          return true; // Success
+        } catch (err) {
+          toast.error("Error al actualizar el stock");
+        } finally {
+          setIsLoadingData(false);
+        }
+      }
+    }
+    return false;
+  }
+
+  const addItem = async (id: string) => {
     const prod = fetchedProductos.find((p) => p.id === id)
     if (!prod) return
-    setItems((prev) => {
-      const existing = prev.find((i) => i.productoId === id)
-      const currentQty = existing ? existing.cantidad : 0
-      
-      if (currentQty + 1 > (prod.cantidad || 0)) {
-        toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
-        return prev
+    
+    // Check stock safely before using setItems
+    const existing = items.find((i) => i.productoId === id)
+    const currentQty = existing ? existing.cantidad : 0
+    
+    if (currentQty + 1 > (prod.cantidad || 0)) {
+      if ((prod.cantidad || 0) === 0 || currentQty === (prod.cantidad || 0)) {
+         const added = await handleAddStockPrompt(prod);
+         if (added) {
+             setItems((prevItems) => {
+                const ex = prevItems.find((i) => i.productoId === id)
+                if (ex) {
+                  return prevItems.map((i) =>
+                    i.productoId === id ? { ...i, cantidad: i.cantidad + 1 } : i,
+                  )
+                }
+                return [
+                  ...prevItems,
+                  { productoId: id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 },
+                ]
+             })
+         }
+      } else {
+         toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
       }
+      return
+    }
 
+    setItems((prev) => {
       if (existing) {
         return prev.map((i) =>
           i.productoId === id ? { ...i, cantidad: i.cantidad + 1 } : i,
@@ -127,20 +199,33 @@ export function VentasModule() {
     })
   }
 
-  const updateQty = (id: string, delta: number) => {
+  const updateQty = async (id: string, delta: number) => {
     const prod = fetchedProductos.find((p) => p.id === id)
     if (!prod) return
 
-    setItems((prev) => {
-      const existing = prev.find((i) => i.productoId === id)
-      if (!existing) return prev
+    const existing = items.find((i) => i.productoId === id)
+    if (!existing) return
 
-      const newQty = existing.cantidad + delta
-      if (delta > 0 && newQty > (prod.cantidad || 0)) {
+    const newQty = existing.cantidad + delta
+    if (delta > 0 && newQty > (prod.cantidad || 0)) {
+      if (existing.cantidad === (prod.cantidad || 0)) {
+        const added = await handleAddStockPrompt(prod);
+        if (added) {
+           setItems((prevItems) => {
+             return prevItems
+                .map((i) =>
+                  i.productoId === id ? { ...i, cantidad: Math.max(0, newQty) } : i,
+                )
+                .filter((i) => i.cantidad > 0)
+           })
+        }
+      } else {
         toast.error(`Solo hay ${prod.cantidad || 0} unidad(es) disponible(s) de ${prod.nombre}`)
-        return prev
       }
+      return
+    }
 
+    setItems((prev) => {
       return prev
         .map((i) =>
           i.productoId === id ? { ...i, cantidad: Math.max(0, newQty) } : i,
