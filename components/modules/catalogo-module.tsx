@@ -236,7 +236,9 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const handleDeleteProduct = async (p: Producto) => {
     const confirm = await Swal.fire({
       title: '¿Estás seguro?',
-      text: `Se eliminará el producto "${p.nombre}" permanentemente del sistema. Esta acción no se puede deshacer.`,
+      text: p.proveedorId 
+        ? `Se eliminará el producto "${p.nombre}" permanentemente de tu catálogo de proveedor.`
+        : `Se eliminará el producto "${p.nombre}" permanentemente del sistema. Esta acción no se puede deshacer.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
