@@ -68,7 +68,7 @@ export function VentasModule() {
   const loadProductos = () => {
     setIsLoadingData(true)
     Promise.all([
-      api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible"),
+      api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible", "internos"),
       new Promise(resolve => setTimeout(resolve, 1000))
     ])
       .then(([res]) => {
