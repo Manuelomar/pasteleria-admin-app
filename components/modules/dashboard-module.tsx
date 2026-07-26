@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { DollarSign, ShoppingBag, Users, Package, AlertCircle, TrendingUp, Wallet, Percent } from "lucide-react"
 import {
   Bar,
@@ -34,10 +34,14 @@ import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
-const MetricsRow = ({ title, data }: { title: string, data: any }) => (
+const MetricsRow = ({ title, data }: { title?: string, data: any }) => {
+  const d = data || { ventas: 0, ganancia: 0, sinItbis: 0, itbis: 0, ordenes: 0 }
+  return (
   <div className="mb-8">
-    <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">{title}</h2>
+    {title && <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">{title}</h2>}
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <Card className="border-border bg-card/50 shadow-sm">
         <CardContent className="flex items-center gap-4 p-5">
@@ -47,7 +51,7 @@ const MetricsRow = ({ title, data }: { title: string, data: any }) => (
           <div className="flex flex-col">
             <span className="text-xs font-medium text-muted-foreground">Ventas Totales</span>
             <div className="flex items-end gap-2">
-              <span className="font-heading text-lg font-bold text-foreground">{currency(data.ventas)}</span>
+              <span className="font-heading text-lg font-bold text-foreground">{currency(d.ventas)}</span>
             </div>
           </div>
         </CardContent>
@@ -60,7 +64,7 @@ const MetricsRow = ({ title, data }: { title: string, data: any }) => (
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-medium text-muted-foreground">Ganancia Neta</span>
-            <span className="font-heading text-lg font-bold text-foreground">{currency(data.ganancia)}</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(d.ganancia)}</span>
           </div>
         </CardContent>
       </Card>
@@ -72,7 +76,7 @@ const MetricsRow = ({ title, data }: { title: string, data: any }) => (
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-medium text-muted-foreground">Ventas Sin ITBIS</span>
-            <span className="font-heading text-lg font-bold text-foreground">{currency(data.sinItbis)}</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(d.sinItbis)}</span>
           </div>
         </CardContent>
       </Card>
@@ -84,7 +88,7 @@ const MetricsRow = ({ title, data }: { title: string, data: any }) => (
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-medium text-muted-foreground">ITBIS Recaudado</span>
-            <span className="font-heading text-lg font-bold text-foreground">{currency(data.itbis)}</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(d.itbis)}</span>
           </div>
         </CardContent>
       </Card>
@@ -96,197 +100,108 @@ const MetricsRow = ({ title, data }: { title: string, data: any }) => (
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-medium text-muted-foreground">Ticket Promedio</span>
-            <span className="font-heading text-lg font-bold text-foreground">{currency(data.ordenes > 0 ? data.ventas / data.ordenes : 0)}</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(d.ordenes > 0 ? d.ventas / d.ordenes : 0)}</span>
           </div>
         </CardContent>
       </Card>
     </div>
   </div>
-)
+  )
+}
 
 export function DashboardModule() {
-  const [ventas, setVentas] = useState<Venta[]>([])
-  const [clientes, setClientes] = useState<Cliente[]>([])
-  const [productos, setProductos] = useState<Producto[]>([])
+  const [metrics, setMetrics] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
+  const [filterType, setFilterType] = useState("hoy")
+  const [customStart, setCustomStart] = useState("")
+  const [customEnd, setCustomEnd] = useState("")
+
+  const loadMetrics = useCallback(() => {
     setIsLoading(true)
-    Promise.all([
-      api.ventas.getAll(),
-      api.clientes.getAll(),
-      api.productos.getAll(),
-      new Promise((resolve) => setTimeout(resolve, 1000))
-    ]).then(([v, c, p]) => {
-      setVentas(v)
-      setClientes(c)
-      setProductos(p)
-    }).catch(err => {
-      console.error(err)
-      toast.error("Error cargando dashboard")
-    }).finally(() => {
-      setIsLoading(false)
-    })
-  }, [])
+    const isCustom = filterType === "custom"
+    const start = isCustom ? customStart : undefined
+    const end = isCustom ? customEnd : undefined
 
-  // Computed Stats - Agrupados por tiempo
-  const stats = useMemo(() => {
-    const today = new Date()
-    today.setHours(23, 59, 59, 999)
-    const startOfDay = new Date(today)
-    startOfDay.setHours(0, 0, 0, 0)
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - 7)
-    startOfWeek.setHours(0, 0, 0, 0)
-    const currentYear = today.getFullYear()
-    const currentMonth = today.getMonth()
-
-    const createEmptyStats = () => ({ ventas: 0, ganancia: 0, itbis: 0, sinItbis: 0, ordenes: 0 })
-    const hoy = createEmptyStats()
-    const semana = createEmptyStats()
-    const mes = createEmptyStats()
-    const anio = createEmptyStats()
-
-    ventas.forEach(v => {
-      const date = new Date(v.fecha)
-      const isHoy = date >= startOfDay && date <= today
-      const isSemana = date >= startOfWeek && date <= today
-      const isMes = date.getFullYear() === currentYear && date.getMonth() === currentMonth
-      const isAnio = date.getFullYear() === currentYear
-
-      let ventaCosto = 0
-      v.items.forEach(item => {
-        ventaCosto += (Number(item.precioCosto) || 0) * item.cantidad
+    api.ventas.getDashboardMetrics(start, end)
+      .then((data: any) => {
+        setMetrics(data)
       })
-      const ingresoVenta = Number(v.subtotal) - Number(v.descuento || 0)
-      const ganancia = ingresoVenta - ventaCosto
-      const sub = Number(v.subtotal) || 0
-      const imp = Number(v.impuesto) || 0
-
-      if (isHoy) {
-        hoy.ventas += v.total
-        hoy.ganancia += ganancia
-        hoy.itbis += imp
-        hoy.sinItbis += sub
-        hoy.ordenes += 1
-      }
-      if (isSemana) {
-        semana.ventas += v.total
-        semana.ganancia += ganancia
-        semana.itbis += imp
-        semana.sinItbis += sub
-        semana.ordenes += 1
-      }
-      if (isMes) {
-        mes.ventas += v.total
-        mes.ganancia += ganancia
-        mes.itbis += imp
-        mes.sinItbis += sub
-        mes.ordenes += 1
-      }
-      if (isAnio) {
-        anio.ventas += v.total
-        anio.ganancia += ganancia
-        anio.itbis += imp
-        anio.sinItbis += sub
-        anio.ordenes += 1
-      }
-    })
-
-    return { hoy, semana, mes, anio }
-  }, [ventas])
-
-  const productosDisp = productos.filter((p) => p.disponible).length
-  const porCobrar = clientes.reduce((s, c) => s + c.balance, 0)
-
-  const masVendidos = useMemo(() => {
-    return [...productos].sort((a, b) => b.vendidos - a.vendidos).slice(0, 5)
-  }, [productos])
-
-  const ventasSemanales = useMemo(() => {
-    const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-    const data = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split("T")[0]
-      const sum = ventas.filter(v => new Date(v.fecha).toISOString().split("T")[0] === dateStr).reduce((s, v) => s + v.total, 0)
-      data.push({ dia: days[d.getDay()], ventas: sum })
-    }
-    return data
-  }, [ventas])
-
-  const ventasMensuales = useMemo(() => {
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    const data = months.map(mes => ({ mes, ventas: 0, subtotal: 0, impuesto: 0 }))
-    
-    const currentYear = new Date().getFullYear()
-    ventas.forEach(v => {
-      const date = new Date(v.fecha)
-      if (date.getFullYear() === currentYear) {
-        data[date.getMonth()].ventas += v.total
-        data[date.getMonth()].subtotal += (v.subtotal || 0)
-        data[date.getMonth()].impuesto += (v.impuesto || 0)
-      }
-    })
-    
-    return data
-  }, [ventas])
-
-  const ventasPorCategoria = useMemo(() => {
-    const colors: Record<string, string> = {
-      Dulce: "var(--color-chart-1)",
-      Salado: "var(--color-chart-2)",
-      Bebida: "var(--color-chart-3)",
-    }
-    const catMap: Record<string, number> = { Dulce: 0, Salado: 0, Bebida: 0 }
-    
-    ventas.forEach(v => {
-      v.items.forEach(item => {
-        const prod = productos.find(p => p.id === item.productoId)
-        if (prod) {
-          const cat = prod.tipo === "dulce" ? "Dulce" : prod.tipo === "salado" ? "Salado" : "Bebida"
-          catMap[cat] += item.precio * item.cantidad
-        }
+      .catch((err: any) => {
+        console.error(err)
+        toast.error("Error cargando dashboard")
       })
-    })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [filterType, customStart, customEnd])
 
-    return Object.keys(catMap).map(k => ({
-      categoria: k,
-      valor: catMap[k],
-      fill: colors[k] || "var(--color-chart-1)"
-    })).filter(x => x.valor > 0)
-  }, [ventas, productos])
-
-  const metodosPago = useMemo(() => {
-    const colors: Record<string, string> = {
-      Efectivo: "var(--color-chart-1)",
-      Tarjeta: "var(--color-chart-2)",
-      Transferencia: "var(--color-chart-3)",
+  useEffect(() => {
+    if (filterType !== "custom") {
+      loadMetrics()
     }
-    const map: Record<string, number> = { Efectivo: 0, Tarjeta: 0, Transferencia: 0 }
-    
-    ventas.forEach(v => {
-      const met = v.metodoPago === "efectivo" ? "Efectivo" : v.metodoPago === "tarjeta" ? "Tarjeta" : "Transferencia"
-      map[met] += v.total
-    })
+  }, [filterType, loadMetrics])
 
-    return Object.keys(map).map(k => ({
-      metodo: k,
-      valor: map[k],
-      fill: colors[k] || "var(--color-chart-1)"
-    })).filter(x => x.valor > 0)
-  }, [ventas])
+  useEffect(() => {
+    if (filterType === "custom" && customStart && customEnd) {
+      loadMetrics()
+    }
+  }, [customStart, customEnd, filterType, loadMetrics])
+
+  const {
+    stats = { hoy: null, semana: null, mes: null, anio: null, custom: null },
+    ventasSemanales = [],
+    ventasMensuales = [],
+    ventasPorCategoria = [],
+    metodosPago = [],
+    masVendidos = [],
+    productosDisp = 0,
+    porCobrar = 0,
+    ventasRecientes = []
+  } = metrics || {}
 
   
 
   return (
     <div className="flex flex-col gap-8 relative min-h-[400px]">
       <LoadingOverlay active={isLoading} />
-      <MetricsRow title="Métricas de Hoy" data={stats.hoy} />
-      <MetricsRow title="Métricas de la Semana" data={stats.semana} />
-      <MetricsRow title="Métricas del Mes" data={stats.mes} />
-      <MetricsRow title="Métricas del Año" data={stats.anio} />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-xl font-heading font-semibold text-foreground">
+            Resumen de Métricas
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
+            {filterType === "custom" && (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Input type="date" value={customStart} onChange={(e: any) => setCustomStart(e.target.value)} className="w-full sm:w-[140px]" />
+                <span className="text-muted-foreground hidden sm:inline">-</span>
+                <Input type="date" value={customEnd} onChange={(e: any) => setCustomEnd(e.target.value)} className="w-full sm:w-[140px]" />
+              </div>
+            )}
+            <Select value={filterType} onValueChange={(val: string | null) => setFilterType(val || "hoy")}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Seleccionar periodo">
+                  {{
+                    hoy: "Hoy",
+                    semana: "Última Semana",
+                    mes: "Este Mes",
+                    anio: "Este Año",
+                    custom: "Personalizado...",
+                  }[filterType] || "Seleccionar periodo"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hoy">Hoy</SelectItem>
+                <SelectItem value="semana">Última Semana</SelectItem>
+                <SelectItem value="mes">Este Mes</SelectItem>
+                <SelectItem value="anio">Este Año</SelectItem>
+                <SelectItem value="custom">Personalizado...</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <MetricsRow data={stats[filterType as keyof typeof stats] || stats.hoy} />
+      </div>
 
       {/* SECCIÓN: Cuentas por Cobrar */}
       <div>
@@ -304,7 +219,7 @@ export function DashboardModule() {
             <CardDescription>Comparativa de facturación con y sin impuestos en el año</CardDescription>
           </CardHeader>
           <CardContent>
-            {ventasMensuales.some(v => v.ventas > 0) ? (
+            {ventasMensuales.some((v: any) => v.ventas > 0) ? (
               <ChartContainer 
                 config={{ 
                   subtotal: { label: "Sin ITBIS", color: "var(--chart-2)" }, 
@@ -336,7 +251,7 @@ export function DashboardModule() {
             <CardDescription>Total facturado por día (últimos 7 días)</CardDescription>
           </CardHeader>
           <CardContent>
-            {ventasSemanales.some(v => v.ventas > 0) ? (
+            {ventasSemanales.some((v: any) => v.ventas > 0) ? (
               <ChartContainer
                 config={{ ventas: { label: "Ventas", color: "var(--chart-1)" } }}
                 className="h-[280px] w-full"
@@ -377,7 +292,7 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {ventasPorCategoria.map((entry) => (
+                    {ventasPorCategoria.map((entry: any) => (
                       <Cell key={entry.categoria} fill={entry.fill} />
                     ))}
                   </Pie>
@@ -410,7 +325,7 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={metodosPago} dataKey="valor" nameKey="metodo" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {metodosPago.map((entry) => <Cell key={entry.metodo} fill={entry.fill} />)}
+                    {metodosPago.map((entry: any) => <Cell key={entry.metodo} fill={entry.fill} />)}
                   </Pie>
                   <ChartLegend content={<ChartLegendContent nameKey="metodo" />} />
                 </PieChart>
@@ -432,7 +347,7 @@ export function DashboardModule() {
             <CardDescription>Movimientos recientes</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {ventas.length > 0 ? ventas.slice(0, 5).map((v) => (
+            {ventasRecientes.length > 0 ? ventasRecientes.map((v: any) => (
               <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-foreground">{v.clienteNombre || "Cliente General"}</span>
@@ -459,7 +374,7 @@ export function DashboardModule() {
             <CardDescription>Top 5 general</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {masVendidos.length > 0 ? masVendidos.map((p, i) => (
+            {masVendidos.length > 0 ? masVendidos.map((p: any, i: number) => (
               <div key={p.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
                 <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                   {i + 1}

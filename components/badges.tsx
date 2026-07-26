@@ -8,6 +8,7 @@ export function TipoBadge({ tipo }: { tipo: Tipo }) {
     dulce: "border-transparent bg-primary/10 text-primary",
     salado: "border-transparent bg-[#f4a261]/15 text-[#b96a2c]",
     bebida: "border-transparent bg-[#8ab07d]/15 text-[#4f7642]",
+    material: "border-transparent bg-slate-500/15 text-slate-700 dark:text-slate-300",
   }
   return (
     <Badge variant="outline" className={cn("font-medium", styles[tipo])}>

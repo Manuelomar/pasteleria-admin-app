@@ -17,6 +17,13 @@ export const ventasService = {
       data: (res.data || []).map(mapVentaToFrontend)
     }));
   },
+  getDashboardMetrics: (fechaInicio?: string, fechaFin?: string): Promise<any> => {
+    let url = `/ventas/dashboard-metrics`;
+    if (fechaInicio && fechaFin) {
+       url += `?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+    }
+    return fetchAPI(url);
+  },
   getResumenCaja: (fecha: string): Promise<{ efectivo: number, tarjeta: number, transferencia: number, total: number, cantidad: number }> => 
     fetchAPI(`/ventas/resumen-caja?fecha=${fecha}`),
   getReporteHistorico: (): Promise<{ total: number, cantidad: number }> => 
