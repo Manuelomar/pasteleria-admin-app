@@ -74,7 +74,7 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
   const hasPermission = (moduloId: string) => {
     if (moduloId === "usuarios") return true
     if (currentUser?.rol === "admin") return true
-    if (currentUser?.rol === "proveedor" && (moduloId === "catalogo" || moduloId === "entregas")) return true
+    if (currentUser?.rol === "proveedor" && (moduloId === "catalogo" || moduloId === "entregas" || moduloId === "reportes")) return true
     return currentUser?.permisos?.[moduloId] === true
   }
 

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { api } from "@/services"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,11 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Loader } from "@/components/ui/loader"
 import { Printer, Calendar, CalendarDays, CalendarRange } from "lucide-react"
+import { type Usuario } from "@/types"
 
 export function ReportesModule() {
   const [activeTab, setActiveTab] = useState("proveedor")
   const [loading, setLoading] = useState(false)
   const [reportHtml, setReportHtml] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+
+  useEffect(() => {
+    api.auth.getMe().then(setCurrentUser).catch(console.error)
+  }, [])
+
+  const isProveedor = currentUser?.rol === "proveedor"
   
   // Filtros
   const [fechaInicio, setFechaInicio] = useState("")
@@ -114,8 +122,12 @@ export function ReportesModule() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="proveedor">Reporte de Proveedores</TabsTrigger>
-          <TabsTrigger value="ventas">Reporte de Ventas</TabsTrigger>
-          <TabsTrigger value="ganancias">Reporte de Ganancias</TabsTrigger>
+          {!isProveedor && (
+            <>
+              <TabsTrigger value="ventas">Reporte de Ventas</TabsTrigger>
+              <TabsTrigger value="ganancias">Reporte de Ganancias</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="proveedor" className="space-y-4">

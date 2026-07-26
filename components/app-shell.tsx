@@ -113,7 +113,7 @@ function SidebarContent({
   const modulosVisibles = modulos
     .filter((m) => {
       if (isAdmin) return true;
-      if (isProveedor && (m.id === 'catalogo' || m.id === 'entregas')) return true;
+      if (isProveedor && (m.id === 'catalogo' || m.id === 'entregas' || m.id === 'reportes')) return true;
       return permisos[m.id] === true;
     })
     .map(m => {
