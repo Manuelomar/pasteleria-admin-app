@@ -33,6 +33,7 @@ export function CuentasCobrarModule() {
   const [pendientes, setPendientes] = useState<Venta[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedCliente, setSelectedCliente] = useState<any | null>(null)
+  const [detallesCliente, setDetallesCliente] = useState<any | null>(null)
   
   // Modal state
   const [montoPago, setMontoPago] = useState<number | "">("")
@@ -288,9 +289,14 @@ export function CuentasCobrarModule() {
                         <TableCell className="text-right hidden md:table-cell">{currency(cliente.montoPagadoTotal)}</TableCell>
                         <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(cliente.balanceTotal)}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>
-                            Saldar Deuda
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setDetallesCliente(cliente)}>
+                              Ver Detalles
+                            </Button>
+                            <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>
+                              Saldar Deuda
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -359,6 +365,67 @@ export function CuentasCobrarModule() {
             <Button onClick={handleProcessPayment} disabled={isPaying || !montoPago || montoPago <= 0}>
               {isPaying ? "Procesando..." : "Confirmar Pago"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detallesCliente} onOpenChange={(open) => !open && setDetallesCliente(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Detalle de Facturas Pendientes</DialogTitle>
+            <DialogDescription>
+              Cliente: <span className="font-semibold text-foreground text-base">{detallesCliente?.clienteNombre}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-4">
+            {detallesCliente?.facturas.map((f: any) => (
+              <div key={f.id} className="border border-border/60 rounded-xl p-4 space-y-3 bg-card shadow-sm">
+                <div className="flex flex-wrap justify-between items-start gap-4 border-b border-border/50 pb-3">
+                  <div>
+                    <p className="font-bold text-lg text-primary">Factura {f.factura || 'S/N'}</p>
+                    <p className="text-sm text-muted-foreground">{new Date(f.fecha).toLocaleDateString()} a las {new Date(f.fecha).toLocaleTimeString()}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-4 md:gap-8 text-sm bg-muted/30 p-2 rounded-lg">
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Total</span>
+                      <span className="font-semibold text-foreground">{currency(Number(f.total))}</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Pagado</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{currency(Number(f.montoPagado || 0))}</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs uppercase text-amber-600 font-semibold tracking-wider">Pendiente</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-500">{currency(Number(f.balance))}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Productos facturados</p>
+                  <div className="bg-background border border-border/40 rounded-lg p-3">
+                    <ul className="space-y-2 text-sm">
+                      {f.items?.length > 0 ? (
+                        f.items.map((item: any, idx: number) => (
+                          <li key={idx} className="flex justify-between items-center border-b border-border/30 last:border-0 pb-2 last:pb-0">
+                            <div className="flex items-center gap-2">
+                              <span className="bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-md text-xs">{item.cantidad}x</span>
+                              <span className="font-medium text-foreground">{item.nombre}</span>
+                            </div>
+                            <span className="text-muted-foreground">{currency(Number(item.precio))}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-muted-foreground italic text-xs py-1">No hay productos registrados en esta factura.</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="mt-2 border-t pt-4">
+            <Button variant="outline" onClick={() => setDetallesCliente(null)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
