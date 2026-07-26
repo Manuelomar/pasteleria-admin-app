@@ -350,7 +350,7 @@ export function DashboardModule() {
             {ventasRecientes.length > 0 ? ventasRecientes.map((v: any) => (
               <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">{v.clienteNombre || "Cliente General"}</span>
+                  <span className="text-sm font-medium text-foreground">{v.cliente?.nombre || v.clienteNombre || "Cliente General"}</span>
                   <span className="text-xs text-muted-foreground">
                     {v.factura} · {v.items.length} producto(s)
                   </span>
