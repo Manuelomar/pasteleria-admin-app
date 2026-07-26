@@ -378,7 +378,7 @@ export function CuentasCobrarModule() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-4">
-            {detallesCliente?.facturas.map((f: any) => (
+            {detallesCliente?.facturas.filter((f: any) => Number(f.balance) > 0).map((f: any) => (
               <div key={f.id} className="border border-border/60 rounded-xl p-4 space-y-3 bg-card shadow-sm">
                 <div className="flex flex-wrap justify-between items-start gap-4 border-b border-border/50 pb-3">
                   <div>
