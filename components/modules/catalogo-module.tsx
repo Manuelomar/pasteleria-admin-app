@@ -222,7 +222,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
     if (amount) {
       const discarded = parseInt(amount);
       const newCantidad = Math.max(0, (p.cantidad ?? 0) - discarded);
-      const newDisponible = newCantidad > 0;
+      const newDisponible = newCantidad > 0 ? true : p.disponible;
       try {
         await api.productos.update(p.id, { cantidad: newCantidad, disponible: newDisponible });
         toast.success(`Se descartaron ${discarded} unidades de ${p.nombre}. Stock: ${newCantidad}`);
