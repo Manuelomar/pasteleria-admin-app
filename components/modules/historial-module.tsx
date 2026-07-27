@@ -24,6 +24,7 @@ export function HistorialModule() {
   const [desde, setDesde] = useState<string>("")
   const [hasta, setHasta] = useState<string>("")
   const [productoId, setProductoId] = useState<string>("all")
+  const [estadoPago, setEstadoPago] = useState<string>("pagadas")
   
   const [productos, setProductos] = useState<Producto[]>([])
   const [historial, setHistorial] = useState<any[]>([])
@@ -47,9 +48,9 @@ export function HistorialModule() {
       .catch((err) => console.error("Error al cargar productos", err))
   }, [])
 
-  const loadHistorial = (desdeVal?: string, hastaVal?: string, prodId?: string, page: number = 1) => {
+  const loadHistorial = (desdeVal?: string, hastaVal?: string, prodId?: string, page: number = 1, estadoPagoVal: string = "pagadas") => {
     setIsLoadingFiltro(true)
-    api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, pageSize)
+    api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, pageSize, estadoPagoVal)
       .then((res: any) => {
         setHistorial(res.data)
         setTotalItems(res.total)
@@ -71,27 +72,28 @@ export function HistorialModule() {
 
   // Carga inicial
   useEffect(() => {
-    loadHistorial(desde, hasta, productoId)
+    loadHistorial(desde, hasta, productoId, 1, estadoPago)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleFiltrar = () => {
     setCurrentPage(1)
-    loadHistorial(desde, hasta, productoId, 1)
+    loadHistorial(desde, hasta, productoId, 1, estadoPago)
   }
 
   const handleLimpiar = () => {
     setDesde("")
     setHasta("")
     setProductoId("all")
+    setEstadoPago("pagadas")
     setCurrentPage(1)
-    loadHistorial("", "", "all", 1)
+    loadHistorial("", "", "all", 1, "pagadas")
   }
 
   // Load when page changes
   useEffect(() => {
     if (!isLoading) {
-      loadHistorial(desde, hasta, productoId, currentPage)
+      loadHistorial(desde, hasta, productoId, currentPage, estadoPago)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage])
@@ -145,6 +147,21 @@ export function HistorialModule() {
                   {productos.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Estado Pago
+              </label>
+              <Select value={estadoPago} onValueChange={(val) => setEstadoPago(val || "pagadas")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pagadas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="pagadas">Pagadas</SelectItem>
+                  <SelectItem value="pendientes">Pendientes de Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>
