@@ -234,6 +234,7 @@ export function HistorialModule() {
                   <TableRow key={item.id || index}>
                     <TableCell className="whitespace-nowrap">
                       {item.fecha ? new Date(item.fecha).toLocaleString("es-DO", {
+                        timeZone: "America/Santo_Domingo",
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",

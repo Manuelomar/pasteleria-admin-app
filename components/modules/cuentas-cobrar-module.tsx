@@ -383,7 +383,7 @@ export function CuentasCobrarModule() {
                 <div className="flex flex-wrap justify-between items-start gap-4 border-b border-border/50 pb-3">
                   <div>
                     <p className="font-bold text-lg text-primary">Factura {f.factura || 'S/N'}</p>
-                    <p className="text-sm text-muted-foreground">{new Date(f.fecha).toLocaleDateString()} a las {new Date(f.fecha).toLocaleTimeString()}</p>
+                    <p className="text-sm text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo' })} a las {new Date(f.fecha).toLocaleTimeString('es-DO', { timeZone: 'America/Santo_Domingo' })}</p>
                   </div>
                   <div className="flex flex-wrap gap-4 md:gap-8 text-sm bg-muted/30 p-2 rounded-lg">
                     <div className="flex flex-col items-end">

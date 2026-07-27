@@ -224,7 +224,7 @@ export function EstadoCuentaModule() {
                         </TableHeader>
                         <TableBody>
                           {ventasDelDia.map(v => {
-                            const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            const hora = new Date(v.fecha).toLocaleTimeString('es-DO', { timeZone: 'America/Santo_Domingo', hour: '2-digit', minute: '2-digit' })
                             return (
                               <TableRow key={v.id}>
                                 <TableCell className="hidden md:table-cell font-mono text-sm">{v.factura}</TableCell>
