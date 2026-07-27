@@ -18,6 +18,8 @@ import {
   History,
   ChevronDown,
   ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -65,12 +67,16 @@ function NavGroupComponent({
   items,
   active,
   onSelect,
+  isCollapsed,
+  onExpand,
 }: {
   label: string
   icon: React.ComponentType<{ className?: string }>
   items: NavItem[]
   active: ModuleId
   onSelect: (id: ModuleId) => void
+  isCollapsed?: boolean
+  onExpand?: () => void
 }) {
   const isActiveGroup = items.some((item) => item.id === active)
   const [isOpen, setIsOpen] = useState(isActiveGroup)
@@ -78,25 +84,34 @@ function NavGroupComponent({
   return (
     <div className="flex flex-col gap-1">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isCollapsed && onExpand) {
+            onExpand()
+            setIsOpen(true)
+          } else {
+            setIsOpen(!isOpen)
+          }
+        }}
+        title={isCollapsed ? label : undefined}
         className={cn(
-          "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+          isCollapsed ? "justify-center px-0" : "justify-between px-3 gap-3",
           isActiveGroup
             ? "text-primary bg-primary/5 shadow-sm"
             : "text-foreground/80 hover:bg-secondary hover:text-foreground"
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
           <Icon className="size-4.5 shrink-0" />
-          <span className="text-left leading-tight">{label}</span>
+          {!isCollapsed && <span className="text-left leading-tight">{label}</span>}
         </div>
-        {isOpen ? (
+        {!isCollapsed && (isOpen ? (
           <ChevronDown className="size-4 opacity-50 transition-transform" />
         ) : (
           <ChevronRight className="size-4 opacity-50 transition-transform" />
-        )}
+        ))}
       </button>
-      {isOpen && (
+      {isOpen && !isCollapsed && (
         <div className="ml-4 flex flex-col gap-1 border-l border-border/50 pl-2 mt-1">
           {items.map((item) => {
             const ItemIcon = item.icon
@@ -127,25 +142,29 @@ function NavItemComponent({
   item,
   active,
   onSelect,
+  isCollapsed,
 }: {
   item: NavItem
   active: ModuleId
   onSelect: (id: ModuleId) => void
+  isCollapsed?: boolean
 }) {
   const Icon = item.icon
   const isActive = active === item.id
   return (
     <button
       onClick={() => onSelect(item.id)}
+      title={isCollapsed ? item.label : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+        isCollapsed ? "justify-center px-0" : "px-3 gap-3",
         isActive
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-foreground/80 hover:bg-secondary hover:text-foreground"
       )}
     >
       <Icon className="size-4.5 shrink-0" />
-      <span>{item.label}</span>
+      {!isCollapsed && <span>{item.label}</span>}
     </button>
   )
 }
@@ -155,11 +174,15 @@ function NavSection({
   items,
   active,
   onSelect,
+  isCollapsed,
+  onExpand,
 }: {
   title: string
   items: NavItem[]
   active: ModuleId
   onSelect: (id: ModuleId) => void
+  isCollapsed?: boolean
+  onExpand?: () => void
 }) {
   // Define groups dynamically based on available items
   const dashboardItem = items.find((i) => i.id === "dashboard")
@@ -172,16 +195,18 @@ function NavSection({
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </p>
+      {!isCollapsed && (
+        <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </p>
+      )}
       
       {dashboardItem && (
-        <NavItemComponent item={dashboardItem} active={active} onSelect={onSelect} />
+        <NavItemComponent item={dashboardItem} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
 
       {ventasItem && (
-        <NavItemComponent item={ventasItem} active={active} onSelect={onSelect} />
+        <NavItemComponent item={ventasItem} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
 
       {catalogItems.length > 1 ? (
@@ -191,9 +216,11 @@ function NavSection({
           items={catalogItems}
           active={active}
           onSelect={onSelect}
+          isCollapsed={isCollapsed}
+          onExpand={onExpand}
         />
       ) : catalogItems.length === 1 && (
-        <NavItemComponent item={catalogItems[0]} active={active} onSelect={onSelect} />
+        <NavItemComponent item={catalogItems[0]} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
 
       {clientsItems.length > 1 ? (
@@ -203,9 +230,11 @@ function NavSection({
           items={clientsItems}
           active={active}
           onSelect={onSelect}
+          isCollapsed={isCollapsed}
+          onExpand={onExpand}
         />
       ) : clientsItems.length === 1 && (
-        <NavItemComponent item={clientsItems[0]} active={active} onSelect={onSelect} />
+        <NavItemComponent item={clientsItems[0]} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
 
       {financeItems.length > 1 ? (
@@ -215,9 +244,11 @@ function NavSection({
           items={financeItems}
           active={active}
           onSelect={onSelect}
+          isCollapsed={isCollapsed}
+          onExpand={onExpand}
         />
       ) : financeItems.length === 1 && (
-        <NavItemComponent item={financeItems[0]} active={active} onSelect={onSelect} />
+        <NavItemComponent item={financeItems[0]} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
 
       {reportItems.length > 1 ? (
@@ -227,9 +258,11 @@ function NavSection({
           items={reportItems}
           active={active}
           onSelect={onSelect}
+          isCollapsed={isCollapsed}
+          onExpand={onExpand}
         />
       ) : reportItems.length === 1 && (
-        <NavItemComponent item={reportItems[0]} active={active} onSelect={onSelect} />
+        <NavItemComponent item={reportItems[0]} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
       )}
       
       {/* Fallback for items that don't belong to any group and are not dashboard */}
@@ -244,7 +277,7 @@ function NavSection({
             !reportItems.includes(i)
         )
         .map((item) => (
-          <NavItemComponent key={item.id} item={item} active={active} onSelect={onSelect} />
+          <NavItemComponent key={item.id} item={item} active={active} onSelect={onSelect} isCollapsed={isCollapsed} />
         ))}
     </div>
   )
@@ -255,11 +288,15 @@ function SidebarContent({
   onSelect,
   onLogout,
   currentUser,
+  isCollapsed,
+  onToggleCollapse,
 }: {
   active: ModuleId
   onSelect: (id: ModuleId) => void
   onLogout?: () => void
   currentUser?: Usuario | null
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }) {
   const isAdmin = currentUser?.rol === "admin"
   const isProveedor = currentUser?.rol === "proveedor"
@@ -290,19 +327,21 @@ function SidebarContent({
     })
   return (
     <div className="flex h-full flex-col p-4">
-      <div className="flex items-center gap-3 px-2 py-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+      <div className={cn("flex items-center py-3", isCollapsed ? "justify-center px-0" : "px-2 gap-3")}>
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <Cake className="size-5" />
         </div>
-        <div className="flex flex-col">
-          <span className="font-heading text-lg font-semibold leading-none text-foreground">
-            Bizcochao
-          </span>
-          <span className="text-xs text-muted-foreground">Pastelería & Repostería</span>
-        </div>
+        {!isCollapsed && (
+          <div className="flex flex-col">
+            <span className="font-heading text-lg font-semibold leading-none text-foreground">
+              Bizcochao
+            </span>
+            <span className="text-xs text-muted-foreground">Pastelería & Repostería</span>
+          </div>
+        )}
       </div>
       <nav className="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 pr-1">
-        <NavSection title="Módulos" items={modulosVisibles} active={active} onSelect={onSelect} />
+        <NavSection title="Módulos" items={modulosVisibles} active={active} onSelect={onSelect} isCollapsed={isCollapsed} onExpand={() => onToggleCollapse?.()} />
         {administracionVisibles.length > 0 && (
           <>
             <div className="my-1 h-px bg-border" />
@@ -311,18 +350,27 @@ function SidebarContent({
               items={administracionVisibles}
               active={active}
               onSelect={onSelect}
+              isCollapsed={isCollapsed}
+              onExpand={() => onToggleCollapse?.()}
             />
           </>
         )}
       </nav>
-      {onLogout && (
-        <div className="mt-auto pt-4">
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" onClick={onLogout}>
-            <ShieldCheck className="mr-3 size-4.5" />
-            Cerrar sesión
+      
+      <div className="mt-auto flex flex-col gap-2 pt-4">
+        {onToggleCollapse && (
+          <Button variant="ghost" className={cn("text-muted-foreground hover:text-foreground", isCollapsed ? "w-full justify-center px-0" : "w-full justify-start")} onClick={onToggleCollapse} title={isCollapsed ? "Expandir" : "Contraer menú"}>
+            {isCollapsed ? <PanelLeftOpen className="size-4.5" /> : <PanelLeftClose className="mr-3 size-4.5" />}
+            {!isCollapsed && "Contraer menú"}
           </Button>
-        </div>
-      )}
+        )}
+        {onLogout && (
+          <Button variant="ghost" className={cn("text-muted-foreground hover:text-foreground", isCollapsed ? "w-full justify-center px-0" : "w-full justify-start")} onClick={onLogout} title={isCollapsed ? "Cerrar sesión" : undefined}>
+            <ShieldCheck className={cn("size-4.5", !isCollapsed && "mr-3")} />
+            {!isCollapsed && "Cerrar sesión"}
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
@@ -343,6 +391,7 @@ export function AppShell({
   currentUser?: Usuario | null
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleSelect = (id: ModuleId) => {
     onSelect(id)
@@ -352,11 +401,11 @@ export function AppShell({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-sidebar lg:block">
-        <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} currentUser={currentUser} />
+      <aside className={cn("fixed inset-y-0 left-0 hidden border-r border-border bg-sidebar lg:block transition-all duration-300", isCollapsed ? "w-20" : "w-64")}>
+        <SidebarContent active={active} onSelect={handleSelect} onLogout={onLogout} currentUser={currentUser} isCollapsed={isCollapsed} onToggleCollapse={() => setIsCollapsed(!isCollapsed)} />
       </aside>
 
-      <div className="flex flex-1 flex-col lg:pl-64">
+      <div className={cn("flex flex-1 flex-col transition-all duration-300", isCollapsed ? "lg:pl-20" : "lg:pl-64")}>
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur md:px-6">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -383,11 +432,6 @@ export function AppShell({
             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
               {currentUser?.nombre?.substring(0, 2) || "U"}
             </div>
-            {/* {onLogout && (
-              <Button variant="ghost" size="sm" onClick={onLogout} className="ml-2 text-muted-foreground hover:text-foreground">
-                Cerrar sesión
-              </Button>
-            )} */}
           </div>
         </header>
 
