@@ -203,13 +203,7 @@ export function DashboardModule() {
         <MetricsRow data={stats[filterType as keyof typeof stats] || stats.hoy} />
       </div>
 
-      {/* SECCIÓN: Cuentas por Cobrar */}
-      <div>
-        <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">Global</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard title="Cuentas por cobrar" value={currency(porCobrar)} icon={AlertCircle} accent="orange" />
-        </div>
-      </div>
+
 
       {/* SECCIÓN: Gráficas de Rendimiento */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
