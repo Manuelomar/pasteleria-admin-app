@@ -16,6 +16,8 @@ import {
   Banknote,
   Package,
   History,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -56,6 +58,97 @@ const modulos: NavItem[] = [
 
 const administracion: NavItem[] = [{ id: "usuarios", label: "Usuarios", icon: ShieldCheck }]
 
+function NavGroupComponent({
+  label,
+  icon: Icon,
+  items,
+  active,
+  onSelect,
+}: {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  items: NavItem[]
+  active: ModuleId
+  onSelect: (id: ModuleId) => void
+}) {
+  const isActiveGroup = items.some((item) => item.id === active)
+  const [isOpen, setIsOpen] = useState(isActiveGroup)
+
+  return (
+    <div className="flex flex-col gap-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          isActiveGroup
+            ? "text-primary bg-primary/5 shadow-sm"
+            : "text-foreground/80 hover:bg-secondary hover:text-foreground"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <Icon className="size-4.5 shrink-0" />
+          <span className="text-left leading-tight">{label}</span>
+        </div>
+        {isOpen ? (
+          <ChevronDown className="size-4 opacity-50 transition-transform" />
+        ) : (
+          <ChevronRight className="size-4 opacity-50 transition-transform" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="ml-4 flex flex-col gap-1 border-l border-border/50 pl-2 mt-1">
+          {items.map((item) => {
+            const ItemIcon = item.icon
+            const isActive = active === item.id
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                    : "text-foreground/70 hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <ItemIcon className="size-4 shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NavItemComponent({
+  item,
+  active,
+  onSelect,
+}: {
+  item: NavItem
+  active: ModuleId
+  onSelect: (id: ModuleId) => void
+}) {
+  const Icon = item.icon
+  const isActive = active === item.id
+  return (
+    <button
+      onClick={() => onSelect(item.id)}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-foreground/80 hover:bg-secondary hover:text-foreground"
+      )}
+    >
+      <Icon className="size-4.5 shrink-0" />
+      <span>{item.label}</span>
+    </button>
+  )
+}
+
 function NavSection({
   title,
   items,
@@ -67,30 +160,91 @@ function NavSection({
   active: ModuleId
   onSelect: (id: ModuleId) => void
 }) {
+  // Define groups dynamically based on available items
+  const dashboardItem = items.find((i) => i.id === "dashboard")
+  const ventasItem = items.find((i) => i.id === "ventas")
+  
+  const catalogItems = items.filter((i) => ["catalogo", "inventario"].includes(i.id))
+  const clientsItems = items.filter((i) => ["clientes", "entregas"].includes(i.id))
+  const financeItems = items.filter((i) => ["cuentas-cobrar", "estado-cuenta"].includes(i.id))
+  const reportItems = items.filter((i) => ["historial", "reportes"].includes(i.id))
+
   return (
     <div className="flex flex-col gap-1">
       <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </p>
-      {items.map((item) => {
-        const Icon = item.icon
-        const isActive = active === item.id
-        return (
-          <button
-            key={item.id}
-            onClick={() => onSelect(item.id)}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-foreground/80 hover:bg-secondary hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4.5 shrink-0" />
-            <span>{item.label}</span>
-          </button>
+      
+      {dashboardItem && (
+        <NavItemComponent item={dashboardItem} active={active} onSelect={onSelect} />
+      )}
+
+      {ventasItem && (
+        <NavItemComponent item={ventasItem} active={active} onSelect={onSelect} />
+      )}
+
+      {catalogItems.length > 1 ? (
+        <NavGroupComponent
+          label="Catálogo e Inventario"
+          icon={Package}
+          items={catalogItems}
+          active={active}
+          onSelect={onSelect}
+        />
+      ) : catalogItems.length === 1 && (
+        <NavItemComponent item={catalogItems[0]} active={active} onSelect={onSelect} />
+      )}
+
+      {clientsItems.length > 1 ? (
+        <NavGroupComponent
+          label="Clientes y Entregas"
+          icon={Users}
+          items={clientsItems}
+          active={active}
+          onSelect={onSelect}
+        />
+      ) : clientsItems.length === 1 && (
+        <NavItemComponent item={clientsItems[0]} active={active} onSelect={onSelect} />
+      )}
+
+      {financeItems.length > 1 ? (
+        <NavGroupComponent
+          label="Finanzas"
+          icon={Wallet}
+          items={financeItems}
+          active={active}
+          onSelect={onSelect}
+        />
+      ) : financeItems.length === 1 && (
+        <NavItemComponent item={financeItems[0]} active={active} onSelect={onSelect} />
+      )}
+
+      {reportItems.length > 1 ? (
+        <NavGroupComponent
+          label="Reportes e Historial"
+          icon={FileText}
+          items={reportItems}
+          active={active}
+          onSelect={onSelect}
+        />
+      ) : reportItems.length === 1 && (
+        <NavItemComponent item={reportItems[0]} active={active} onSelect={onSelect} />
+      )}
+      
+      {/* Fallback for items that don't belong to any group and are not dashboard */}
+      {items
+        .filter(
+          (i) =>
+            i.id !== "dashboard" &&
+            i.id !== "ventas" &&
+            !catalogItems.includes(i) &&
+            !clientsItems.includes(i) &&
+            !financeItems.includes(i) &&
+            !reportItems.includes(i)
         )
-      })}
+        .map((item) => (
+          <NavItemComponent key={item.id} item={item} active={active} onSelect={onSelect} />
+        ))}
     </div>
   )
 }
@@ -146,7 +300,7 @@ function SidebarContent({
           <span className="text-xs text-muted-foreground">Pastelería & Repostería</span>
         </div>
       </div>
-      <nav className="mt-2 flex flex-1 flex-col gap-2">
+      <nav className="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 pr-1">
         <NavSection title="Módulos" items={modulosVisibles} active={active} onSelect={onSelect} />
         {administracionVisibles.length > 0 && (
           <>
