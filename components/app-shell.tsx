@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { type Usuario, rolLabel } from "@/types"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export type ModuleId =
   | "dashboard"
@@ -374,6 +375,7 @@ export function AppShell({
           </Sheet>
           <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
           <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-none text-foreground">{currentUser?.nombre || "Usuario"}</p>
               <p className="text-xs text-muted-foreground">{currentUser ? rolLabel[currentUser.rol] : ""}</p>
