@@ -18,6 +18,7 @@ import { AppPagination } from "@/components/ui/app-pagination"
 import { currency, type Venta } from "@/types"
 import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
+import { IncomeDistribution } from "@/components/modules/income-distribution"
 
 interface ResumenCaja {
   efectivo: number;
@@ -114,9 +115,10 @@ export function EstadoCuentaModule() {
     <div className="flex flex-col gap-6">
       <Tabs defaultValue="caja" className="w-full">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <TabsList className="grid w-full grid-cols-2 sm:w-[400px]">
+          <TabsList className="grid w-full grid-cols-3 sm:w-[500px]">
             <TabsTrigger value="caja">Cierre de Caja</TabsTrigger>
             <TabsTrigger value="reporte">Reporte de Ventas</TabsTrigger>
+            <TabsTrigger value="distribucion">Distribución</TabsTrigger>
           </TabsList>
 
           <Button variant="outline" onClick={() => toast.success("Exportando datos a Excel...")} className="w-full sm:w-auto">
@@ -345,6 +347,11 @@ export function EstadoCuentaModule() {
               )}
             </>
           )}
+        </TabsContent>
+
+        {/* PESTAÑA 3: DISTRIBUCIÓN */}
+        <TabsContent value="distribucion" className="mt-6">
+          <IncomeDistribution />
         </TabsContent>
 
       </Tabs>
