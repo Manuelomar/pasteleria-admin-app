@@ -39,6 +39,8 @@ export type ModuleId =
   | "inventario"
   | "reportes"
   | "historial"
+  | "solicitudes-bizcocho"
+  | "solicitudes-combo"
 
 interface NavItem {
   id: ModuleId
@@ -57,6 +59,11 @@ const modulos: NavItem[] = [
   { id: "estado-cuenta", label: "Finanzas y Caja", icon: Wallet },
   { id: "historial", label: "Historial", icon: History },
   { id: "reportes", label: "Reportes", icon: FileText },
+]
+
+const solicitudes: NavItem[] = [
+  { id: "solicitudes-bizcocho", label: "Bizcochos", icon: Cake },
+  { id: "solicitudes-combo", label: "Combos", icon: Package },
 ]
 
 const administracion: NavItem[] = [{ id: "usuarios", label: "Usuarios", icon: ShieldCheck }]
@@ -325,6 +332,9 @@ function SidebarContent({
       }
       return m
     })
+    
+  const solicitudesVisibles = solicitudes.filter(() => isAdmin)
+
   return (
     <div className="flex h-full flex-col p-4">
       <div className={cn("flex items-center py-3", isCollapsed ? "justify-center px-0" : "px-2 gap-3")}>
@@ -342,6 +352,21 @@ function SidebarContent({
       </div>
       <nav className="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto min-h-0 pr-1">
         <NavSection title="Módulos" items={modulosVisibles} active={active} onSelect={onSelect} isCollapsed={isCollapsed} onExpand={() => onToggleCollapse?.()} />
+        
+        {solicitudesVisibles.length > 0 && (
+          <>
+            <div className="my-1 h-px bg-border" />
+            <NavSection
+              title="Solicitudes Web"
+              items={solicitudesVisibles}
+              active={active}
+              onSelect={onSelect}
+              isCollapsed={isCollapsed}
+              onExpand={() => onToggleCollapse?.()}
+            />
+          </>
+        )}
+
         {administracionVisibles.length > 0 && (
           <>
             <div className="my-1 h-px bg-border" />

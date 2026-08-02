@@ -11,6 +11,8 @@ import { EntregasModule } from "@/components/modules/entregas-module"
 import { ReportesModule } from "@/components/modules/reportes-module"
 import { InventarioModule } from "@/components/modules/inventario-module"
 import { HistorialModule } from "@/components/modules/historial-module"
+import { SolicitudesBizcochoModule } from "@/components/modules/solicitudes-bizcocho-module"
+import { SolicitudesComboModule } from "@/components/modules/solicitudes-combo-module"
 import { useParams } from "next/navigation"
 
 export default function Page() {
@@ -30,6 +32,8 @@ export default function Page() {
       {currentModule === "inventario" && <InventarioModule />}
       {currentModule === "historial" && <HistorialModule />}
       {currentModule === "reportes" && <ReportesModule />}
+      {currentModule === "solicitudes-bizcocho" && <SolicitudesBizcochoModule />}
+      {currentModule === "solicitudes-combo" && <SolicitudesComboModule />}
     </>
   )
 }
