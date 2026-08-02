@@ -9,6 +9,13 @@ class SolicitudesService {
     })
   }
 
+  async createCombo(formData: FormData) {
+    return await fetchPublicAPI('/solicitudes/combo', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
   async getAll(tipo?: 'bizcocho' | 'combo') {
     const url = tipo ? `/solicitudes?tipo=${tipo}` : '/solicitudes'
     return await fetchAPI(url) as Promise<Solicitud[]>

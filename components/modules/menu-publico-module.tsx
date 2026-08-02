@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   ToggleGroup,
@@ -71,13 +72,13 @@ export function MenuPublicoModule() {
   return (
     <>
       {isNavigating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
           <Loader />
         </div>
       )}
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="flex min-h-screen flex-col bg-background">
       {/* Header Público */}
-      <header className="sticky top-0 z-10 flex flex-col items-center justify-center border-b bg-white p-4 shadow-sm relative">
+      <header className="sticky top-0 z-10 flex flex-col items-center justify-center border-b bg-background/95 p-4 shadow-sm relative backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <h1 className="font-heading text-3xl font-bold text-primary">Bizcochao</h1>
         <p className="text-sm text-muted-foreground">Catálogo de Productos</p>
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -114,6 +115,7 @@ export function MenuPublicoModule() {
           >
             <Cake className="h-4 w-4" />
           </Button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -127,14 +129,14 @@ export function MenuPublicoModule() {
               <Input
                 type="search"
                 placeholder="Buscar producto..."
-                className="w-full bg-white pl-9 shadow-sm"
+                className="w-full bg-background pl-9 shadow-sm"
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <ToggleGroup value={[tipo]} onValueChange={(val) => {
               if (val && val.length > 0) handleTipoChange(val[0] as any)
-            }} className="justify-start bg-white p-1 rounded-md shadow-sm border border-input">
+            }} className="justify-start bg-background p-1 rounded-md shadow-sm border border-input">
               <ToggleGroupItem value="productos" aria-label="Todos">Todos</ToggleGroupItem>
               <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
               <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
@@ -176,7 +178,7 @@ export function MenuPublicoModule() {
                         </div>
                       )}
                     </div>
-                    <CardContent className="flex flex-col flex-grow p-4">
+                    <CardContent className="flex flex-grow flex-col p-4 bg-card text-card-foreground">
                       <h3 className="font-medium leading-tight line-clamp-2 min-h-[2.5rem]">{p.nombre}</h3>
                       <div className="mt-auto pt-3 flex items-end justify-between">
                         <div className="flex flex-col">

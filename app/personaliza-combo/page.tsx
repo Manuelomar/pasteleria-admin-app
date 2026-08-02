@@ -1,14 +1,13 @@
-import type { Metadata } from 'next'
-import { CakeBuilder } from '@/components/cake-builder/CakeBuilder'
+import { ComboBuilder } from "@/components/combo-builder/ComboBuilder"
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: 'Personaliza tu Bizcocho | Bizcochao',
-  description:
-    'Arma tu bizcocho ideal eligiendo sabor, relleno, cobertura, colores y decoración. Visualiza el resultado en tiempo real.',
+  title: 'Personaliza tu Combo | Bizcochao',
+  description: 'Arma tu combo con los productos de Bizcochao.',
 }
 
-export default function PersonalizaBizcochoPage() {
+export default function PersonalizaComboPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header público */}
@@ -33,7 +32,7 @@ export default function PersonalizaBizcochoPage() {
       </header>
 
       <main>
-        <CakeBuilder />
+        <ComboBuilder />
       </main>
 
       <footer className="mt-12 border-t border-border py-6 text-center text-xs text-muted-foreground">
