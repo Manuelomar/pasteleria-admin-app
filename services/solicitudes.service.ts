@@ -35,6 +35,16 @@ class SolicitudesService {
     }) as Promise<Solicitud>
   }
 
+  async updateConfiguracion(id: string, configuracion: any) {
+    return await fetchAPI(`/solicitudes/${id}/configuracion`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ configuracion }),
+    }) as Promise<Solicitud>
+  }
+
   async delete(id: string) {
     return await fetchAPI(`/solicitudes/${id}`, {
       method: 'DELETE',

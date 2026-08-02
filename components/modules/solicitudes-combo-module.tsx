@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Swal from 'sweetalert2'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,6 +33,7 @@ export function SolicitudesComboModule() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null)
+  const router = useRouter()
 
   const fetchSolicitudes = async () => {
     try {
@@ -76,6 +79,85 @@ export function SolicitudesComboModule() {
     s.apellido.toLowerCase().includes(search.toLowerCase()) ||
     s.telefono.includes(search)
   )
+
+  const handleGenerarVenta = async () => {
+    if (!selectedSolicitud) return;
+
+    if (selectedSolicitud.configuracion?.ventaGenerada) {
+      const confirmTwice = await Swal.fire({
+        title: '¿Volver a vender?',
+        text: 'Ya se ha generado una venta de este combo anteriormente. ¿Estás seguro de que deseas volver a venderlo?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, vender de nuevo',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#e11d48'
+      })
+      if (!confirmTwice.isConfirmed) return;
+    }
+
+    const { value: metodoPago } = await Swal.fire({
+      title: 'Generar Venta',
+      text: 'Selecciona el método de pago',
+      input: 'select',
+      inputOptions: {
+        'efectivo': 'Efectivo',
+        'tarjeta': 'Tarjeta',
+        'transferencia': 'Transferencia'
+      },
+      inputPlaceholder: 'Selecciona un método',
+      showCancelButton: true,
+      confirmButtonText: 'Crear Venta',
+      cancelButtonText: 'Cancelar'
+    })
+
+    if (metodoPago) {
+      const items = selectedSolicitud.configuracion?.productos?.map((p: any) => ({
+        productoId: p.id,
+        nombre: p.nombre,
+        precio: p.precioUnitario,
+        cantidad: p.cantidad
+      })) || []
+
+      try {
+        await api.ventas.create({
+          clienteNombre: `${selectedSolicitud.nombre} ${selectedSolicitud.apellido}`,
+          clienteId: null,
+          items,
+          subtotal: selectedSolicitud.configuracion?.subtotal || 0,
+          descuento: selectedSolicitud.configuracion?.descuentoAplicado || 0,
+          impuesto: 0,
+          total: selectedSolicitud.precioEstimado || 0,
+          metodoPago,
+          estadoPago: 'pagado',
+          montoPagado: selectedSolicitud.precioEstimado || 0,
+          fecha: new Date().toISOString()
+        })
+        
+        // Update the solicitud configuration to mark it as sold
+        const updatedConfig = { ...selectedSolicitud.configuracion, ventaGenerada: true };
+        const updatedSolicitud = await api.solicitudes.updateConfiguracion(selectedSolicitud.id, updatedConfig);
+        setSelectedSolicitud(updatedSolicitud);
+        fetchSolicitudes();
+
+        toast.success('Venta generada exitosamente')
+        
+        const { isConfirmed } = await Swal.fire({
+          title: 'Venta Generada',
+          text: '¿Deseas ir al módulo de Ventas o seguir aquí?',
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonText: 'Ir a Ventas',
+          cancelButtonText: 'Seguir aquí'
+        })
+        if (isConfirmed) {
+           router.push('/ventas')
+        }
+      } catch (err) {
+        toast.error('Error al generar la venta')
+      }
+    }
+  }
 
   const getConfigLabel = (config: Record<string, any> | null) => {
     if (!config || !config.productos || !Array.isArray(config.productos)) return 'Sin productos'
@@ -275,6 +357,18 @@ export function SolicitudesComboModule() {
                           Cancelada
                         </Button>
                       </div>
+
+                      {selectedSolicitud.estado === 'completada' && (
+                        <div className="mt-6 border-t pt-4">
+                          <Button 
+                            className={`w-full ${selectedSolicitud.configuracion?.ventaGenerada ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'}`} 
+                            onClick={handleGenerarVenta}
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            {selectedSolicitud.configuracion?.ventaGenerada ? 'Volver a vender este combo' : 'Generar Venta'}
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
