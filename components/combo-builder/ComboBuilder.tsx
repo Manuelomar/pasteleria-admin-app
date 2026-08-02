@@ -21,7 +21,7 @@ export function ComboBuilder() {
   const [tipoFiltro, setTipoFiltro] = useState<string>('todos')
 
   useEffect(() => {
-    api.productos.getAll()
+    api.productos.getPublicAll()
       .then((res) => {
         setProductos(res.filter((p) => (p.cantidad || 0) > 0))
       })
@@ -39,11 +39,6 @@ export function ComboBuilder() {
         const newCart = { ...prev }
         delete newCart[producto.id]
         return newCart
-      }
-
-      if (producto.cantidad !== undefined && newQty > producto.cantidad) {
-        toast.error(`Solo hay ${producto.cantidad} unidades disponibles de ${producto.nombre}`)
-        return prev
       }
 
       return {

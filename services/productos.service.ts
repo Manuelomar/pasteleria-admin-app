@@ -38,6 +38,7 @@ export const productosService = {
       data: (res.data || []).map(mapProductoToFrontend)
     }));
   },
+  getPublicAll: (): Promise<Producto[]> => fetchPublicAPI('/productos/public/all').then((list: any[]) => list.map(mapProductoToFrontend)),
   getById: (id: string): Promise<Producto> => fetchAPI(`/productos/${id}`).then(mapProductoToFrontend),
   getUniqueNames: (): Promise<Partial<Producto>[]> => fetchAPI('/productos/unique'),
   create: (data: Partial<Producto>): Promise<Producto> => fetchAPI('/productos', { method: 'POST', body: JSON.stringify(data) }).then(mapProductoToFrontend),
