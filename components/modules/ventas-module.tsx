@@ -335,18 +335,11 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
-      const payloadItems = items.map(i => {
-        let finalPrice = i.precio;
-        if (metodoPago === "uberEats" && total > 0 && subtotal > 0) {
-           const ratio = total / subtotal;
-           finalPrice = i.precio * ratio;
-        }
-        return { ...i, precio: finalPrice };
-      })
+      const payloadItems = items.map(i => ({ ...i }))
       
-      const finalSubtotal = metodoPago === "uberEats" ? total : subtotal
-      const finalDescuento = metodoPago === "uberEats" ? 0 : descTotal
+      const finalSubtotal = subtotal
       const finalImp = metodoPago === "uberEats" ? 0 : imp
+      const finalDescuento = metodoPago === "uberEats" ? Math.max(0, subtotal - total) : descTotal
       const finalPagado = estadoPago === "pagado" ? total : (Number(montoPagado) || 0)
       const finalBalance = Math.max(0, total - finalPagado)
 
@@ -499,18 +492,11 @@ export function VentasModule() {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = i.precio
                 
-                if (metodoPago === "uberEats" && total > 0 && subtotal > 0) {
-                  const ratio = total / subtotal;
-                  displayPrice = i.precio * ratio;
-                }
-                
                 return (
                   <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
                     <div className="flex flex-1 flex-col">
                       <span className="text-sm font-medium text-foreground">{i.nombre}</span>
-                      <span className="text-xs text-muted-foreground">
-                         {metodoPago === "uberEats" ? `${currency(displayPrice)} c/u (Ajustado)` : `${currency(displayPrice)} c/u`}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{currency(displayPrice)} c/u</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
