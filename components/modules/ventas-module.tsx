@@ -49,6 +49,7 @@ export function VentasModule() {
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pagado")
   const [montoPagado, setMontoPagado] = useState("")
   const [efectivoRecibido, setEfectivoRecibido] = useState("")
+  const [uberEatsTotal, setUberEatsTotal] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [lastVentaId, setLastVentaId] = useState<string | null>(null)
 
@@ -247,7 +248,9 @@ export function VentasModule() {
   const descPorcentajeMonto = (subtotal * descPorcentaje) / 100
   const descTotal = descMonto + descPorcentajeMonto
   const imp = aplicarItbis ? (subtotal - descTotal) * 0.18 : 0
-  const total = Math.max(0, subtotal - descTotal + imp)
+  const baseTotal = Math.max(0, subtotal - descTotal + imp)
+  
+  const total = metodoPago === "uberEats" ? (Number(uberEatsTotal) || 0) : baseTotal
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
   const devuelta = metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
@@ -266,6 +269,7 @@ export function VentasModule() {
     setEstadoPago("pagado")
     setMetodoPago("efectivo")
     setClienteId("general")
+    setUberEatsTotal("")
   }
 
   const imprimirFactura = async (id: string) => {
@@ -331,19 +335,32 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
-      const payloadItems = items.map(i => ({ ...i }))
+      const payloadItems = items.map(i => {
+        let finalPrice = i.precio;
+        if (metodoPago === "uberEats" && total > 0 && subtotal > 0) {
+           const ratio = total / subtotal;
+           finalPrice = i.precio * ratio;
+        }
+        return { ...i, precio: finalPrice };
+      })
+      
+      const finalSubtotal = metodoPago === "uberEats" ? total : subtotal
+      const finalDescuento = metodoPago === "uberEats" ? 0 : descTotal
+      const finalImp = metodoPago === "uberEats" ? 0 : imp
+      const finalPagado = estadoPago === "pagado" ? total : (Number(montoPagado) || 0)
+      const finalBalance = Math.max(0, total - finalPagado)
 
       const res = await api.ventas.create({
         clienteId: esCredito ? clienteId : undefined,
         cajeroId: "d69d45cc-d820-4e55-9a8c-a1112b32f22b", // Todo: real session user
-        subtotal,
-        descuento: descTotal,
-        impuesto: imp,
+        subtotal: finalSubtotal,
+        descuento: finalDescuento,
+        impuesto: finalImp,
         total,
         metodoPago,
         estadoPago,
-        montoPagado: pagado,
-        balance,
+        montoPagado: finalPagado,
+        balance: finalBalance,
         items: payloadItems
       })
       
@@ -481,9 +498,6 @@ export function VentasModule() {
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = i.precio
-                if (prod && metodoPago === "uberEats" && prod.precioUber !== undefined) {
-                  displayPrice = prod.precioUber
-                }
                 return (
                   <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
                     <div className="flex flex-1 flex-col">
@@ -512,51 +526,7 @@ export function VentasModule() {
           )}
 
           <Separator />
-
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium">{currency(subtotal)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Descuento ($)</span>
-              <Input
-                type="number"
-                value={descuento}
-                onChange={(e) => setDescuento(e.target.value)}
-                className="h-8 w-24 text-right"
-                min="0"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Descuento (%)</span>
-              <Input
-                type="number"
-                value={descuentoPorcentaje}
-                onChange={(e) => setDescuentoPorcentaje(e.target.value)}
-                className="h-8 w-24 text-right"
-                min="0"
-                max="100"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Aplicar ITBIS (18%)</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{currency(imp)}</span>
-                <Switch
-                  checked={aplicarItbis}
-                  onCheckedChange={setAplicarItbis}
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between border-t border-border pt-2">
-              <span className="font-heading text-base font-semibold">Total</span>
-              <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
-            </div>
-          </div>
-
-          <Separator />
-
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field>
               <FieldLabel>Método de pago</FieldLabel>
@@ -586,6 +556,68 @@ export function VentasModule() {
               </Select>
             </Field>
           </div>
+
+          <Separator />
+
+          {metodoPago === "uberEats" ? (
+             <div className="flex flex-col gap-2 text-sm">
+                <Field>
+                  <FieldLabel>Total Venta (Uber Eats)</FieldLabel>
+                  <Input 
+                     type="number"
+                     value={uberEatsTotal}
+                     onChange={e => setUberEatsTotal(e.target.value)}
+                     placeholder="Ingrese total cobrado en la plataforma..."
+                  />
+                </Field>
+                <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
+                  <span className="font-heading text-base font-semibold">Total Final</span>
+                  <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
+                </div>
+             </div>
+          ) : (
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">{currency(subtotal)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Descuento ($)</span>
+                <Input
+                  type="number"
+                  value={descuento}
+                  onChange={(e) => setDescuento(e.target.value)}
+                  className="h-8 w-24 text-right"
+                  min="0"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Descuento (%)</span>
+                <Input
+                  type="number"
+                  value={descuentoPorcentaje}
+                  onChange={(e) => setDescuentoPorcentaje(e.target.value)}
+                  className="h-8 w-24 text-right"
+                  min="0"
+                  max="100"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Aplicar ITBIS (18%)</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{currency(imp)}</span>
+                  <Switch
+                    checked={aplicarItbis}
+                    onCheckedChange={setAplicarItbis}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-2">
+                <span className="font-heading text-base font-semibold">Total</span>
+                <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
+              </div>
+            </div>
+          )}
 
           {estadoPago === "pagado" && metodoPago === "efectivo" ? (
             <div className="flex flex-col gap-3">
