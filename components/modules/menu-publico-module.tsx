@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search } from "lucide-react"
+import { Search, Cake, Package } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   ToggleGroup,
@@ -21,6 +23,8 @@ export function MenuPublicoModule() {
   const [tipo, setTipo] = useState<"productos" | Tipo>("productos")
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
+  const [isNavigating, setIsNavigating] = useState(false)
+  const router = useRouter()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(12)
@@ -59,12 +63,58 @@ export function MenuPublicoModule() {
     setCurrentPage(1)
   }
 
+  const handleNavigate = (path: string) => {
+    setIsNavigating(true)
+    router.push(path)
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <>
+      {isNavigating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+          <Loader />
+        </div>
+      )}
+      <div className="flex min-h-screen flex-col bg-slate-50">
       {/* Header Público */}
-      <header className="sticky top-0 z-10 flex flex-col items-center justify-center border-b bg-white p-4 shadow-sm">
+      <header className="sticky top-0 z-10 flex flex-col items-center justify-center border-b bg-white p-4 shadow-sm relative">
         <h1 className="font-heading text-3xl font-bold text-primary">Bizcochao</h1>
         <p className="text-sm text-muted-foreground">Catálogo de Productos</p>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => handleNavigate('/personaliza-combo')}
+            className="gap-2 hidden sm:flex text-primary border-primary/20 hover:bg-primary/5"
+          >
+            <Package className="h-4 w-4" />
+            <span>Personaliza tu Combo</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => handleNavigate('/personaliza-combo')}
+            className="sm:hidden text-primary border-primary/20 hover:bg-primary/5"
+          >
+            <Package className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => handleNavigate('/personaliza-bizcocho')}
+            className="gap-2 hidden sm:flex text-primary border-primary/20 hover:bg-primary/5"
+          >
+            <Cake className="h-4 w-4" />
+            <span>Personaliza tu Bizcocho</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => handleNavigate('/personaliza-bizcocho')}
+            className="sm:hidden text-primary border-primary/20 hover:bg-primary/5"
+          >
+            <Cake className="h-4 w-4" />
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 p-4 md:p-8 lg:px-16">
@@ -158,5 +208,6 @@ export function MenuPublicoModule() {
         </div>
       </main>
     </div>
+    </>
   )
 }
