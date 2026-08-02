@@ -498,11 +498,19 @@ export function VentasModule() {
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = i.precio
+                
+                if (metodoPago === "uberEats" && total > 0 && subtotal > 0) {
+                  const ratio = total / subtotal;
+                  displayPrice = i.precio * ratio;
+                }
+                
                 return (
                   <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
                     <div className="flex flex-1 flex-col">
                       <span className="text-sm font-medium text-foreground">{i.nombre}</span>
-                      <span className="text-xs text-muted-foreground">{currency(displayPrice)} c/u</span>
+                      <span className="text-xs text-muted-foreground">
+                         {metodoPago === "uberEats" ? `${currency(displayPrice)} c/u (Ajustado)` : `${currency(displayPrice)} c/u`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="icon" className="size-7" onClick={() => updateQty(i.productoId, -1)}>
