@@ -154,7 +154,7 @@ export function IncomeDistribution() {
                 <div className="flex-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Periodo de Ingresos</label>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={filterType} onValueChange={setFilterType}>
+                    <Select value={filterType} onValueChange={(val) => val && setFilterType(val)}>
                       <SelectTrigger className="w-full sm:w-[160px] bg-background">
                         <SelectValue placeholder="Periodo">
                           {{
