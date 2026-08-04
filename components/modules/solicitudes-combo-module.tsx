@@ -52,7 +52,19 @@ export function SolicitudesComboModule() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('¿Estás seguro de eliminar esta solicitud de combo?')) return
+    
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¿Estás seguro de eliminar esta solicitud de combo?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e11d48'
+    })
+
+    if (!result.isConfirmed) return
+
     try {
       await api.solicitudes.delete(id)
       setSolicitudes(solicitudes.filter(s => s.id !== id))
