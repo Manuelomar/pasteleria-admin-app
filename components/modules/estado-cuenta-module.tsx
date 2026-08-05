@@ -220,6 +220,7 @@ export function EstadoCuentaModule() {
                             <TableHead className="hidden md:table-cell">Factura</TableHead>
                             <TableHead>Hora</TableHead>
                             <TableHead>Cliente</TableHead>
+                            <TableHead>Productos</TableHead>
                             <TableHead className="hidden sm:table-cell">Método de Pago</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                           </TableRow>
@@ -232,6 +233,9 @@ export function EstadoCuentaModule() {
                                 <TableCell className="hidden md:table-cell font-mono text-sm">{v.factura}</TableCell>
                                 <TableCell className="text-sm">{hora}</TableCell>
                                 <TableCell className="text-sm max-w-[120px] truncate">{v.clienteNombre || "Cliente de Paso"}</TableCell>
+                                <TableCell className="text-sm max-w-[200px] truncate" title={v.items?.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}>
+                                  {v.items?.map(i => `${i.cantidad}x ${i.nombre}`).join(', ') || 'N/A'}
+                                </TableCell>
                                 <TableCell className="hidden sm:table-cell text-sm capitalize">{v.metodoPago}</TableCell>
                                 <TableCell className="text-right font-semibold">{currency(v.total)}</TableCell>
                               </TableRow>
