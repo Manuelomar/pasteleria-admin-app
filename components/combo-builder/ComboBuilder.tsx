@@ -23,7 +23,7 @@ export function ComboBuilder() {
   useEffect(() => {
     api.productos.getPublicAll()
       .then((res) => {
-        setProductos(res.filter((p) => (p.cantidad || 0) > 0))
+        setProductos(res)
       })
       .catch(() => toast.error('Error cargando los productos'))
       .finally(() => setIsLoading(false))
