@@ -159,7 +159,7 @@ export function MenuPublicoModule() {
                 const stockAgotado = !p.disponible;
 
                 return (
-                  <Card key={p.id} className="flex flex-col overflow-hidden transition-all hover:shadow-md border-border/50 bg-white h-full">
+                  <Card key={p.id} className="flex flex-col overflow-hidden transition-all hover:shadow-md border-border/50 h-full">
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted shrink-0">
                       <img
                         src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) : "/placeholder.svg"}

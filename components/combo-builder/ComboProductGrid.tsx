@@ -28,7 +28,7 @@ export function ComboProductGrid({ productos, cart, onUpdateQuantity }: ComboPro
         const quantity = cartItem ? cartItem.cantidad : 0
 
         return (
-          <Card key={p.id} className="flex h-full flex-col overflow-hidden border-border/50 bg-white shadow-sm transition-all hover:shadow-md">
+          <Card key={p.id} className="flex h-full flex-col overflow-hidden border-border/50 shadow-sm transition-all hover:shadow-md">
             <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
               <img
                 src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') 
