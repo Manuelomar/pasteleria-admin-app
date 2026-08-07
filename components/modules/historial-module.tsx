@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, History, CalendarIcon, TrendingUp } from "lucide-react"
+import { Search, History, CalendarIcon, TrendingUp, Package, ShoppingCart } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -20,12 +21,41 @@ import { AppPagination } from "@/components/ui/app-pagination"
 import { currency, type Producto } from "@/types"
 import { api } from "@/services"
 
+type Vista = "producto" | "venta"
+
+const METODO_LABEL: Record<string, string> = {
+  efectivo: "Efectivo",
+  tarjeta: "Tarjeta",
+  transferencia: "Transferencia",
+  uberEats: "UberEats",
+}
+
+const ESTADO_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pagado:    { label: "Pagado",    variant: "default"     },
+  parcial:   { label: "Parcial",   variant: "secondary"   },
+  pendiente: { label: "Pendiente", variant: "destructive" },
+}
+
+function formatFecha(fecha: string | Date) {
+  return new Date(fecha).toLocaleString("es-DO", {
+    timeZone: "America/Santo_Domingo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).replace(",", "")
+}
+
 export function HistorialModule() {
   const [desde, setDesde] = useState<string>("")
   const [hasta, setHasta] = useState<string>("")
   const [productoId, setProductoId] = useState<string>("all")
   const [estadoPago, setEstadoPago] = useState<string>("pagadas")
-  
+  const [ventaSearch, setVentaSearch] = useState<string>("")
+  const [vista, setVista] = useState<Vista>("producto")
+
   const [productos, setProductos] = useState<Producto[]>([])
   const [historial, setHistorial] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -48,26 +78,59 @@ export function HistorialModule() {
       .catch((err) => console.error("Error al cargar productos", err))
   }, [])
 
-  const loadHistorial = (desdeVal?: string, hastaVal?: string, prodId?: string, page: number = 1, estadoPagoVal: string = "pagadas", newPageSize?: number) => {
+  const loadHistorial = (
+    desdeVal?: string,
+    hastaVal?: string,
+    prodId?: string,
+    page: number = 1,
+    estadoPagoVal: string = "pagadas",
+    newPageSize?: number,
+    ventaSearchVal?: string,
+    vistaVal?: Vista,
+  ) => {
     setIsLoadingFiltro(true)
-    api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, newPageSize ?? pageSize, estadoPagoVal)
-      .then((res: any) => {
-        setHistorial(res.data)
-        setTotalItems(res.total)
-        setTotalPages(res.totalPages)
-        setCurrentPage(res.page)
-        setTotalCantidad(res.overallCantidad)
-        setTotalGenerado(res.overallTotal)
-        setTotalGanancia(res.overallGanancia || 0)
-      })
-      .catch((err) => {
-        console.error("Error al cargar el historial", err)
-        toast.error("Hubo un error cargando el historial de productos")
-      })
-      .finally(() => {
-        setIsLoading(false)
-        setIsLoadingFiltro(false)
-      })
+    const ps = newPageSize ?? pageSize
+    const vs = vistaVal ?? vista
+
+    if (vs === "venta") {
+      api.ventas.getHistorialVentas(desdeVal, hastaVal, estadoPagoVal, ventaSearchVal ?? ventaSearch, page, ps)
+        .then((res: any) => {
+          setHistorial(res.data)
+          setTotalItems(res.total)
+          setTotalPages(res.totalPages)
+          setCurrentPage(res.page)
+          setTotalCantidad(0)
+          setTotalGenerado(res.overallTotal || 0)
+          setTotalGanancia(0)
+        })
+        .catch((err) => {
+          console.error("Error al cargar el historial de ventas", err)
+          toast.error("Hubo un error cargando el historial de ventas")
+        })
+        .finally(() => {
+          setIsLoading(false)
+          setIsLoadingFiltro(false)
+        })
+    } else {
+      api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, ps, estadoPagoVal, ventaSearchVal ?? ventaSearch)
+        .then((res: any) => {
+          setHistorial(res.data)
+          setTotalItems(res.total)
+          setTotalPages(res.totalPages)
+          setCurrentPage(res.page)
+          setTotalCantidad(res.overallCantidad)
+          setTotalGenerado(res.overallTotal)
+          setTotalGanancia(res.overallGanancia || 0)
+        })
+        .catch((err) => {
+          console.error("Error al cargar el historial", err)
+          toast.error("Hubo un error cargando el historial de productos")
+        })
+        .finally(() => {
+          setIsLoading(false)
+          setIsLoadingFiltro(false)
+        })
+    }
   }
 
   // Carga inicial
@@ -78,7 +141,7 @@ export function HistorialModule() {
 
   const handleFiltrar = () => {
     setCurrentPage(1)
-    loadHistorial(desde, hasta, productoId, 1, estadoPago)
+    loadHistorial(desde, hasta, productoId, 1, estadoPago, undefined, ventaSearch)
   }
 
   const handleLimpiar = () => {
@@ -86,14 +149,22 @@ export function HistorialModule() {
     setHasta("")
     setProductoId("all")
     setEstadoPago("pagadas")
+    setVentaSearch("")
     setCurrentPage(1)
-    loadHistorial("", "", "all", 1, "pagadas")
+    loadHistorial("", "", "all", 1, "pagadas", undefined, "")
+  }
+
+  const handleVistaChange = (v: Vista) => {
+    setVista(v)
+    setCurrentPage(1)
+    setHistorial([])
+    loadHistorial(desde, hasta, productoId, 1, estadoPago, undefined, ventaSearch, v)
   }
 
   // Load when page changes
   useEffect(() => {
     if (!isLoading) {
-      loadHistorial(desde, hasta, productoId, currentPage, estadoPago)
+      loadHistorial(desde, hasta, productoId, currentPage, estadoPago, undefined, ventaSearch)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage])
@@ -103,7 +174,7 @@ export function HistorialModule() {
       <LoadingOverlay active={isLoading} />
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
-          Consulta el historial de ventas por producto, filtrando por rango de fechas y producto específico.
+          Consulta el historial de ventas por producto o por venta, filtrando por rango de fechas, producto específico, número de factura o cliente.
         </p>
       </div>
 
@@ -132,24 +203,47 @@ export function HistorialModule() {
                 className="w-full"
               />
             </div>
+
+            {/* Filtro por producto — solo visible en modo producto */}
+            {vista === "producto" && (
+              <div className="flex flex-col gap-1.5 flex-[1.5]">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Producto
+                </label>
+                <Select value={productoId} onValueChange={(val) => setProductoId(val || "all")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los productos">
+                      {productoId === "all" ? "Todos los productos" : productos.find(p => p.id === productoId)?.nombre || "Todos los productos"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los productos</SelectItem>
+                    {productos.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Búsqueda por factura / cliente — siempre visible */}
             <div className="flex flex-col gap-1.5 flex-[1.5]">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Producto
+                Venta / Cliente
               </label>
-              <Select value={productoId} onValueChange={(val) => setProductoId(val || "all")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos los productos">
-                    {productoId === "all" ? "Todos los productos" : productos.find(p => p.id === productoId)?.nombre || "Todos los productos"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los productos</SelectItem>
-                  {productos.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Nº factura o cliente..."
+                  value={ventaSearch}
+                  onChange={(e) => setVentaSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleFiltrar() }}
+                  className="pl-9 w-full"
+                />
+              </div>
             </div>
+
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Estado Pago
@@ -177,18 +271,57 @@ export function HistorialModule() {
         </CardContent>
       </Card>
 
+      {/* Toggle de vista */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Vista:</span>
+        <Button
+          variant={vista === "producto" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleVistaChange("producto")}
+          className="gap-1.5"
+        >
+          <Package className="size-4" />
+          Por Producto
+        </Button>
+        <Button
+          variant={vista === "venta" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleVistaChange("venta")}
+          className="gap-1.5"
+        >
+          <ShoppingCart className="size-4" />
+          Por Venta
+        </Button>
+      </div>
+
+      {/* Tarjetas de resumen */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-sm">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <History className="size-6" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Productos Vendidos</span>
-              <span className="font-heading text-2xl font-bold text-primary">{totalCantidad}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {vista === "producto" && (
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <History className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Productos Vendidos</span>
+                <span className="font-heading text-2xl font-bold text-primary">{totalCantidad}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {vista === "venta" && (
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingCart className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ventas Encontradas</span>
+                <span className="font-heading text-2xl font-bold text-primary">{totalItems}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card className="border-border bg-card/50 shadow-sm">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="flex size-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -200,69 +333,114 @@ export function HistorialModule() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border bg-card/50 shadow-sm">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="size-6" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ganancia</span>
-              <span className="font-heading text-2xl font-bold text-foreground">{currency(totalGanancia)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {vista === "producto" && (
+          <Card className="border-border bg-card/50 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <TrendingUp className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ganancia</span>
+                <span className="font-heading text-2xl font-bold text-foreground">{currency(totalGanancia)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card className="overflow-hidden p-0 relative min-h-[300px]">
         <LoadingOverlay active={isLoadingFiltro && !isLoading} />
         <div className="overflow-x-auto w-full">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="hidden md:table-cell">Factura</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead className="text-center">Cantidad</TableHead>
-                <TableHead className="text-right hidden md:table-cell">Precio</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {historial.length > 0 ? (
-                historial.map((item, index) => (
-                  <TableRow key={item.id || index}>
-                    <TableCell className="whitespace-nowrap">
-                      {item.fecha ? new Date(item.fecha).toLocaleString("es-DO", {
-                        timeZone: "America/Santo_Domingo",
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false
-                      }).replace(",", "") : "-"}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell font-medium">{item.factura}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{item.clienteNombre}</TableCell>
-                    <TableCell className="font-semibold text-primary">{item.producto}</TableCell>
-                    <TableCell className="text-center font-bold">{item.cantidad}</TableCell>
-                    <TableCell className="text-right hidden md:table-cell">{currency(item.precio)}</TableCell>
-                    <TableCell className="text-right font-bold">{currency(item.total)}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+
+          {/* TABLA: Por Producto */}
+          {vista === "producto" && (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="md:hidden h-32 text-center text-muted-foreground">
-                    No se encontraron registros.
-                  </TableCell>
-                  <TableCell colSpan={7} className="hidden md:table-cell h-32 text-center text-muted-foreground">
-                    No se encontraron registros de ventas con los filtros seleccionados.
-                  </TableCell>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="hidden md:table-cell">Factura</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Producto</TableHead>
+                  <TableHead className="text-center">Cantidad</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Precio</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {historial.length > 0 ? (
+                  historial.map((item, index) => (
+                    <TableRow key={item.id || index}>
+                      <TableCell className="whitespace-nowrap">{item.fecha ? formatFecha(item.fecha) : "-"}</TableCell>
+                      <TableCell className="hidden md:table-cell font-medium">{item.factura}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{item.clienteNombre}</TableCell>
+                      <TableCell className="font-semibold text-primary">{item.producto}</TableCell>
+                      <TableCell className="text-center font-bold">{item.cantidad}</TableCell>
+                      <TableCell className="text-right hidden md:table-cell">{currency(item.precio)}</TableCell>
+                      <TableCell className="text-right font-bold">{currency(item.total)}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                      No se encontraron registros de ventas con los filtros seleccionados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          {/* TABLA: Por Venta */}
+          {vista === "venta" && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Factura</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Productos</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Subtotal</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">ITBIS</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="hidden md:table-cell">Método</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historial.length > 0 ? (
+                  historial.map((v, index) => {
+                    const estadoInfo = ESTADO_BADGE[v.estadoPago] ?? { label: v.estadoPago, variant: "outline" as const }
+                    return (
+                      <TableRow key={v.id || index}>
+                        <TableCell className="whitespace-nowrap">{v.fecha ? formatFecha(v.fecha) : "-"}</TableCell>
+                        <TableCell className="font-medium">{v.factura}</TableCell>
+                        <TableCell className="max-w-[160px] truncate">{v.clienteNombre}</TableCell>
+                        <TableCell className="text-center hidden sm:table-cell">
+                          <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold px-2 py-0.5">
+                            {v.totalItems}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right hidden md:table-cell">{currency(v.subtotal)}</TableCell>
+                        <TableCell className="text-right hidden lg:table-cell">{currency(v.impuesto)}</TableCell>
+                        <TableCell className="text-right font-bold">{currency(v.total)}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{METODO_LABEL[v.metodoPago] ?? v.metodoPago}</TableCell>
+                        <TableCell>
+                          <Badge variant={estadoInfo.variant}>{estadoInfo.label}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                      No se encontraron ventas con los filtros seleccionados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+
         </div>
         
         {/* Paginación */}
@@ -276,7 +454,7 @@ export function HistorialModule() {
               onPageChange={setCurrentPage}
               onPageSizeChange={(size) => {
                 setPageSize(size)
-                loadHistorial(desde, hasta, productoId, 1, estadoPago, size)
+                loadHistorial(desde, hasta, productoId, 1, estadoPago, size, ventaSearch)
               }}
               itemName="registros"
             />
