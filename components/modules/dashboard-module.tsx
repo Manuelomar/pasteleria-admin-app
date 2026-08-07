@@ -42,7 +42,7 @@ const MetricsRow = ({ title, data }: { title?: string, data: any }) => {
   return (
   <div className="mb-8">
     {title && <h2 className="mb-4 text-lg font-heading font-semibold text-foreground">{title}</h2>}
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <Card className="border-border bg-card/50 shadow-sm">
         <CardContent className="flex items-center gap-4 p-5">
           <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -53,6 +53,18 @@ const MetricsRow = ({ title, data }: { title?: string, data: any }) => {
             <div className="flex items-end gap-2">
               <span className="font-heading text-lg font-bold text-foreground">{currency(d.ventas)}</span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card/50 shadow-sm">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+            <Package className="size-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-muted-foreground">Gastos Inventario</span>
+            <span className="font-heading text-lg font-bold text-foreground">{currency(d.gastos || 0)}</span>
           </div>
         </CardContent>
       </Card>

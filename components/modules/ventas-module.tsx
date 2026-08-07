@@ -136,14 +136,12 @@ export function VentasModule() {
 
       if (amount) {
         const added = parseInt(amount);
-        const newCantidad = (prod.cantidad ?? 0) + added;
-        const newDisponible = newCantidad > 0 ? true : prod.disponible;
         try {
           setIsLoadingData(true);
-          await api.productos.update(prod.id, { cantidad: newCantidad, disponible: newDisponible });
-          toast.success(`Stock de ${prod.nombre} actualizado a ${newCantidad}`);
+          const result = await api.productos.addStock(prod.id, added);
+          toast.success(`Stock de ${prod.nombre} actualizado a ${result.cantidad}`);
           
-          setFetchedProductos(prev => prev.map(p => p.id === prod.id ? { ...p, cantidad: newCantidad, disponible: newDisponible } : p));
+          setFetchedProductos(prev => prev.map(p => p.id === prod.id ? { ...p, cantidad: result.cantidad, disponible: result.disponible } : p));
           loadProductos();
           return true; // Success
         } catch (err) {

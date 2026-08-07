@@ -185,11 +185,9 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
     if (amount) {
       const added = parseInt(amount);
-      const newCantidad = (p.cantidad ?? 0) + added;
-      const newDisponible = newCantidad > 0 ? true : p.disponible;
       try {
-        await api.productos.update(p.id, { cantidad: newCantidad, disponible: newDisponible });
-        toast.success(`Stock de ${p.nombre} actualizado a ${newCantidad}`);
+        await api.productos.addStock(p.id, added);
+        toast.success(`Se añadieron ${added} unidades a ${p.nombre}`);
         fetchProductos();
       } catch (err) {
         toast.error("Error al actualizar el stock");

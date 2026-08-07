@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Plus, Package, PackageMinus, Trash2 } from "lucide-react"
+import { Search, Plus, Package, PackageMinus, Trash2, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -73,11 +73,9 @@ export function InventarioModule() {
 
     if (amount) {
       const added = parseInt(amount);
-      const newCantidad = (p.cantidad ?? 0) + added;
-      const newDisponible = newCantidad > 0 ? true : p.disponible;
       try {
-        await api.productos.update(p.id, { cantidad: newCantidad, disponible: newDisponible });
-        toast.success(`Stock de ${p.nombre} actualizado a ${newCantidad}`);
+        const result = await api.productos.addStock(p.id, added);
+        toast.success(`Stock de ${p.nombre} actualizado a ${result.cantidad}`);
         fetchMateriales();
       } catch (err) {
         toast.error("Error al actualizar el stock");
@@ -117,6 +115,40 @@ export function InventarioModule() {
         fetchMateriales();
       } catch (err) {
         toast.error("Error al descartar el stock");
+      }
+    }
+  }
+
+  const handleRevertStock = async (p: Producto) => {
+    const { value: amount } = await Swal.fire({
+      title: `Corregir Error de Stock`,
+      text: `Material: ${p.nombre}. ¿Cuántas unidades añadiste por error? (Se anulará el gasto correspondiente).`,
+      input: 'number',
+      inputLabel: 'Unidades a revertir:',
+      inputPlaceholder: 'Ej. 10',
+      showCancelButton: true,
+      confirmButtonText: 'Corregir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b',
+      inputValidator: (value) => {
+        if (!value || parseInt(value) <= 0) {
+          return 'Ingresa una cantidad válida mayor a 0'
+        }
+        if (p.cantidad !== undefined && parseInt(value) > p.cantidad) {
+          return 'No puedes revertir más del stock actual'
+        }
+        return null;
+      }
+    });
+
+    if (amount) {
+      const reverted = parseInt(amount);
+      try {
+        await api.productos.revertStock(p.id, reverted);
+        toast.success(`Se corrigieron ${reverted} unidades de ${p.nombre} y se ajustó el gasto.`);
+        fetchMateriales();
+      } catch (err) {
+        toast.error("Error al revertir el stock");
       }
     }
   }
@@ -218,6 +250,9 @@ export function InventarioModule() {
                   </Button>
                   <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleAddStock(p)}>
                     Añadir stock
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-none px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200" onClick={() => handleRevertStock(p)} title="Corregir error (revertir ingreso)" disabled={(p.cantidad ?? 0) <= 0}>
+                    <Undo2 size={16} />
                   </Button>
                   <Button variant="outline" size="sm" className="flex-none px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => handleDiscardStock(p)} title="Descartar stock" disabled={(p.cantidad ?? 0) <= 0}>
                     <PackageMinus size={16} />
