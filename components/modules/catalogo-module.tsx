@@ -35,7 +35,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [items, setItems] = useState<Producto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(8)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -121,7 +121,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
   useEffect(() => {
     fetchProductos()
-  }, [currentPage, search, tipo, disp, selectedProviderId, isAdmin, providerCategory, currentUser])
+  }, [currentPage, pageSize, search, tipo, disp, selectedProviderId, isAdmin, providerCategory, currentUser])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -571,7 +571,8 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         pageSize={pageSize}
         totalItems={totalItems}
         totalPages={totalPages}
-        onPageChange={setCurrentPage}
+        onPageChange={(page) => { setCurrentPage(page) }}
+        onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
         itemName="productos"
       />
           </>

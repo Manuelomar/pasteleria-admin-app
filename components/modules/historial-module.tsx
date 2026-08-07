@@ -37,7 +37,7 @@ export function HistorialModule() {
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -48,9 +48,9 @@ export function HistorialModule() {
       .catch((err) => console.error("Error al cargar productos", err))
   }, [])
 
-  const loadHistorial = (desdeVal?: string, hastaVal?: string, prodId?: string, page: number = 1, estadoPagoVal: string = "pagadas") => {
+  const loadHistorial = (desdeVal?: string, hastaVal?: string, prodId?: string, page: number = 1, estadoPagoVal: string = "pagadas", newPageSize?: number) => {
     setIsLoadingFiltro(true)
-    api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, pageSize, estadoPagoVal)
+    api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, newPageSize ?? pageSize, estadoPagoVal)
       .then((res: any) => {
         setHistorial(res.data)
         setTotalItems(res.total)
@@ -274,6 +274,10 @@ export function HistorialModule() {
               totalItems={totalItems}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                loadHistorial(desde, hasta, productoId, 1, estadoPago, size)
+              }}
               itemName="registros"
             />
           </div>

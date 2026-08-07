@@ -49,7 +49,7 @@ export function UsuariosModule() {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -90,7 +90,7 @@ export function UsuariosModule() {
 
   useEffect(() => {
     fetchUsuarios()
-  }, [currentPage, search, rol, estado])
+  }, [currentPage, pageSize, search, rol, estado])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -326,7 +326,8 @@ export function UsuariosModule() {
           pageSize={pageSize}
           totalItems={totalItems}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => { setCurrentPage(page) }}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
           itemName="usuarios"
         />
       )}

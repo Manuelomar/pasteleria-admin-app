@@ -43,9 +43,17 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
         setCurrentUser(user)
         setIsAuthenticated(true)
         
-        // Si es proveedor y está intentando entrar al dashboard, redirigir a entregas
-        if (user.rol === "proveedor" && (pathname === "/" || pathname === "")) {
-          router.push("/entregas")
+        // Redirigir al módulo inicial según el rol
+        if (user.rol === "proveedor") {
+          // Proveedor → catálogo
+          if (pathname === "/" || pathname === "" || pathname === "/login") {
+            router.push("/catalogo")
+          }
+        } else {
+          // Admin / usuario → dashboard
+          if (pathname !== "/" && !Object.keys(titles).includes(pathname.split('/')[1])) {
+            router.push("/")
+          }
         }
       } catch (err) {
         localStorage.removeItem("token")

@@ -22,7 +22,7 @@ export function InventarioModule() {
   const [search, setSearch] = useState("")
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(12)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -50,7 +50,7 @@ export function InventarioModule() {
   useEffect(() => {
     api.auth.getMe().then(setCurrentUser).catch(console.error)
     fetchMateriales()
-  }, [currentPage, search])
+  }, [currentPage, pageSize, search])
 
   const handleAddStock = async (p: Producto) => {
     const { value: amount } = await Swal.fire({
@@ -232,15 +232,14 @@ export function InventarioModule() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <AppPagination
+      <AppPagination
           currentPage={currentPage}
           pageSize={pageSize}
           totalItems={totalItems}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => { setCurrentPage(page) }}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
         />
-      )}
 
       <ProductoDialog
         open={dialogOpen}

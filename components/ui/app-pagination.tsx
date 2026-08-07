@@ -1,6 +1,15 @@
 import React from 'react';
 import { Button } from './button';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
+
+const DEFAULT_PAGE_SIZE_OPTIONS = [20, 40, 60, 100];
 
 export interface AppPaginationProps {
   currentPage: number;
@@ -9,6 +18,8 @@ export interface AppPaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   itemName?: string;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
 }
 
 export function AppPagination({
@@ -17,7 +28,9 @@ export function AppPagination({
   totalItems,
   totalPages: rawTotalPages,
   onPageChange,
-  itemName = "registros"
+  itemName = "registros",
+  onPageSizeChange,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
 }: AppPaginationProps) {
   const totalPages = Math.max(1, rawTotalPages);
 
@@ -48,12 +61,40 @@ export function AppPagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border pt-4 gap-4 mt-2">
-      <div className="text-sm text-muted-foreground order-2 sm:order-1">
-        Mostrando <span className="font-semibold text-foreground">{startItem}</span> a{" "}
-        <span className="font-semibold text-foreground">{endItem}</span>{" "}
-        de <span className="font-semibold text-foreground">{totalItems}</span> {itemName}
+      {/* Info + selector de registros por página */}
+      <div className="flex items-center gap-3 order-2 sm:order-1">
+        <span className="text-sm text-muted-foreground">
+          Mostrando <span className="font-semibold text-foreground">{startItem}</span> a{" "}
+          <span className="font-semibold text-foreground">{endItem}</span>{" "}
+          de <span className="font-semibold text-foreground">{totalItems}</span> {itemName}
+        </span>
+
+        {onPageSizeChange && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">| Ver</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(val) => {
+                onPageSizeChange(Number(val));
+                onPageChange(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-20 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
+      {/* Controles de navegación */}
       <div className="flex items-center gap-1.5 order-1 sm:order-2">
         <Button
           variant="outline"
