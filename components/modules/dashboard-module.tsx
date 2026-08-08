@@ -286,10 +286,9 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {ventasPorCategoria.map((entry: any, index: number) => {
-                      const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
-                      return <Cell key={entry.categoria} fill={entry.fill || COLORS[index % COLORS.length]} />
-                    })}
+                    {ventasPorCategoria.map((entry: any) => (
+                      <Cell key={entry.categoria} fill={`var(--color-${entry.categoria})`} />
+                    ))}
                   </Pie>
                   <ChartLegend content={<ChartLegendContent nameKey="categoria" />} />
                 </PieChart>
@@ -311,19 +310,18 @@ export function DashboardModule() {
             {metodosPago.length > 0 ? (
               <ChartContainer
                 config={{ 
-                  Efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
-                  Tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
-                  Transferencia: { label: "Transferencia", color: "var(--chart-3)" } 
+                  efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
+                  tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
+                  transferencia: { label: "Transferencia", color: "var(--chart-3)" } 
                 }}
                 className="mx-auto h-[280px] w-full"
               >
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={metodosPago} dataKey="valor" nameKey="metodo" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {metodosPago.map((entry: any, index: number) => {
-                      const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
-                      return <Cell key={entry.metodo} fill={entry.fill || COLORS[index % COLORS.length]} />
-                    })}
+                    {metodosPago.map((entry: any) => (
+                      <Cell key={entry.metodo} fill={`var(--color-${entry.metodo})`} />
+                    ))}
                   </Pie>
                   <ChartLegend content={<ChartLegendContent nameKey="metodo" />} />
                 </PieChart>
