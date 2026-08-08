@@ -40,9 +40,9 @@ export function ReportesModule() {
   // Filtros Ganancias
   const [gananciasFechaInicio, setGananciasFechaInicio] = useState("")
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
-  const [gananciasProductoId, setGananciasProductoId] = useState("all")
+  const [gananciasProductoId, setGananciasProductoId] = useState("todos")
 
-  const selectedGananciasProducto = gananciasProductoId === "all" 
+  const selectedGananciasProducto = gananciasProductoId === "todos" 
     ? "Todos los productos" 
     : (productos.find(p => p.id === gananciasProductoId)?.nombre || "Cargando...");
 
@@ -95,7 +95,7 @@ export function ReportesModule() {
         const html = await api.reportes.getReporteGanancias({
           fechaInicio: gananciasFechaInicio,
           fechaFin: gananciasFechaFin,
-          productoId: gananciasProductoId !== "all" ? gananciasProductoId : undefined,
+          productoId: gananciasProductoId !== "todos" ? gananciasProductoId : undefined,
         })
         setReportHtml(html)
       }
@@ -394,8 +394,9 @@ export function ReportesModule() {
                       <Button variant="outline" size="sm" onClick={() => {
                         setGananciasFechaInicio("")
                         setGananciasFechaFin("")
+                        setGananciasProductoId("todos")
                       }} className="w-full sm:w-auto">
-                        Limpiar Fechas
+                        Limpiar Filtros
                       </Button>
                     </div>
 
@@ -422,14 +423,14 @@ export function ReportesModule() {
 
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto</Label>
-                  <Select value={gananciasProductoId} onValueChange={(val) => setGananciasProductoId(val || "all")}>
+                  <Select value={gananciasProductoId} onValueChange={(val) => setGananciasProductoId(val || "todos")}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Todos los productos">
                         {selectedGananciasProducto}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                      <SelectItem value="all">Todos los productos</SelectItem>
+                      <SelectItem value="todos">Todos los productos</SelectItem>
                       {productos.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                       ))}
