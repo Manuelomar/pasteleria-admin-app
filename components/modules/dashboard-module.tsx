@@ -286,9 +286,10 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {ventasPorCategoria.map((entry: any) => (
-                      <Cell key={entry.categoria} fill={entry.fill} />
-                    ))}
+                    {ventasPorCategoria.map((entry: any, index: number) => {
+                      const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+                      return <Cell key={entry.categoria} fill={entry.fill || COLORS[index % COLORS.length]} />
+                    })}
                   </Pie>
                   <ChartLegend content={<ChartLegendContent nameKey="categoria" />} />
                 </PieChart>
@@ -319,7 +320,10 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={metodosPago} dataKey="valor" nameKey="metodo" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {metodosPago.map((entry: any) => <Cell key={entry.metodo} fill={entry.fill} />)}
+                    {metodosPago.map((entry: any, index: number) => {
+                      const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+                      return <Cell key={entry.metodo} fill={entry.fill || COLORS[index % COLORS.length]} />
+                    })}
                   </Pie>
                   <ChartLegend content={<ChartLegendContent nameKey="metodo" />} />
                 </PieChart>
