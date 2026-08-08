@@ -7,8 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Loader } from "@/components/ui/loader"
-import { Printer, Calendar, CalendarDays, CalendarRange } from "lucide-react"
+import { Printer, Calendar, CalendarDays, CalendarRange, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { type Usuario, type Producto } from "@/types"
 
 export function ReportesModule() {
@@ -40,11 +41,7 @@ export function ReportesModule() {
   // Filtros Ganancias
   const [gananciasFechaInicio, setGananciasFechaInicio] = useState("")
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
-  const [gananciasProductoId, setGananciasProductoId] = useState("todos")
-
-  const selectedGananciasProducto = gananciasProductoId === "todos" 
-    ? "Todos los productos" 
-    : (productos.find(p => p.id === gananciasProductoId)?.nombre || "Cargando...");
+  const [gananciasProductosIds, setGananciasProductosIds] = useState<string[]>([])
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -95,7 +92,7 @@ export function ReportesModule() {
         const html = await api.reportes.getReporteGanancias({
           fechaInicio: gananciasFechaInicio,
           fechaFin: gananciasFechaFin,
-          productoId: gananciasProductoId !== "todos" ? gananciasProductoId : undefined,
+          productoId: gananciasProductosIds.length > 0 ? gananciasProductosIds.join(",") : undefined,
         })
         setReportHtml(html)
       }
@@ -394,7 +391,7 @@ export function ReportesModule() {
                       <Button variant="outline" size="sm" onClick={() => {
                         setGananciasFechaInicio("")
                         setGananciasFechaFin("")
-                        setGananciasProductoId("todos")
+                        setGananciasProductosIds([])
                       }} className="w-full sm:w-auto">
                         Limpiar Filtros
                       </Button>
@@ -422,20 +419,49 @@ export function ReportesModule() {
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-base font-semibold mb-3 block">Filtrar por Producto</Label>
-                  <Select value={gananciasProductoId} onValueChange={(val) => setGananciasProductoId(val || "todos")}>
+                  <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
+                  <Select 
+                    value="" 
+                    onValueChange={(val) => {
+                      if (val === "todos") {
+                        setGananciasProductosIds([]);
+                      } else if (val && val !== "none" && !gananciasProductosIds.includes(val)) {
+                        setGananciasProductosIds([...gananciasProductosIds, val]);
+                      }
+                    }}
+                  >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Todos los productos">
-                        {selectedGananciasProducto}
+                      <SelectValue placeholder="Agregar producto al filtro...">
+                        Agregar producto al filtro...
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                      <SelectItem value="todos">Todos los productos</SelectItem>
+                      <SelectItem value="none" className="hidden">Agregar producto al filtro...</SelectItem>
+                      <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
                       {productos.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  
+                  {gananciasProductosIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {gananciasProductosIds.map(id => {
+                        const product = productos.find(p => p.id === id);
+                        return (
+                          <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
+                            {product?.nombre || id}
+                            <button 
+                              onClick={() => setGananciasProductosIds(prev => prev.filter(p => p !== id))}
+                              className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               
