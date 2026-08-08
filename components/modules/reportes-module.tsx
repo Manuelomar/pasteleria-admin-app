@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Loader } from "@/components/ui/loader"
 import { Printer, Calendar, CalendarDays, CalendarRange } from "lucide-react"
-import { type Usuario } from "@/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { type Usuario, type Producto } from "@/types"
 
 export function ReportesModule() {
   const [activeTab, setActiveTab] = useState("proveedor")
@@ -16,8 +17,11 @@ export function ReportesModule() {
   const [reportHtml, setReportHtml] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
 
+  const [productos, setProductos] = useState<Producto[]>([])
+
   useEffect(() => {
     api.auth.getMe().then(setCurrentUser).catch(console.error)
+    api.productos.getAll().then(setProductos).catch(console.error)
   }, [])
 
   const isProveedor = currentUser?.rol === "proveedor"
@@ -36,6 +40,7 @@ export function ReportesModule() {
   // Filtros Ganancias
   const [gananciasFechaInicio, setGananciasFechaInicio] = useState("")
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
+  const [gananciasProductoId, setGananciasProductoId] = useState("all")
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -86,6 +91,7 @@ export function ReportesModule() {
         const html = await api.reportes.getReporteGanancias({
           fechaInicio: gananciasFechaInicio,
           fechaFin: gananciasFechaFin,
+          productoId: gananciasProductoId !== "all" ? gananciasProductoId : undefined,
         })
         setReportHtml(html)
       }
@@ -408,6 +414,21 @@ export function ReportesModule() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold mb-3 block">Filtrar por Producto</Label>
+                  <Select value={gananciasProductoId} onValueChange={setGananciasProductoId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Todos los productos" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
+                      <SelectItem value="all">Todos los productos</SelectItem>
+                      {productos.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
