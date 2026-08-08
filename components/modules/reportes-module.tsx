@@ -42,6 +42,10 @@ export function ReportesModule() {
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
   const [gananciasProductoId, setGananciasProductoId] = useState("all")
 
+  const selectedGananciasProducto = gananciasProductoId === "all" 
+    ? "Todos los productos" 
+    : (productos.find(p => p.id === gananciasProductoId)?.nombre || "Cargando...");
+
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const handleQuickDate = (type: 'semana' | 'mes' | 'año', targetTab: 'proveedor' | 'ventas' | 'ganancias' = 'proveedor') => {
@@ -418,9 +422,11 @@ export function ReportesModule() {
 
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto</Label>
-                  <Select value={gananciasProductoId} onValueChange={setGananciasProductoId}>
+                  <Select value={gananciasProductoId} onValueChange={(val) => setGananciasProductoId(val || "all")}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Todos los productos" />
+                      <SelectValue placeholder="Todos los productos">
+                        {selectedGananciasProducto}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
                       <SelectItem value="all">Todos los productos</SelectItem>

@@ -64,10 +64,12 @@ export const reportesService = {
   getReporteGanancias: async (filtros: {
     fechaInicio?: string;
     fechaFin?: string;
+    productoId?: string;
   }) => {
     const params = new URLSearchParams();
     if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
     if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros.productoId) params.append('productoId', filtros.productoId);
 
     let token = null;
     if (typeof window !== 'undefined') {
