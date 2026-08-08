@@ -431,7 +431,11 @@ export function ReportesModule() {
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Agregar producto al filtro..." />
+                      <SelectValue placeholder="Agregar producto al filtro...">
+                        {gananciasProductosIds.length === 0 
+                          ? "Agregar producto al filtro..." 
+                          : (productos.find(p => p.id === gananciasProductosIds[gananciasProductosIds.length - 1])?.nombre || "Cargando...")}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
                       <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
