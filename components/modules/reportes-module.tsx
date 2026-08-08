@@ -421,22 +421,19 @@ export function ReportesModule() {
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
                   <Select 
-                    value="none" 
+                    value={gananciasProductosIds.length === 0 ? "todos" : gananciasProductosIds[gananciasProductosIds.length - 1]} 
                     onValueChange={(val) => {
                       if (val === "todos") {
                         setGananciasProductosIds([]);
-                      } else if (val && val !== "none" && !gananciasProductosIds.includes(val)) {
+                      } else if (val && val !== "todos" && !gananciasProductosIds.includes(val)) {
                         setGananciasProductosIds([...gananciasProductosIds, val]);
                       }
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Agregar producto al filtro...">
-                        Agregar producto al filtro...
-                      </SelectValue>
+                      <SelectValue placeholder="Agregar producto al filtro..." />
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                      <SelectItem value="none" className="hidden">Agregar producto al filtro...</SelectItem>
                       <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
                       {productos.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
