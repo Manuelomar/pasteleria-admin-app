@@ -211,12 +211,12 @@ export function HistorialModule() {
                   Producto
                 </label>
                 <Select value={productoId} onValueChange={(val) => setProductoId(val || "all")}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Todos los productos">
                       {productoId === "all" ? "Todos los productos" : productos.find(p => p.id === productoId)?.nombre || "Todos los productos"}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
                     <SelectItem value="all">Todos los productos</SelectItem>
                     {productos.map(p => (
                       <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
@@ -249,7 +249,7 @@ export function HistorialModule() {
                 Estado Pago
               </label>
               <Select value={estadoPago} onValueChange={(val) => setEstadoPago(val || "pagadas")}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pagadas" />
                 </SelectTrigger>
                 <SelectContent>
