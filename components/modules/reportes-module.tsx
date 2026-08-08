@@ -421,7 +421,7 @@ export function ReportesModule() {
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
                   <Select 
-                    value="" 
+                    value="none" 
                     onValueChange={(val) => {
                       if (val === "todos") {
                         setGananciasProductosIds([]);
