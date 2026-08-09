@@ -123,7 +123,7 @@ export function DashboardModule() {
     const start = isCustom ? customStart : undefined
     const end = isCustom ? customEnd : undefined
 
-    api.ventas.getDashboardMetrics(start, end)
+    api.ventas.getDashboardMetrics(start, end, filterType)
       .then((data: any) => {
         setMetrics(data)
       })
@@ -312,7 +312,8 @@ export function DashboardModule() {
                 config={{ 
                   Efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
                   Tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
-                  Transferencia: { label: "Transferencia", color: "var(--chart-3)" } 
+                  Transferencia: { label: "Transferencia", color: "var(--chart-3)" },
+                  UberEats: { label: "Uber Eats", color: "var(--chart-4)" }
                 }}
                 className="mx-auto h-[280px] w-full"
               >

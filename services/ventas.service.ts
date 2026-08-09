@@ -17,10 +17,14 @@ export const ventasService = {
       data: (res.data || []).map(mapVentaToFrontend)
     }));
   },
-  getDashboardMetrics: (fechaInicio?: string, fechaFin?: string): Promise<any> => {
+  getDashboardMetrics: (fechaInicio?: string, fechaFin?: string, filterType?: string): Promise<any> => {
     let url = `/ventas/dashboard-metrics`;
-    if (fechaInicio && fechaFin) {
-       url += `?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+    const params = new URLSearchParams();
+    if (fechaInicio) params.append('fechaInicio', fechaInicio);
+    if (fechaFin) params.append('fechaFin', fechaFin);
+    if (filterType) params.append('filterType', filterType);
+    if (params.toString()) {
+       url += `?${params.toString()}`;
     }
     return fetchAPI(url);
   },
