@@ -58,9 +58,9 @@ export function ClientesModule() {
       .finally(() => setIsLoading(false))
   }
 
-  const debouncedFetch = useMemo(
-    () => debounce((page, size, query) => fetchClientes(page, size, query), 300),
-    []
+  const debouncedFetch = useDebounce(
+    (page: number, size: number, query: string) => fetchClientes(page, size, query),
+    300
   )
 
   useEffect(() => {

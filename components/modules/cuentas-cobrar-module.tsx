@@ -70,13 +70,13 @@ export function CuentasCobrarModule() {
   }, [currentPage, pageSize])
 
   // Debounced search
-  const handleSearch = useMemo(
-    () => debounce((val: string) => {
+  const handleSearch = useDebounce(
+    (val: string) => {
       setSearch(val)
       setCurrentPage(1)
       loadPendientes(1, pageSize, val)
-    }, 500),
-    [pageSize]
+    },
+    500
   )
 
   useEffect(() => {

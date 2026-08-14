@@ -55,9 +55,9 @@ export function EntregasModule() {
       .finally(() => setIsLoading(false))
   }
 
-  const debouncedFetch = useMemo(
-    () => debounce((page, size, filtro, query) => fetchEntregas(page, size, filtro, query), 300),
-    []
+  const debouncedFetch = useDebounce(
+    (page: number, size: number, filtro: string, query: string) => fetchEntregas(page, size, filtro, query),
+    300
   )
 
   useEffect(() => {

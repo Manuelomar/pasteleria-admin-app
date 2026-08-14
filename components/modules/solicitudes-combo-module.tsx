@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 import type { Solicitud, EstadoSolicitud } from '@/types/solicitud'
 import { currency } from '@/types'
 import { AppPagination } from '@/components/ui/app-pagination'
-import { useDebounce } from '@/hooks/use-debounce'
+
 
 // Helper para color de estado
 const estadoColor: Record<EstadoSolicitud, string> = {
