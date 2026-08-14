@@ -1,15 +1,15 @@
 import { fetchAPI } from "./api.config";
 import { mapClienteToFrontend } from "./mappers";
-import { Cliente } from "@/types";
+import { Cliente, PaginatedResponse } from "@/types";
 
 export const clientesService = {
   getAll: (): Promise<Cliente[]> => fetchAPI('/clientes').then((list: any[]) => list.map(mapClienteToFrontend)),
-  getPaged: (page: number, limit: number, search?: string): Promise<{ items: Cliente[], total: number, page: number, pageSize: number, totalPages: number }> => {
+  getPaged: (page: number, limit: number, search?: string): Promise<PaginatedResponse<Cliente>> => {
     let query = `?page=${page}&limit=${limit}`;
     if (search) query += `&search=${encodeURIComponent(search)}`;
     return fetchAPI(`/clientes/paged${query}`).then((res: any) => ({
       ...res,
-      items: res.items.map(mapClienteToFrontend)
+      data: res.items.map(mapClienteToFrontend)
     }));
   },
   getById: (id: string): Promise<Cliente> => fetchAPI(`/clientes/${id}`).then(mapClienteToFrontend),

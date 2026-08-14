@@ -1,5 +1,6 @@
 import { fetchAPI, fetchPublicAPI } from './api.config'
 import type { Solicitud, EstadoSolicitud } from '@/types/solicitud'
+import { PaginatedResponse } from '@/types'
 
 class SolicitudesService {
   async createBizcocho(formData: FormData) {
@@ -21,12 +22,16 @@ class SolicitudesService {
     return await fetchAPI(url) as Promise<Solicitud[]>
   }
 
-  async getPaged(page: number, limit: number, tipo?: 'bizcocho' | 'combo') {
+  async getPaged(page: number, limit: number, tipo?: 'bizcocho' | 'combo'): Promise<PaginatedResponse<Solicitud>> {
     let url = `/solicitudes/paged?page=${page}&limit=${limit}`;
     if (tipo) {
       url += `&tipo=${tipo}`;
     }
-    return await fetchAPI(url) as Promise<{ items: Solicitud[], total: number, page: number, pageSize: number, totalPages: number }>;
+    const res = await fetchAPI(url) as any;
+    return {
+      ...res,
+      data: res.items || res.data || []
+    };
   }
 
   async getById(id: string) {
