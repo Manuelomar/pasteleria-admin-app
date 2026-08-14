@@ -44,7 +44,7 @@ export function EntregasModule() {
     setIsLoading(true)
     api.entregas.getPaged(page, size, filtro, query)
       .then((data) => {
-        setEntregas(data.items)
+        setEntregas(data.data)
         setTotalPages(data.totalPages)
         setTotalItems(data.total)
       })

@@ -45,12 +45,9 @@ export function ClientesModule() {
 
   const fetchClientes = (page: number, size: number, query: string) => {
     setIsLoading(true)
-    Promise.all([
-      api.clientes.getPaged(page, size, query),
-      new Promise((resolve) => setTimeout(resolve, 500))
-    ])
-      .then(([data]) => {
-        setItems(data.items)
+    api.clientes.getPaged(page, size, query)
+      .then((data) => {
+        setItems(data.data)
         setTotalPages(data.totalPages)
         setTotalItems(data.total)
       })

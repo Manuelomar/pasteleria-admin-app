@@ -53,7 +53,7 @@ export function CuentasCobrarModule() {
     setIsLoading(true)
     api.ventas.getPendientesPaged(page, limit, searchTerm)
       .then((data) => {
-        setPendientes(data.items)
+        setPendientes(data.data)
         setTotalPages(data.totalPages)
         setTotalItems(data.total)
       })

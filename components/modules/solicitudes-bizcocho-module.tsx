@@ -52,7 +52,7 @@ export function SolicitudesBizcochoModule() {
     setLoading(true)
     try {
       const data = await api.solicitudes.getPaged(page, limit, 'bizcocho')
-      setSolicitudes(data.items)
+      setSolicitudes(data.data)
       setTotalPages(data.totalPages)
       setTotalItems(data.total)
     } catch (error) {

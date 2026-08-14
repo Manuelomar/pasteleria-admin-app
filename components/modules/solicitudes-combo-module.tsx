@@ -47,7 +47,7 @@ export function SolicitudesComboModule() {
     setLoading(true)
     try {
       const data = await api.solicitudes.getPaged(page, limit, 'combo')
-      setSolicitudes(data.items)
+      setSolicitudes(data.data)
       setTotalPages(data.totalPages)
       setTotalItems(data.total)
     } catch (error) {
