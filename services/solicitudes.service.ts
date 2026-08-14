@@ -22,8 +22,8 @@ class SolicitudesService {
     return await fetchAPI(url) as Promise<Solicitud[]>
   }
 
-  async getPaged(page: number, limit: number, tipo?: 'bizcocho' | 'combo'): Promise<PaginatedResponse<Solicitud>> {
-    let url = `/solicitudes/paged?page=${page}&limit=${limit}`;
+  async getPaged(pageNumber: number, pageSize: number, tipo?: 'bizcocho' | 'combo'): Promise<PaginatedResponse<Solicitud>> {
+    let url = `/solicitudes/paged?pageNumber=${pageNumber}&pageSize=${pageSize}`;
     if (tipo) {
       url += `&tipo=${tipo}`;
     }

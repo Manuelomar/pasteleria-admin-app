@@ -9,6 +9,8 @@ import { toast } from 'sonner'
 import { Loader } from '@/components/ui/loader'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
+import { AppPagination } from '@/components/ui/app-pagination'
+
 export type CartItem = {
   producto: Producto
   cantidad: number
@@ -20,14 +22,22 @@ export function ComboBuilder() {
   const [cart, setCart] = useState<Record<string, CartItem>>({})
   const [tipoFiltro, setTipoFiltro] = useState<string>('todos')
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(12)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+
   useEffect(() => {
-    api.productos.getPublicAll()
+    setIsLoading(true)
+    api.productos.getPublicPaged(currentPage, pageSize, '', tipoFiltro)
       .then((res) => {
-        setProductos(res)
+        setProductos(res.data)
+        setTotalItems(res.total)
+        setTotalPages(res.totalPages)
       })
       .catch(() => toast.error('Error cargando los productos'))
       .finally(() => setIsLoading(false))
-  }, [])
+  }, [currentPage, pageSize, tipoFiltro])
 
   const handleUpdateQuantity = (producto: Producto, delta: number) => {
     setCart((prev) => {
@@ -52,10 +62,6 @@ export function ComboBuilder() {
   }
 
   const handleClearCart = () => setCart({})
-
-  const filteredProductos = productos.filter(
-    (p) => tipoFiltro === 'todos' || p.tipo === tipoFiltro
-  )
 
   if (isLoading) {
     return (
@@ -92,10 +98,26 @@ export function ComboBuilder() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <ComboProductGrid 
-            productos={filteredProductos} 
+            productos={productos} 
             cart={cart} 
             onUpdateQuantity={handleUpdateQuantity} 
           />
+          {totalPages > 1 && (
+            <div className="mt-8">
+              <AppPagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+                itemName="productos"
+              />
+            </div>
+          )}
         </div>
         <div className="lg:col-span-4">
           <div className="sticky top-24">

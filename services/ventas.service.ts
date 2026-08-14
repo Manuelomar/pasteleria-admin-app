@@ -10,7 +10,7 @@ export const ventasService = {
     limit: number,
     search?: string
   ): Promise<PaginatedResponse<Venta>> => {
-    let url = `/ventas/pendientes/paged?page=${page}&limit=${limit}`;
+    let url = `/ventas/pendientes/paged?pageNumber=${page}&pageSize=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     return fetchAPI(url).then((res: any) => ({
       ...res,

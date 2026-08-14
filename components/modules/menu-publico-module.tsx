@@ -203,6 +203,10 @@ export function MenuPublicoModule() {
                 pageSize={pageSize}
                 totalItems={totalItems}
                 onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
                 itemName="productos"
               />
             </div>
