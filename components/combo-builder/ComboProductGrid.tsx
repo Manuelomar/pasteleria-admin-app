@@ -35,7 +35,7 @@ export function ComboProductGrid({ productos, cart, onUpdateQuantity }: ComboPro
                   ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) 
                   : "/placeholder.svg"}
                 alt={p.nombre}
-                className={`absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105`}
+                className={`absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-105 ${!p.disponible ? 'opacity-60 grayscale' : ''}`}
                 onError={(e) => {
                   e.currentTarget.src = "/placeholder.svg"
                 }}
@@ -43,6 +43,11 @@ export function ComboProductGrid({ productos, cart, onUpdateQuantity }: ComboPro
               <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
                 <TipoBadge tipo={p.tipo} />
               </div>
+              {!p.disponible && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+                  <span className="rounded-md bg-destructive px-3 py-1 text-sm font-bold text-white shadow-sm">AGOTADO</span>
+                </div>
+              )}
             </div>
             
             <CardContent className="flex flex-grow flex-col p-4">
@@ -71,6 +76,7 @@ export function ComboProductGrid({ productos, cart, onUpdateQuantity }: ComboPro
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-primary"
                     onClick={() => onUpdateQuantity(p, 1)}
+                    disabled={!p.disponible}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>

@@ -28,11 +28,13 @@ export const productosService = {
     page: number,
     pageSize: number,
     search?: string,
-    tipo?: string
+    tipo?: string,
+    disponible?: string
   ): Promise<PaginatedResponse<Producto>> => {
     let url = `/productos/public/paged?pageNumber=${page}&pageSize=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tipo && tipo !== 'todos') url += `&tipo=${tipo}`;
+    if (disponible) url += `&disponible=${disponible}`;
     return fetchPublicAPI(url).then((res: any) => ({
       ...res,
       data: (res.data || []).map(mapProductoToFrontend)
