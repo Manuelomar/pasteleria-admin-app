@@ -14,7 +14,7 @@ export default function PersonalizaComboPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
           <a
-            href="/"
+            href="/menu"
             className="font-heading text-2xl font-bold text-primary transition-opacity hover:opacity-80"
           >
             Bizcochao

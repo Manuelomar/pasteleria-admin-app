@@ -78,44 +78,36 @@ export function MenuPublicoModule() {
       )}
       <div className="flex min-h-screen flex-col bg-background">
       {/* Header Público */}
-      <header className="sticky top-0 z-10 flex flex-col items-center justify-center border-b bg-background/95 p-4 shadow-sm relative backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <h1 className="font-heading text-3xl font-bold text-primary">Bizcochao</h1>
-        <p className="text-sm text-muted-foreground">Catálogo de Productos</p>
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => handleNavigate('/personaliza-combo')}
-            className="gap-2 hidden sm:flex text-primary border-primary/20 hover:bg-primary/5"
-          >
-            <Package className="h-4 w-4" />
-            <span>Personaliza tu Combo</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => handleNavigate('/personaliza-combo')}
-            className="sm:hidden text-primary border-primary/20 hover:bg-primary/5"
-          >
-            <Package className="h-4 w-4" />
-          </Button>
+      <header className="sticky top-0 z-10 border-b bg-background/95 p-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row md:gap-0">
+          <div className="flex flex-col items-center md:items-start">
+            <a href="/menu" className="transition-opacity hover:opacity-80">
+              <h1 className="font-heading text-3xl font-bold text-primary">Bizcochao</h1>
+            </a>
+            <p className="text-sm text-muted-foreground">Catálogo de Productos</p>
+          </div>
           
-          <Button 
-            variant="outline" 
-            onClick={() => handleNavigate('/personaliza-bizcocho')}
-            className="gap-2 hidden sm:flex text-primary border-primary/20 hover:bg-primary/5"
-          >
-            <Cake className="h-4 w-4" />
-            <span>Personaliza tu Bizcocho</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => handleNavigate('/personaliza-bizcocho')}
-            className="sm:hidden text-primary border-primary/20 hover:bg-primary/5"
-          >
-            <Cake className="h-4 w-4" />
-          </Button>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => handleNavigate('/personaliza-combo')}
+              className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
+            >
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Personaliza tu Combo</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => handleNavigate('/personaliza-bizcocho')}
+              className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
+            >
+              <Cake className="h-4 w-4" />
+              <span className="hidden sm:inline">Personaliza tu Bizcocho</span>
+            </Button>
+            
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
