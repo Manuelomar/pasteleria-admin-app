@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Search, Plus, MoreHorizontal, History, Pencil, Wallet, UserX } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,8 @@ import { currency, type Cliente } from "@/types"
 import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
+import { AppPagination } from "@/components/ui/app-pagination"
+import debounce from "lodash/debounce"
 
 export function ClientesModule() {
   const [search, setSearch] = useState("")
@@ -35,13 +37,23 @@ export function ClientesModule() {
   const [items, setItems] = useState<Cliente[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchClientes = () => {
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
+  const fetchClientes = (page: number, size: number, query: string) => {
     setIsLoading(true)
     Promise.all([
-      api.clientes.getAll(),
-      new Promise((resolve) => setTimeout(resolve, 1000))
+      api.clientes.getPaged(page, size, query),
+      new Promise((resolve) => setTimeout(resolve, 500))
     ])
-      .then(([data]) => setItems(data))
+      .then(([data]) => {
+        setItems(data.items)
+        setTotalPages(data.totalPages)
+        setTotalItems(data.total)
+      })
       .catch((err) => {
         console.error("Error fetching clientes", err)
         toast.error("Error de conexión al cargar clientes")
@@ -49,20 +61,20 @@ export function ClientesModule() {
       .finally(() => setIsLoading(false))
   }
 
+  const debouncedFetch = useMemo(
+    () => debounce((page, size, query) => fetchClientes(page, size, query), 300),
+    []
+  )
+
   useEffect(() => {
-    fetchClientes()
-  }, [])
+    debouncedFetch(currentPage, pageSize, search)
+    return () => debouncedFetch.cancel()
+  }, [currentPage, pageSize, search, debouncedFetch])
 
-  const filtered = items.filter((c) => {
-    const q = search.toLowerCase()
-    return (
-      c.nombre.toLowerCase().includes(q) ||
-      c.telefono.includes(q) ||
-      c.correo.toLowerCase().includes(q)
-    )
-  })
-
-  
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search])
 
   return (
     <div className="flex flex-col gap-5 relative min-h-[400px]">
@@ -108,7 +120,7 @@ export function ClientesModule() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((c) => (
+              {items.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium text-foreground">{c.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">{c.telefono}</TableCell>
@@ -169,13 +181,28 @@ export function ClientesModule() {
         </div>
       </Card>
 
-      {filtered.length === 0 ? (
+      {items.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           No se encontraron clientes.
         </div>
       ) : null}
 
-      <ClienteDialog open={dialogOpen} onOpenChange={setDialogOpen} cliente={editing} onSaved={fetchClientes} />
+      {totalPages > 1 && (
+        <AppPagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setCurrentPage(1)
+          }}
+          itemName="clientes"
+        />
+      )}
+
+      <ClienteDialog open={dialogOpen} onOpenChange={setDialogOpen} cliente={editing} onSaved={() => fetchClientes(currentPage, pageSize, search)} />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Search, Plus, Calendar, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Swal from "sweetalert2"
+import { AppPagination } from "@/components/ui/app-pagination"
+import debounce from "lodash/debounce"
 
 export function EntregasModule() {
   const [entregas, setEntregas] = useState<Entrega[]>([])
@@ -32,16 +34,31 @@ export function EntregasModule() {
   const [search, setSearch] = useState("")
   const [filtroEstado, setFiltroEstado] = useState("pendiente")
 
-  const fetchEntregas = (filtro: string = filtroEstado) => {
-    if (entregas.length === 0) setIsLoading(true)
-    api.entregas.getAll(filtro)
-      .then(setEntregas)
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
+  const fetchEntregas = (page: number, size: number, filtro: string, query: string) => {
+    setIsLoading(true)
+    api.entregas.getPaged(page, size, filtro, query)
+      .then((data) => {
+        setEntregas(data.items)
+        setTotalPages(data.totalPages)
+        setTotalItems(data.total)
+      })
       .catch((err) => {
         console.error("Error fetching entregas", err)
         toast.error("Error al cargar las entregas")
       })
       .finally(() => setIsLoading(false))
   }
+
+  const debouncedFetch = useMemo(
+    () => debounce((page, size, filtro, query) => fetchEntregas(page, size, filtro, query), 300),
+    []
+  )
 
   useEffect(() => {
     api.auth.getMe().then(user => {
@@ -50,8 +67,14 @@ export function EntregasModule() {
   }, [])
 
   useEffect(() => {
-    fetchEntregas(filtroEstado)
-  }, [filtroEstado])
+    debouncedFetch(currentPage, pageSize, filtroEstado, search)
+    return () => debouncedFetch.cancel()
+  }, [currentPage, pageSize, filtroEstado, search, debouncedFetch])
+
+  // Reset page when search or filtro changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, filtroEstado])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
     const result = await Swal.fire({
@@ -68,7 +91,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoEntrega(id, estado)
         toast.success("Estado de entrega actualizado")
-        fetchEntregas()
+        fetchEntregas(currentPage, pageSize, filtroEstado, search)
       } catch (e) {
         toast.error("Error al actualizar estado")
       }
@@ -90,7 +113,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoPago(id, estado)
         toast.success("Estado de pago actualizado")
-        fetchEntregas()
+        fetchEntregas(currentPage, pageSize, filtroEstado, search)
       } catch (e) {
         toast.error("Error al actualizar pago")
       }
@@ -112,7 +135,7 @@ export function EntregasModule() {
       try {
         await api.entregas.addToStock(id)
         toast.success("Productos añadidos al stock correctamente")
-        fetchEntregas()
+        fetchEntregas(currentPage, pageSize, filtroEstado, search)
       } catch (e: any) {
         toast.error(e.message || "Error al añadir al stock")
       }
@@ -134,28 +157,15 @@ export function EntregasModule() {
       try {
         await api.entregas.remove(id)
         toast.success("Entrega descartada correctamente")
-        fetchEntregas()
+        fetchEntregas(currentPage, pageSize, filtroEstado, search)
       } catch (e: any) {
         toast.error(e.message || "Error al descartar la entrega")
       }
     }
   }
 
-  
-
   const isProveedor = currentUser?.rol === "proveedor"
   const isAdmin = currentUser?.rol === "admin"
-
-  const entregasFiltradas = entregas.filter(e => {
-    if (search.trim()) {
-      const query = search.toLowerCase()
-      const provName = (e.proveedor?.nombre || (e.proveedor as any)?.name || "").toLowerCase()
-      const matchesProveedor = provName.includes(query)
-      const matchesProductos = e.items.some(i => i.producto?.nombre?.toLowerCase().includes(query))
-      return matchesProveedor || matchesProductos
-    }
-    return true
-  })
 
   return (
     <div className="flex flex-col gap-5 relative min-h-[400px]">
@@ -195,12 +205,12 @@ export function EntregasModule() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {entregasFiltradas.length === 0 ? (
+        {entregas.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             No hay entregas programadas que coincidan con los filtros.
           </div>
         ) : (
-          entregasFiltradas.map((entrega) => (
+          entregas.map((entrega) => (
             <Card key={entrega.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
@@ -334,10 +344,25 @@ export function EntregasModule() {
         )}
       </div>
 
+      {totalPages > 1 && (
+        <AppPagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setCurrentPage(1)
+          }}
+          itemName="entregas"
+        />
+      )}
+
       <EntregaDialog 
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSaved={fetchEntregas}
+        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search)}
         currentUser={currentUser}
       />
     </div>

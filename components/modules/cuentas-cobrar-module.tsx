@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
-import { Users, Receipt, DollarSign, WalletCards } from "lucide-react"
+import { Users, Receipt, DollarSign, WalletCards, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
@@ -28,6 +28,8 @@ import { currency, type Venta } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
+import { AppPagination } from "@/components/ui/app-pagination"
+import debounce from "lodash/debounce"
 
 export function CuentasCobrarModule() {
   const [pendientes, setPendientes] = useState<Venta[]>([])
@@ -35,16 +37,25 @@ export function CuentasCobrarModule() {
   const [selectedCliente, setSelectedCliente] = useState<any | null>(null)
   const [detallesCliente, setDetallesCliente] = useState<any | null>(null)
   
+  // Pagination and search
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
   // Modal state
   const [montoPago, setMontoPago] = useState<number | "">("")
   const [metodoPago, setMetodoPago] = useState<string>("efectivo")
   const [isPaying, setIsPaying] = useState(false)
 
-  const loadPendientes = () => {
+  const loadPendientes = (page: number, limit: number, searchTerm: string) => {
     setIsLoading(true)
-    api.ventas.getPendientes()
+    api.ventas.getPendientesPaged(page, limit, searchTerm)
       .then((data) => {
-        setPendientes(data)
+        setPendientes(data.items)
+        setTotalPages(data.totalPages)
+        setTotalItems(data.total)
       })
       .catch((err) => {
         console.error(err)
@@ -52,6 +63,25 @@ export function CuentasCobrarModule() {
       })
       .finally(() => setIsLoading(false))
   }
+
+  // Effect to load on mount or when page/limit changes
+  useEffect(() => {
+    loadPendientes(currentPage, pageSize, search)
+  }, [currentPage, pageSize])
+
+  // Debounced search
+  const handleSearch = useMemo(
+    () => debounce((val: string) => {
+      setSearch(val)
+      setCurrentPage(1)
+      loadPendientes(1, pageSize, val)
+    }, 500),
+    [pageSize]
+  )
+
+  useEffect(() => {
+    return () => handleSearch.cancel()
+  }, [handleSearch])
 
   const imprimirFactura = async (id: string) => {
     const iframeId = `print-invoice-iframe-${id}`
@@ -88,10 +118,6 @@ export function CuentasCobrarModule() {
       console.error("Error al imprimir la factura", error);
     }
   }
-
-  useEffect(() => {
-    loadPendientes()
-  }, [])
 
   const handleOpenPayment = (cliente: any) => {
     setSelectedCliente(cliente)
@@ -139,7 +165,7 @@ export function CuentasCobrarModule() {
       }
 
       setSelectedCliente(null)
-      loadPendientes()
+      loadPendientes(currentPage, pageSize, search)
 
       const printConfirm = await Swal.fire({
         title: "¡Pago Registrado!",
@@ -227,7 +253,6 @@ export function CuentasCobrarModule() {
   const clientesList = Object.values(clientesAgrupados).sort((a: any, b: any) => b.balanceTotal - a.balanceTotal);
 
   const totalPorCobrar = pendientes.reduce((acc, v) => acc + Number(v.balance || 0), 0)
-  const totalFacturas = pendientes.length
 
   return (
     <div className="flex flex-col gap-6">
@@ -238,7 +263,7 @@ export function CuentasCobrarModule() {
               <DollarSign className="size-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total por Cobrar</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total por Cobrar (Pág.)</span>
               <span className="font-heading text-2xl font-bold text-primary">{currency(totalPorCobrar)}</span>
             </div>
           </CardContent>
@@ -249,8 +274,8 @@ export function CuentasCobrarModule() {
               <Receipt className="size-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Facturas Pendientes</span>
-              <span className="font-heading text-2xl font-bold text-foreground">{totalFacturas}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Facturas Pendientes (Pág.)</span>
+              <span className="font-heading text-2xl font-bold text-foreground">{pendientes.length}</span>
             </div>
           </CardContent>
         </Card>
@@ -258,8 +283,21 @@ export function CuentasCobrarModule() {
 
       <Card className="shadow-sm border-border bg-card/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Detalle de Cuentas por Cobrar</CardTitle>
-          <CardDescription>Lista de facturas con pagos pendientes (estado parcial o pendiente).</CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-lg">Detalle de Cuentas por Cobrar</CardTitle>
+              <CardDescription>Lista de facturas con pagos pendientes (estado parcial o pendiente).</CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente o factura..."
+                className="pl-8"
+                defaultValue={search}
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -267,48 +305,64 @@ export function CuentasCobrarModule() {
               <Loader />
             </div>
           ) : pendientes.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="text-center">Cant. Facturas</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">Total Facturado</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">Monto Pagado</TableHead>
-                    <TableHead className="text-right text-amber-600">Balance Pendiente</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientesList.map((cliente: any) => {
-                    return (
-                      <TableRow key={cliente.clienteNombre}>
-                        <TableCell className="text-sm font-semibold">{cliente.clienteNombre}</TableCell>
-                        <TableCell className="text-center font-medium">{cliente.facturas.length}</TableCell>
-                        <TableCell className="text-right hidden md:table-cell">{currency(cliente.totalFacturado)}</TableCell>
-                        <TableCell className="text-right hidden md:table-cell">{currency(cliente.montoPagadoTotal)}</TableCell>
-                        <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(cliente.balanceTotal)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => setDetallesCliente(cliente)}>
-                              Ver Detalles
-                            </Button>
-                            <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>
-                              Saldar Deuda
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead className="text-center">Cant. Facturas</TableHead>
+                      <TableHead className="text-right hidden md:table-cell">Total Facturado</TableHead>
+                      <TableHead className="text-right hidden md:table-cell">Monto Pagado</TableHead>
+                      <TableHead className="text-right text-amber-600">Balance Pendiente</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientesList.map((cliente: any) => {
+                      return (
+                        <TableRow key={cliente.clienteNombre}>
+                          <TableCell className="text-sm font-semibold">{cliente.clienteNombre}</TableCell>
+                          <TableCell className="text-center font-medium">{cliente.facturas.length}</TableCell>
+                          <TableCell className="text-right hidden md:table-cell">{currency(cliente.totalFacturado)}</TableCell>
+                          <TableCell className="text-right hidden md:table-cell">{currency(cliente.montoPagadoTotal)}</TableCell>
+                          <TableCell className="text-right font-bold text-amber-600 dark:text-amber-400">{currency(cliente.balanceTotal)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setDetallesCliente(cliente)}>
+                                Ver Detalles
+                              </Button>
+                              <Button size="sm" variant="default" onClick={() => handleOpenPayment(cliente)}>
+                                Saldar Deuda
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="mt-4">
+                <AppPagination
+                  currentPage={currentPage}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size)
+                    setCurrentPage(1)
+                  }}
+                  itemName="facturas pendientes"
+                />
+              </div>
+            </>
           ) : (
             <div className="py-12 flex flex-col items-center justify-center text-center text-muted-foreground">
               <Users className="size-12 opacity-20 mb-3" />
               <p>No hay cuentas por cobrar actualmente.</p>
-              <p className="text-sm">Todos los clientes están al día.</p>
+              <p className="text-sm">Todos los clientes están al día o no se encontraron coincidencias.</p>
             </div>
           )}
         </CardContent>

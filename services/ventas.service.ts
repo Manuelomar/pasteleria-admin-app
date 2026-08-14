@@ -5,6 +5,19 @@ import { Venta, PaginatedResponse } from "@/types";
 export const ventasService = {
   getAll: (): Promise<Venta[]> => fetchAPI('/ventas').then((list: any[]) => list.map(mapVentaToFrontend)),
   getPendientes: (): Promise<Venta[]> => fetchAPI('/ventas/pendientes').then((list: any[]) => list.map(mapVentaToFrontend)),
+  getPendientesPaged: (
+    page: number,
+    limit: number,
+    search?: string
+  ): Promise<PaginatedResponse<Venta>> => {
+    let url = `/ventas/pendientes/paged?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return fetchAPI(url).then((res: any) => ({
+      ...res,
+      data: (res.items || res.data || []).map(mapVentaToFrontend),
+      items: (res.items || res.data || []).map(mapVentaToFrontend)
+    }));
+  },
   getPaged: (
     page: number,
     pageSize: number,

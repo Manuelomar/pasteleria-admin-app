@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,8 @@ import {
   EXTRA_FROSTING_OPTIONS,
   TOPPER_OPTIONS,
 } from '../cake-builder/constants/cake-options'
+import { AppPagination } from '@/components/ui/app-pagination'
+import debounce from 'lodash/debounce'
 
 // Helper para color de estado
 const estadoColor: Record<EstadoSolicitud, string> = {
@@ -40,10 +42,19 @@ export function SolicitudesBizcochoModule() {
   const [search, setSearch] = useState('')
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null)
 
-  const fetchSolicitudes = async () => {
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
+  const fetchSolicitudes = async (page: number, limit: number) => {
+    setLoading(true)
     try {
-      const data = await api.solicitudes.getAll('bizcocho')
-      setSolicitudes(data)
+      const data = await api.solicitudes.getPaged(page, limit, 'bizcocho')
+      setSolicitudes(data.items)
+      setTotalPages(data.totalPages)
+      setTotalItems(data.total)
     } catch (error) {
       toast.error('Error al cargar solicitudes')
     } finally {
@@ -52,15 +63,15 @@ export function SolicitudesBizcochoModule() {
   }
 
   useEffect(() => {
-    fetchSolicitudes()
-  }, [])
+    fetchSolicitudes(currentPage, pageSize)
+  }, [currentPage, pageSize])
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!confirm('¿Estás seguro de eliminar esta solicitud?')) return
     try {
       await api.solicitudes.delete(id)
-      setSolicitudes(solicitudes.filter(s => s.id !== id))
+      fetchSolicitudes(currentPage, pageSize)
       if (selectedSolicitud?.id === id) setSelectedSolicitud(null)
       toast.success('Solicitud eliminada')
     } catch (error) {
@@ -108,7 +119,7 @@ export function SolicitudesBizcochoModule() {
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o teléfono..."
+                placeholder="Buscar por nombre o teléfono en la página actual..."
                 className="pl-8"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -140,7 +151,7 @@ export function SolicitudesBizcochoModule() {
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No hay solicitudes registradas.
+                      No hay solicitudes registradas en esta página.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -178,6 +189,21 @@ export function SolicitudesBizcochoModule() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          
+          <div className="mt-4">
+            <AppPagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              itemName="solicitudes"
+            />
           </div>
         </CardContent>
       </Card>

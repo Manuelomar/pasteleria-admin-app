@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +12,8 @@ import { API_URL } from '@/services/api.config'
 import { toast } from 'sonner'
 import type { Solicitud, EstadoSolicitud } from '@/types/solicitud'
 import { currency } from '@/types'
+import { AppPagination } from '@/components/ui/app-pagination'
+import debounce from 'lodash/debounce'
 
 // Helper para color de estado
 const estadoColor: Record<EstadoSolicitud, string> = {
@@ -35,10 +37,19 @@ export function SolicitudesComboModule() {
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null)
   const router = useRouter()
 
-  const fetchSolicitudes = async () => {
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
+  const fetchSolicitudes = async (page: number, limit: number) => {
+    setLoading(true)
     try {
-      const data = await api.solicitudes.getAll('combo')
-      setSolicitudes(data)
+      const data = await api.solicitudes.getPaged(page, limit, 'combo')
+      setSolicitudes(data.items)
+      setTotalPages(data.totalPages)
+      setTotalItems(data.total)
     } catch (error) {
       toast.error('Error al cargar solicitudes de combos')
     } finally {
@@ -47,8 +58,8 @@ export function SolicitudesComboModule() {
   }
 
   useEffect(() => {
-    fetchSolicitudes()
-  }, [])
+    fetchSolicitudes(currentPage, pageSize)
+  }, [currentPage, pageSize])
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -67,7 +78,7 @@ export function SolicitudesComboModule() {
 
     try {
       await api.solicitudes.delete(id)
-      setSolicitudes(solicitudes.filter(s => s.id !== id))
+      fetchSolicitudes(currentPage, pageSize)
       if (selectedSolicitud?.id === id) setSelectedSolicitud(null)
       toast.success('Solicitud eliminada')
     } catch (error) {
@@ -150,7 +161,7 @@ export function SolicitudesComboModule() {
         const updatedConfig = { ...selectedSolicitud.configuracion, ventaGenerada: true };
         const updatedSolicitud = await api.solicitudes.updateConfiguracion(selectedSolicitud.id, updatedConfig);
         setSelectedSolicitud(updatedSolicitud);
-        fetchSolicitudes();
+        fetchSolicitudes(currentPage, pageSize);
 
         toast.success('Venta generada exitosamente')
         
@@ -196,7 +207,7 @@ export function SolicitudesComboModule() {
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o teléfono..."
+                placeholder="Buscar por nombre o teléfono en la página actual..."
                 className="pl-8"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -228,7 +239,7 @@ export function SolicitudesComboModule() {
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No hay solicitudes registradas.
+                      No hay solicitudes registradas en esta página.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -271,6 +282,21 @@ export function SolicitudesComboModule() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          
+          <div className="mt-4">
+            <AppPagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              itemName="solicitudes de combos"
+            />
           </div>
         </CardContent>
       </Card>
