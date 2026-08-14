@@ -19,7 +19,7 @@ import {
   TOPPER_OPTIONS,
 } from '../cake-builder/constants/cake-options'
 import { AppPagination } from '@/components/ui/app-pagination'
-import debounce from 'lodash/debounce'
+import { useDebounce } from '@/hooks/use-debounce'
 
 // Helper para color de estado
 const estadoColor: Record<EstadoSolicitud, string> = {

@@ -29,7 +29,7 @@ import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
 import { AppPagination } from "@/components/ui/app-pagination"
-import debounce from "lodash/debounce"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export function CuentasCobrarModule() {
   const [pendientes, setPendientes] = useState<Venta[]>([])

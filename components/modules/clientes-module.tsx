@@ -28,7 +28,7 @@ import { api } from "@/services"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { AppPagination } from "@/components/ui/app-pagination"
-import debounce from "lodash/debounce"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export function ClientesModule() {
   const [search, setSearch] = useState("")

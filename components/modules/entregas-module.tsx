@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Swal from "sweetalert2"
 import { AppPagination } from "@/components/ui/app-pagination"
-import debounce from "lodash/debounce"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export function EntregasModule() {
   const [entregas, setEntregas] = useState<Entrega[]>([])
