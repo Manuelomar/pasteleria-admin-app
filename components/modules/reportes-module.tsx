@@ -386,7 +386,7 @@ export function ReportesModule() {
         </TabsContent>
 
         <TabsContent value="ganancias" className="space-y-4">
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader>
               <CardTitle>Filtros del Reporte de Ganancias</CardTitle>
               <CardDescription>Configura los parámetros para ver las ganancias de las ventas en un periodo.</CardDescription>
@@ -560,7 +560,7 @@ export function ReportesModule() {
         </TabsContent>
 
         <TabsContent value="costos" className="space-y-4">
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader>
               <CardTitle>Filtros del Reporte de Costos</CardTitle>
               <CardDescription>Configura los parámetros para ver los costos de las ventas en un periodo.</CardDescription>
