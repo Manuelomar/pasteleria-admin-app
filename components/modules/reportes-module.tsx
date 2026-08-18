@@ -42,10 +42,17 @@ export function ReportesModule() {
   const [gananciasFechaInicio, setGananciasFechaInicio] = useState("")
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
   const [gananciasProductosIds, setGananciasProductosIds] = useState<string[]>([])
+  const [searchProductoGanancias, setSearchProductoGanancias] = useState("")
+
+  // Filtros Costos
+  const [costosFechaInicio, setCostosFechaInicio] = useState("")
+  const [costosFechaFin, setCostosFechaFin] = useState("")
+  const [costosProductosIds, setCostosProductosIds] = useState<string[]>([])
+  const [searchProductoCostos, setSearchProductoCostos] = useState("")
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const handleQuickDate = (type: 'semana' | 'mes' | 'año', targetTab: 'proveedor' | 'ventas' | 'ganancias' = 'proveedor') => {
+  const handleQuickDate = (type: 'semana' | 'mes' | 'año', targetTab: 'proveedor' | 'ventas' | 'ganancias' | 'costos' = 'proveedor') => {
     const end = new Date()
     const start = new Date()
 
@@ -63,6 +70,9 @@ export function ReportesModule() {
     } else if (targetTab === 'ganancias') {
       setGananciasFechaInicio(start.toISOString().split('T')[0])
       setGananciasFechaFin(end.toISOString().split('T')[0])
+    } else if (targetTab === 'costos') {
+      setCostosFechaInicio(start.toISOString().split('T')[0])
+      setCostosFechaFin(end.toISOString().split('T')[0])
     } else {
       setFechaInicio(start.toISOString().split('T')[0])
       setFechaFin(end.toISOString().split('T')[0])
@@ -95,6 +105,13 @@ export function ReportesModule() {
           productoId: gananciasProductosIds.length > 0 ? gananciasProductosIds.join(",") : undefined,
         })
         setReportHtml(html)
+      } else if (activeTab === "costos") {
+        const html = await api.reportes.getReporteCostos({
+          fechaInicio: costosFechaInicio,
+          fechaFin: costosFechaFin,
+          productoId: costosProductosIds.length > 0 ? costosProductosIds.join(",") : undefined,
+        })
+        setReportHtml(html)
       }
     } catch (error) {
       console.error("Error al generar reporte", error)
@@ -109,7 +126,9 @@ export function ReportesModule() {
       const timestamp = new Date().getTime();
       document.title = activeTab === 'proveedor' 
         ? `Reporte_Proveedores_${timestamp}` 
-        : activeTab === 'ventas' ? `Reporte_Ventas_${timestamp}` : `Reporte_Ganancias_${timestamp}`;
+        : activeTab === 'ventas' ? `Reporte_Ventas_${timestamp}` 
+        : activeTab === 'ganancias' ? `Reporte_Ganancias_${timestamp}`
+        : `Reporte_Costos_${timestamp}`;
       
       iframeRef.current.contentWindow.print();
       
@@ -133,6 +152,7 @@ export function ReportesModule() {
             <>
               <TabsTrigger value="ventas">Reporte de Ventas</TabsTrigger>
               <TabsTrigger value="ganancias">Reporte de Ganancias</TabsTrigger>
+              <TabsTrigger value="costos">Reporte de Costos</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -428,6 +448,7 @@ export function ReportesModule() {
                       } else if (val && val !== "todos" && !gananciasProductosIds.includes(val)) {
                         setGananciasProductosIds([...gananciasProductosIds, val]);
                       }
+                      setSearchProductoGanancias("");
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -438,8 +459,19 @@ export function ReportesModule() {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
+                      <div className="p-2 border-b">
+                        <Input
+                          placeholder="Buscar producto..."
+                          value={searchProductoGanancias}
+                          onChange={(e) => setSearchProductoGanancias(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="h-8"
+                        />
+                      </div>
                       <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
-                      {productos.map(p => (
+                      {productos
+                        .filter(p => p.nombre.toLowerCase().includes(searchProductoGanancias.toLowerCase()))
+                        .map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                       ))}
                     </SelectContent>
@@ -454,6 +486,156 @@ export function ReportesModule() {
                             {product?.nombre || id}
                             <button 
                               onClick={() => setGananciasProductosIds(prev => prev.filter(p => p !== id))}
+                              className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <Button onClick={generarReporte} disabled={loading} className="w-full md:w-auto">
+                  {loading ? <Loader className="mr-2 h-4 w-4" /> : null}
+                  Generar Reporte
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {reportHtml && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Vista Previa del Reporte</CardTitle>
+                  <CardDescription>Revisa el reporte antes de imprimirlo o descargarlo.</CardDescription>
+                </div>
+                <Button variant="secondary" onClick={imprimirReporte}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimir
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-md bg-white shadow-sm" style={{ height: "600px", overflow: "hidden" }}>
+                  <iframe 
+                    ref={iframeRef}
+                    srcDoc={reportHtml} 
+                    style={{ width: "100%", height: "100%", border: "none" }}
+                    title="Reporte Generado"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="costos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtros del Reporte de Costos</CardTitle>
+              <CardDescription>Configura los parámetros para ver los costos de las ventas en un periodo.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Rango de Fechas</Label>
+                    
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('semana', 'costos')} className="w-full sm:w-auto">
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        Última Semana
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('mes', 'costos')} className="w-full sm:w-auto">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Último Mes
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleQuickDate('año', 'costos')} className="w-full sm:w-auto">
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        Último Año
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setCostosFechaInicio("")
+                        setCostosFechaFin("")
+                        setCostosProductosIds([])
+                      }} className="w-full sm:w-auto">
+                        Limpiar Filtros
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Fecha Inicio</Label>
+                        <Input 
+                          type="date" 
+                          value={costosFechaInicio} 
+                          onChange={(e) => setCostosFechaInicio(e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fecha Fin</Label>
+                        <Input 
+                          type="date" 
+                          value={costosFechaFin} 
+                          onChange={(e) => setCostosFechaFin(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
+                  <Select 
+                    value={costosProductosIds.length === 0 ? "todos" : costosProductosIds[costosProductosIds.length - 1]} 
+                    onValueChange={(val) => {
+                      if (val === "todos") {
+                        setCostosProductosIds([]);
+                      } else if (val && val !== "todos" && !costosProductosIds.includes(val)) {
+                        setCostosProductosIds([...costosProductosIds, val]);
+                      }
+                      setSearchProductoCostos("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Agregar producto al filtro...">
+                        {costosProductosIds.length === 0 
+                          ? "Agregar producto al filtro..." 
+                          : (productos.find(p => p.id === costosProductosIds[costosProductosIds.length - 1])?.nombre || "Cargando...")}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
+                      <div className="p-2 border-b">
+                        <Input
+                          placeholder="Buscar producto..."
+                          value={searchProductoCostos}
+                          onChange={(e) => setSearchProductoCostos(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="h-8"
+                        />
+                      </div>
+                      <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
+                      {productos
+                        .filter(p => p.nombre.toLowerCase().includes(searchProductoCostos.toLowerCase()))
+                        .map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {costosProductosIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {costosProductosIds.map(id => {
+                        const product = productos.find(p => p.id === id);
+                        return (
+                          <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
+                            {product?.nombre || id}
+                            <button 
+                              onClick={() => setCostosProductosIds(prev => prev.filter(p => p !== id))}
                               className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
                             >
                               <X className="h-3.5 w-3.5" />

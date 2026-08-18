@@ -88,4 +88,32 @@ export const reportesService = {
 
     return response.text(); // Devuelve HTML
   },
+
+  getReporteCostos: async (filtros: {
+    fechaInicio?: string;
+    fechaFin?: string;
+    productoId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+    if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
+    if (filtros.productoId) params.append('productoId', filtros.productoId);
+
+    let token = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token');
+    }
+
+    const response = await fetch(`${API_URL}/reportes/costos?${params.toString()}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al generar el reporte de costos');
+    }
+
+    return response.text(); // Devuelve HTML
+  },
 };
