@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Loader } from "@/components/ui/loader"
-import { Printer, Calendar, CalendarDays, CalendarRange, X } from "lucide-react"
+import { Printer, Calendar, CalendarDays, CalendarRange, X, ChevronDown } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { type Usuario, type Producto } from "@/types"
@@ -43,12 +43,14 @@ export function ReportesModule() {
   const [gananciasFechaFin, setGananciasFechaFin] = useState("")
   const [gananciasProductosIds, setGananciasProductosIds] = useState<string[]>([])
   const [searchProductoGanancias, setSearchProductoGanancias] = useState("")
+  const [isGananciasDropdownOpen, setIsGananciasDropdownOpen] = useState(false)
 
   // Filtros Costos
   const [costosFechaInicio, setCostosFechaInicio] = useState("")
   const [costosFechaFin, setCostosFechaFin] = useState("")
   const [costosProductosIds, setCostosProductosIds] = useState<string[]>([])
   const [searchProductoCostos, setSearchProductoCostos] = useState("")
+  const [isCostosDropdownOpen, setIsCostosDropdownOpen] = useState(false)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -440,42 +442,66 @@ export function ReportesModule() {
 
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
-                  <Select 
-                    value={gananciasProductosIds.length === 0 ? "todos" : gananciasProductosIds[gananciasProductosIds.length - 1]} 
-                    onValueChange={(val) => {
-                      if (val === "todos") {
-                        setGananciasProductosIds([]);
-                      } else if (val && val !== "todos" && !gananciasProductosIds.includes(val)) {
-                        setGananciasProductosIds([...gananciasProductosIds, val]);
-                      }
-                      setSearchProductoGanancias("");
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Agregar producto al filtro...">
+                  <div className="relative">
+                    <div 
+                      className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm cursor-pointer hover:bg-accent/50"
+                      onClick={() => setIsGananciasDropdownOpen(!isGananciasDropdownOpen)}
+                    >
+                      <span className="truncate">
                         {gananciasProductosIds.length === 0 
                           ? "Agregar producto al filtro..." 
-                          : (productos.find(p => p.id === gananciasProductosIds[gananciasProductosIds.length - 1])?.nombre || "Cargando...")}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                      <div className="p-2 border-b">
-                        <Input
-                          placeholder="Buscar producto..."
-                          value={searchProductoGanancias}
-                          onChange={(e) => setSearchProductoGanancias(e.target.value)}
-                          onKeyDown={(e) => e.stopPropagation()}
-                          className="h-8"
-                        />
+                          : `${gananciasProductosIds.length} producto(s) seleccionado(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </div>
+
+                    {isGananciasDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                        <div className="p-1 pb-2 border-b">
+                          <Input
+                            placeholder="Buscar producto..."
+                            value={searchProductoGanancias}
+                            onChange={(e) => setSearchProductoGanancias(e.target.value)}
+                            className="h-8"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-1">
+                          <div 
+                            className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => {
+                              setGananciasProductosIds([]);
+                              setIsGananciasDropdownOpen(false);
+                            }}
+                          >
+                            Todos los productos (Limpiar)
+                          </div>
+                          {productos
+                            .filter(p => p.nombre.toLowerCase().includes(searchProductoGanancias.toLowerCase()))
+                            .map(p => (
+                            <div 
+                              key={p.id} 
+                              className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                if (gananciasProductosIds.includes(p.id)) {
+                                  setGananciasProductosIds(gananciasProductosIds.filter(id => id !== p.id));
+                                } else {
+                                  setGananciasProductosIds([...gananciasProductosIds, p.id]);
+                                }
+                              }}
+                            >
+                              <Checkbox 
+                                checked={gananciasProductosIds.includes(p.id)} 
+                                onCheckedChange={() => {}} 
+                                className="pointer-events-none"
+                              />
+                              <span>{p.nombre}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
-                      {productos
-                        .filter(p => p.nombre.toLowerCase().includes(searchProductoGanancias.toLowerCase()))
-                        .map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    )}
+                  </div>
                   
                   {gananciasProductosIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
@@ -590,42 +616,66 @@ export function ReportesModule() {
 
                 <div className="space-y-4">
                   <Label className="text-base font-semibold mb-3 block">Filtrar por Producto(s)</Label>
-                  <Select 
-                    value={costosProductosIds.length === 0 ? "todos" : costosProductosIds[costosProductosIds.length - 1]} 
-                    onValueChange={(val) => {
-                      if (val === "todos") {
-                        setCostosProductosIds([]);
-                      } else if (val && val !== "todos" && !costosProductosIds.includes(val)) {
-                        setCostosProductosIds([...costosProductosIds, val]);
-                      }
-                      setSearchProductoCostos("");
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Agregar producto al filtro...">
+                  <div className="relative">
+                    <div 
+                      className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm cursor-pointer hover:bg-accent/50"
+                      onClick={() => setIsCostosDropdownOpen(!isCostosDropdownOpen)}
+                    >
+                      <span className="truncate">
                         {costosProductosIds.length === 0 
                           ? "Agregar producto al filtro..." 
-                          : (productos.find(p => p.id === costosProductosIds[costosProductosIds.length - 1])?.nombre || "Cargando...")}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                      <div className="p-2 border-b">
-                        <Input
-                          placeholder="Buscar producto..."
-                          value={searchProductoCostos}
-                          onChange={(e) => setSearchProductoCostos(e.target.value)}
-                          onKeyDown={(e) => e.stopPropagation()}
-                          className="h-8"
-                        />
+                          : `${costosProductosIds.length} producto(s) seleccionado(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </div>
+
+                    {isCostosDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                        <div className="p-1 pb-2 border-b">
+                          <Input
+                            placeholder="Buscar producto..."
+                            value={searchProductoCostos}
+                            onChange={(e) => setSearchProductoCostos(e.target.value)}
+                            className="h-8"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-1">
+                          <div 
+                            className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => {
+                              setCostosProductosIds([]);
+                              setIsCostosDropdownOpen(false);
+                            }}
+                          >
+                            Todos los productos (Limpiar)
+                          </div>
+                          {productos
+                            .filter(p => p.nombre.toLowerCase().includes(searchProductoCostos.toLowerCase()))
+                            .map(p => (
+                            <div 
+                              key={p.id} 
+                              className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                if (costosProductosIds.includes(p.id)) {
+                                  setCostosProductosIds(costosProductosIds.filter(id => id !== p.id));
+                                } else {
+                                  setCostosProductosIds([...costosProductosIds, p.id]);
+                                }
+                              }}
+                            >
+                              <Checkbox 
+                                checked={costosProductosIds.includes(p.id)} 
+                                onCheckedChange={() => {}} 
+                                className="pointer-events-none"
+                              />
+                              <span>{p.nombre}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <SelectItem value="todos">Todos los productos (Limpiar)</SelectItem>
-                      {productos
-                        .filter(p => p.nombre.toLowerCase().includes(searchProductoCostos.toLowerCase()))
-                        .map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    )}
+                  </div>
                   
                   {costosProductosIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
