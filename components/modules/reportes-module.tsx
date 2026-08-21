@@ -243,12 +243,16 @@ export function ReportesModule() {
                       <Label className="text-base font-semibold mb-3 block">Filtrar por Proveedor</Label>
                       <Select value={proveedorId} onValueChange={setProveedorId}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Todos los proveedores" />
+                          <SelectValue placeholder="Todos los proveedores">
+                            {proveedorId === 'todos' 
+                              ? 'Todos los proveedores' 
+                              : (proveedores.find(p => p.id === proveedorId)?.nombre || proveedorId)}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="todos">Todos los proveedores</SelectItem>
                           {proveedores.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                            <SelectItem key={p.id} value={p.id}>{p.nombre || 'Sin nombre'}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
