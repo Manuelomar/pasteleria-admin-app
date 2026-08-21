@@ -57,6 +57,46 @@ export function ReportesModule() {
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
+  const getUniqueProducts = () => {
+    const unique: Producto[] = [];
+    const seen = new Set<string>();
+    for (const p of productos) {
+      const name = p.nombre.toLowerCase().trim();
+      if (!seen.has(name)) {
+        seen.add(name);
+        unique.push(p);
+      }
+    }
+    return unique;
+  }
+
+  const toggleProductName = (
+    productName: string, 
+    selectedIds: string[], 
+    setSelectedIds: (ids: string[]) => void
+  ) => {
+    const normalizedName = productName.toLowerCase().trim();
+    const matchingIds = productos
+      .filter(p => p.nombre.toLowerCase().trim() === normalizedName)
+      .map(p => p.id);
+    
+    // Si todos los matchingIds están en selectedIds, significa que está "seleccionado" y debemos quitarlos.
+    const isSelected = matchingIds.every(id => selectedIds.includes(id));
+    
+    if (isSelected) {
+      setSelectedIds(selectedIds.filter(id => !matchingIds.includes(id)));
+    } else {
+      const newIds = new Set(selectedIds);
+      matchingIds.forEach(id => newIds.add(id));
+      setSelectedIds(Array.from(newIds));
+    }
+  }
+
+  const getProductName = (p: Producto | undefined | null) => {
+    if (!p) return "";
+    return p.nombre;
+  }
+
   const handleQuickDate = (type: 'semana' | 'mes' | 'año', targetTab: 'proveedor' | 'ventas' | 'ganancias' | 'costos' = 'proveedor') => {
     const end = new Date()
     const start = new Date()
@@ -241,7 +281,7 @@ export function ReportesModule() {
                   {!isProveedor && (
                     <div className="mt-4">
                       <Label className="text-base font-semibold mb-3 block">Filtrar por Proveedor</Label>
-                      <Select value={proveedorId} onValueChange={setProveedorId}>
+                      <Select value={proveedorId} onValueChange={(val) => setProveedorId(val || 'todos')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Todos los proveedores">
                             {proveedorId === 'todos' 
@@ -501,28 +541,29 @@ export function ReportesModule() {
                           >
                             Todos los productos (Limpiar)
                           </div>
-                          {productos
+                          {getUniqueProducts()
                             .filter(p => p.nombre.toLowerCase().includes(searchProductoGanancias.toLowerCase()))
-                            .map(p => (
-                            <div 
-                              key={p.id} 
-                              className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                              onClick={() => {
-                                if (gananciasProductosIds.includes(p.id)) {
-                                  setGananciasProductosIds(gananciasProductosIds.filter(id => id !== p.id));
-                                } else {
-                                  setGananciasProductosIds([...gananciasProductosIds, p.id]);
-                                }
-                              }}
-                            >
-                              <Checkbox 
-                                checked={gananciasProductosIds.includes(p.id)} 
-                                onCheckedChange={() => {}} 
-                                className="pointer-events-none"
-                              />
-                              <span>{p.nombre}</span>
-                            </div>
-                          ))}
+                            .map(p => {
+                              const matchingIds = productos
+                                .filter(prod => prod.nombre.toLowerCase().trim() === p.nombre.toLowerCase().trim())
+                                .map(prod => prod.id);
+                              const isSelected = matchingIds.every(id => gananciasProductosIds.includes(id)) && matchingIds.length > 0;
+                              
+                              return (
+                                <div 
+                                  key={p.nombre} 
+                                  className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => toggleProductName(p.nombre, gananciasProductosIds, setGananciasProductosIds)}
+                                >
+                                  <Checkbox 
+                                    checked={isSelected} 
+                                    onCheckedChange={() => {}} 
+                                    className="pointer-events-none"
+                                  />
+                                  <span>{p.nombre}</span>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     )}
@@ -530,20 +571,17 @@ export function ReportesModule() {
                   
                   {gananciasProductosIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {gananciasProductosIds.map(id => {
-                        const product = productos.find(p => p.id === id);
-                        return (
-                          <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
-                            {product?.nombre || id}
+                      {Array.from(new Set(gananciasProductosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).map(nombre => (
+                          <Badge key={nombre} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
+                            {nombre}
                             <button 
-                              onClick={() => setGananciasProductosIds(prev => prev.filter(p => p !== id))}
+                              onClick={() => toggleProductName(nombre as string, gananciasProductosIds, setGananciasProductosIds)}
                               className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </Badge>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -675,28 +713,29 @@ export function ReportesModule() {
                           >
                             Todos los productos (Limpiar)
                           </div>
-                          {productos
+                          {getUniqueProducts()
                             .filter(p => p.nombre.toLowerCase().includes(searchProductoCostos.toLowerCase()))
-                            .map(p => (
-                            <div 
-                              key={p.id} 
-                              className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                              onClick={() => {
-                                if (costosProductosIds.includes(p.id)) {
-                                  setCostosProductosIds(costosProductosIds.filter(id => id !== p.id));
-                                } else {
-                                  setCostosProductosIds([...costosProductosIds, p.id]);
-                                }
-                              }}
-                            >
-                              <Checkbox 
-                                checked={costosProductosIds.includes(p.id)} 
-                                onCheckedChange={() => {}} 
-                                className="pointer-events-none"
-                              />
-                              <span>{p.nombre}</span>
-                            </div>
-                          ))}
+                            .map(p => {
+                              const matchingIds = productos
+                                .filter(prod => prod.nombre.toLowerCase().trim() === p.nombre.toLowerCase().trim())
+                                .map(prod => prod.id);
+                              const isSelected = matchingIds.every(id => costosProductosIds.includes(id)) && matchingIds.length > 0;
+                              
+                              return (
+                                <div 
+                                  key={p.nombre} 
+                                  className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                  onClick={() => toggleProductName(p.nombre, costosProductosIds, setCostosProductosIds)}
+                                >
+                                  <Checkbox 
+                                    checked={isSelected} 
+                                    onCheckedChange={() => {}} 
+                                    className="pointer-events-none"
+                                  />
+                                  <span>{p.nombre}</span>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     )}
@@ -704,20 +743,17 @@ export function ReportesModule() {
                   
                   {costosProductosIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {costosProductosIds.map(id => {
-                        const product = productos.find(p => p.id === id);
-                        return (
-                          <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
-                            {product?.nombre || id}
+                      {Array.from(new Set(costosProductosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).map(nombre => (
+                          <Badge key={nombre} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
+                            {nombre}
                             <button 
-                              onClick={() => setCostosProductosIds(prev => prev.filter(p => p !== id))}
+                              onClick={() => toggleProductName(nombre as string, costosProductosIds, setCostosProductosIds)}
                               className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </Badge>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
