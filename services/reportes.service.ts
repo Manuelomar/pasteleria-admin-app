@@ -6,12 +6,14 @@ export const reportesService = {
     fechaFin?: string;
     pagoPendiente?: boolean;
     pagoPagado?: boolean;
+    proveedorId?: string;
   }) => {
     const params = new URLSearchParams();
     if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
     if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
     if (filtros.pagoPendiente) params.append('pagoPendiente', 'true');
     if (filtros.pagoPagado) params.append('pagoPagado', 'true');
+    if (filtros.proveedorId && filtros.proveedorId !== 'todos') params.append('proveedorId', filtros.proveedorId);
 
     let token = null;
     if (typeof window !== 'undefined') {

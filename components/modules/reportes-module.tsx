@@ -19,10 +19,12 @@ export function ReportesModule() {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
 
   const [productos, setProductos] = useState<Producto[]>([])
+  const [proveedores, setProveedores] = useState<Usuario[]>([])
 
   useEffect(() => {
     api.auth.getMe().then(setCurrentUser).catch(console.error)
     api.productos.getAll().then(setProductos).catch(console.error)
+    api.usuarios.getAll().then(res => setProveedores(res.filter(u => u.rol === 'proveedor'))).catch(console.error)
   }, [])
 
   const isProveedor = currentUser?.rol === "proveedor"
@@ -32,6 +34,7 @@ export function ReportesModule() {
   const [fechaFin, setFechaFin] = useState("")
   const [pagoPendiente, setPagoPendiente] = useState(false)
   const [pagoPagado, setPagoPagado] = useState(false)
+  const [proveedorId, setProveedorId] = useState("todos")
 
   // Filtros Ventas
   const [ventasFechaInicio, setVentasFechaInicio] = useState("")
@@ -91,6 +94,7 @@ export function ReportesModule() {
           fechaFin,
           pagoPendiente,
           pagoPagado,
+          proveedorId: !isProveedor && proveedorId !== "todos" ? proveedorId : undefined,
         })
         setReportHtml(html)
       } else if (activeTab === "ventas") {
@@ -233,6 +237,23 @@ export function ReportesModule() {
                       <Label htmlFor="pagoPagado" className="font-normal">Pagado</Label>
                     </div>
                   </div>
+                  
+                  {!isProveedor && (
+                    <div className="mt-4">
+                      <Label className="text-base font-semibold mb-3 block">Filtrar por Proveedor</Label>
+                      <Select value={proveedorId} onValueChange={setProveedorId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos los proveedores" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos los proveedores</SelectItem>
+                          {proveedores.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
               
