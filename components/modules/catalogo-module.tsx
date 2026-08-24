@@ -104,7 +104,14 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
     }
 
     Promise.all([
-      api.productos.getPaged(currentPage, pageSize, search, effectiveTipo, disp, selectedProviderId === "internos" ? "internos" : selectedProviderId || undefined),
+      api.productos.getPaged(
+        currentPage, 
+        pageSize, 
+        search, 
+        effectiveTipo, 
+        disp, 
+        selectedProviderId === "internos" || (!isAdmin && currentUser?.rol !== 'proveedor') ? "internos" : selectedProviderId || undefined
+      ),
       new Promise(resolve => setTimeout(resolve, 1000))
     ])
       .then(([res]) => {
