@@ -198,6 +198,8 @@ export function UsuariosModule() {
               <SelectItem value="todos">Todos los roles</SelectItem>
               <SelectItem value="admin">Administrador</SelectItem>
               <SelectItem value="usuario">Usuario</SelectItem>
+              <SelectItem value="proveedor">Proveedor</SelectItem>
+              <SelectItem value="vendedor">Vendedor</SelectItem>
             </SelectContent>
           </Select>
           <Select value={estado} onValueChange={handleEstadoChange}>

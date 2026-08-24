@@ -58,6 +58,7 @@ export function UsuarioDialog({
     graficos: true,
     estadoCuenta: true,
     usuarios: false,
+    inventario: false,
   }
   const [permisos, setPermisos] = useState<Record<string, boolean>>(defaultPermisos)
   const [isSaving, setIsSaving] = useState(false)
@@ -86,6 +87,19 @@ export function UsuarioDialog({
         graficos: false,
         estadoCuenta: false,
         usuarios: false,
+        inventario: false,
+      })
+    } else if (rol === "vendedor") {
+      setPermisos({
+        dashboard: false,
+        clientes: false,
+        catalogo: true,
+        entregas: false,
+        ventas: true,
+        graficos: false,
+        estadoCuenta: false,
+        usuarios: false,
+        inventario: true,
       })
     }
   }, [rol])
@@ -280,6 +294,7 @@ export function UsuarioDialog({
                     <SelectItem value="admin">Administrador</SelectItem>
                     <SelectItem value="usuario">Usuario</SelectItem>
                     <SelectItem value="proveedor">Proveedor</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -305,6 +320,7 @@ export function UsuarioDialog({
                 graficos: "Gráficos",
                 estadoCuenta: "Finanzas y Caja",
                 usuarios: "Usuarios",
+                inventario: "Inventario",
               }).map(([key, label]) => (
                 <Field key={key} orientation="horizontal" className="items-center justify-between col-span-2 sm:col-span-1">
                   <FieldLabel htmlFor={`perm-${key}`} className="font-normal text-sm">{label}</FieldLabel>
