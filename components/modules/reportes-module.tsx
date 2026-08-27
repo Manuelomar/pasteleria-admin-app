@@ -34,7 +34,9 @@ export function ReportesModule() {
   const [fechaFin, setFechaFin] = useState("")
   const [pagoPendiente, setPagoPendiente] = useState(false)
   const [pagoPagado, setPagoPagado] = useState(false)
-  const [proveedorId, setProveedorId] = useState("todos")
+  const [proveedoresIds, setProveedoresIds] = useState<string[]>([])
+  const [searchProveedor, setSearchProveedor] = useState("")
+  const [isProveedorDropdownOpen, setIsProveedorDropdownOpen] = useState(false)
 
   // Filtros Ventas
   const [ventasFechaInicio, setVentasFechaInicio] = useState("")
@@ -68,6 +70,14 @@ export function ReportesModule() {
       }
     }
     return unique;
+  }
+
+  const toggleProveedorId = (id: string) => {
+    if (proveedoresIds.includes(id)) {
+      setProveedoresIds(proveedoresIds.filter(pid => pid !== id));
+    } else {
+      setProveedoresIds([...proveedoresIds, id]);
+    }
   }
 
   const toggleProductName = (
@@ -134,7 +144,7 @@ export function ReportesModule() {
           fechaFin,
           pagoPendiente,
           pagoPagado,
-          proveedorId: !isProveedor && proveedorId !== "todos" ? proveedorId : undefined,
+          proveedorId: !isProveedor && proveedoresIds.length > 0 ? proveedoresIds.join(',') : undefined,
         })
         setReportHtml(html)
       } else if (activeTab === "ventas") {
@@ -231,8 +241,9 @@ export function ReportesModule() {
                       <Button variant="outline" size="sm" onClick={() => {
                         setFechaInicio("")
                         setFechaFin("")
+                        setProveedoresIds([])
                       }} className="w-full sm:w-auto">
-                        Limpiar Fechas
+                        Limpiar Filtros
                       </Button>
                     </div>
 
@@ -279,23 +290,86 @@ export function ReportesModule() {
                   </div>
                   
                   {!isProveedor && (
-                    <div className="mt-4">
-                      <Label className="text-base font-semibold mb-3 block">Filtrar por Proveedor</Label>
-                      <Select value={proveedorId} onValueChange={(val) => setProveedorId(val || 'todos')}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todos los proveedores">
-                            {proveedorId === 'todos' 
-                              ? 'Todos los proveedores' 
-                              : (proveedores.find(p => p.id === proveedorId)?.nombre || proveedorId)}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos los proveedores</SelectItem>
-                          {proveedores.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.nombre || 'Sin nombre'}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="mt-4 space-y-4">
+                      <Label className="text-base font-semibold mb-3 block">Filtrar por Proveedor(es)</Label>
+                      <div className="relative">
+                        <div 
+                          className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm cursor-pointer hover:bg-accent/50"
+                          onClick={() => setIsProveedorDropdownOpen(!isProveedorDropdownOpen)}
+                        >
+                          <span className="truncate">
+                            {proveedoresIds.length === 0 
+                              ? "Todos los proveedores" 
+                              : `${proveedoresIds.length} proveedor(es) seleccionado(s)`}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        </div>
+
+                        {isProveedorDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                            <div className="p-1 pb-2 border-b">
+                              <Input
+                                placeholder="Buscar proveedor..."
+                                value={searchProveedor}
+                                onChange={(e) => setSearchProveedor(e.target.value)}
+                                className="h-8"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-60 overflow-y-auto p-1">
+                              <div 
+                                className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                onClick={() => {
+                                  setProveedoresIds([]);
+                                  setIsProveedorDropdownOpen(false);
+                                }}
+                              >
+                                Todos los proveedores (Limpiar)
+                              </div>
+                              {proveedores
+                                .filter(p => (p.nombre || 'Sin nombre').toLowerCase().includes(searchProveedor.toLowerCase()))
+                                .map(p => {
+                                  const isSelected = proveedoresIds.includes(p.id);
+                                  
+                                  return (
+                                    <div 
+                                      key={p.id} 
+                                      className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                      onClick={() => toggleProveedorId(p.id)}
+                                    >
+                                      <Checkbox 
+                                        checked={isSelected} 
+                                        onCheckedChange={() => {}} 
+                                        className="pointer-events-none"
+                                      />
+                                      <span>{p.nombre || 'Sin nombre'}</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {proveedoresIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {proveedoresIds.map(id => {
+                            const p = proveedores.find(prov => prov.id === id);
+                            const nombre = p?.nombre || 'Sin nombre';
+                            return (
+                              <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 px-3 text-sm">
+                                {nombre}
+                                <button 
+                                  onClick={() => toggleProveedorId(id)}
+                                  className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
