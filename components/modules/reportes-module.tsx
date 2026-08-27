@@ -214,7 +214,7 @@ export function ReportesModule() {
         </TabsList>
 
         <TabsContent value="proveedor" className="space-y-4">
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader>
               <CardTitle>Filtros del Reporte</CardTitle>
               <CardDescription>Configura los parámetros para generar el reporte de entregas de proveedores.</CardDescription>
