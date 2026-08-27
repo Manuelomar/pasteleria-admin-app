@@ -57,6 +57,7 @@ export function ProductoDialog({
   const [cantidad, setCantidad] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [disponible, setDisponible] = useState(true)
+  const [contable, setContable] = useState(true)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -99,6 +100,7 @@ export function ProductoDialog({
       setCantidad(producto?.cantidad !== undefined ? String(producto.cantidad) : "0")
       setDescripcion(producto?.descripcion ?? "")
       setDisponible(producto?.disponible ?? true)
+      setContable(producto?.contable ?? true)
       setFile(null)
       setPreviewUrl(producto?.imagen ?? null)
     }
@@ -193,6 +195,7 @@ export function ProductoDialog({
         cantidad: parseInt(cantidad) || 0,
         descripcion,
         disponible,
+        contable,
         imagen: imagenUrl,
       }
       
@@ -328,6 +331,7 @@ export function ProductoDialog({
                   value={cantidad}
                   onChange={(e) => setCantidad(e.target.value)}
                   placeholder="0"
+                  disabled={!contable}
                 />
               </Field>
             </div>
@@ -365,6 +369,10 @@ export function ProductoDialog({
                   />
                 </div>
               )}
+            </Field>
+            <Field orientation="horizontal" className="items-center justify-between">
+              <FieldLabel htmlFor="prod-contable">Lleva inventario (Contable)</FieldLabel>
+              <Switch id="prod-contable" checked={contable} onCheckedChange={setContable} />
             </Field>
             <Field orientation="horizontal" className="items-center justify-between">
               <FieldLabel htmlFor="prod-disp">Disponible</FieldLabel>

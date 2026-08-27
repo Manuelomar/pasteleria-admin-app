@@ -12,6 +12,7 @@ export interface Producto {
   descripcion: string
   vendidos: number
   cantidad?: number
+  contable?: boolean
   proveedorId?: string
   precioCosto?: number
   precioUber?: number

@@ -164,7 +164,7 @@ export function VentasModule() {
     const existing = items.find((i) => i.productoId === id)
     const currentQty = existing ? existing.cantidad : 0
     
-    if (currentQty + 1 > (prod.cantidad || 0)) {
+    if (prod.contable !== false && currentQty + 1 > (prod.cantidad || 0)) {
       if ((prod.cantidad || 0) === 0 || currentQty === (prod.cantidad || 0)) {
          const added = await handleAddStockPrompt(prod);
          if (added) {
@@ -208,7 +208,7 @@ export function VentasModule() {
     if (!existing) return
 
     const newQty = existing.cantidad + delta
-    if (delta > 0 && newQty > (prod.cantidad || 0)) {
+    if (prod.contable !== false && delta > 0 && newQty > (prod.cantidad || 0)) {
       if (existing.cantidad === (prod.cantidad || 0)) {
         const added = await handleAddStockPrompt(prod);
         if (added) {
@@ -432,7 +432,7 @@ export function VentasModule() {
               </div>
               <div className="flex flex-col gap-1 p-2.5">
                 <span className="line-clamp-1 text-sm font-medium text-foreground">{p.nombre}</span>
-                <span className="text-[10px] text-muted-foreground">Stock: {p.cantidad ?? 0}</span>
+                <span className="text-[10px] text-muted-foreground">Stock: {p.contable === false ? '∞' : (p.cantidad ?? 0)}</span>
                 <div className="flex items-center justify-between gap-1 mt-0.5">
                   <span className="text-sm font-semibold text-primary">{currency(p.precio)}</span>
                   <Plus className="size-4 text-muted-foreground group-hover:text-primary" />

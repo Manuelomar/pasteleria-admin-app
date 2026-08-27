@@ -500,7 +500,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               </div>
               <div className="flex items-center justify-between mt-1">
                 <DisponibleBadge disponible={p.disponible} />
-                <span className="text-xs font-medium text-muted-foreground">Stock: {p.cantidad ?? 0}</span>
+                <span className="text-xs font-medium text-muted-foreground">Stock: {p.contable === false ? '∞' : (p.cantidad ?? 0)}</span>
               </div>
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
@@ -530,6 +530,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                 className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                 onClick={() => handleAddStock(p)}
                 title="Añadir stock"
+                disabled={p.contable === false}
               >
                 <PackagePlus />
                 <span className="sr-only">Añadir stock</span>
@@ -540,7 +541,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                 className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                 onClick={() => handleDiscardStock(p)}
                 title="Descartar stock"
-                disabled={(p.cantidad ?? 0) <= 0}
+                disabled={p.contable === false || (p.cantidad ?? 0) <= 0}
               >
                 <PackageMinus />
                 <span className="sr-only">Descartar stock</span>
