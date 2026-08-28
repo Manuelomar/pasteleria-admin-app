@@ -179,7 +179,7 @@ export function EntregaDialog({
             <Field>
               <FieldLabel>Proveedor</FieldLabel>
               <select 
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 value={selectedProveedor}
                 onChange={e => {
                   setSelectedProveedor(e.target.value)
@@ -188,9 +188,9 @@ export function EntregaDialog({
                   setTipoItem("")
                 }}
               >
-                <option value="">-- Seleccione proveedor --</option>
+                <option value="" className="bg-background text-foreground">-- Seleccione proveedor --</option>
                 {proveedores.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                  <option key={p.id} value={p.id} className="bg-background text-foreground">{p.nombre}</option>
                 ))}
               </select>
             </Field>
@@ -223,15 +223,15 @@ export function EntregaDialog({
                   <FieldLabel>Añadir {tipoItem === "materiales" ? "Material" : "Producto"}</FieldLabel>
                   <div className="flex gap-2">
                     <select 
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       value={selectedProducto}
                       onChange={e => setSelectedProducto(e.target.value)}
                     >
-                      <option value="">-- Seleccione {tipoItem === "materiales" ? "material" : "producto"} --</option>
+                      <option value="" className="bg-background text-foreground">-- Seleccione {tipoItem === "materiales" ? "material" : "producto"} --</option>
                       {productos
                         .filter(p => (vendeMateriales && tipoItem === "materiales") ? p.tipo === "material" : p.tipo !== "material")
                         .map(p => (
-                        <option key={p.id} value={p.id} disabled={(p.cantidad || 0) <= 0}>
+                        <option key={p.id} value={p.id} disabled={(p.cantidad || 0) <= 0} className="bg-background text-foreground">
                           {p.nombre} (Stock: {p.cantidad || 0})
                         </option>
                       ))}

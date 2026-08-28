@@ -274,6 +274,7 @@ export function EntregasModule() {
                           <Select 
                             value={entrega.estadoEntrega} 
                             onValueChange={(v) => v && handleUpdateEstado(entrega.id, v)}
+                            disabled={entrega.agregadoAlStock}
                           >
                             <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
                               <SelectValue>
@@ -291,6 +292,7 @@ export function EntregasModule() {
                           <Select 
                             value={entrega.estadoPago} 
                             onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
+                            disabled={entrega.agregadoAlStock}
                           >
                             <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
                               <SelectValue>
