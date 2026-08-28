@@ -288,23 +288,25 @@ export function EntregasModule() {
                             </Select>
                           </div>
                         )}
-                        <div className="flex flex-col gap-2">
-                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Pago</Label>
-                          <Select 
-                            value={entrega.estadoPago} 
-                            onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
-                          >
-                            <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                              <SelectValue>
-                                {entrega.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pendiente_pago">Pendiente</SelectItem>
-                              <SelectItem value="pagado">Pagado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {!(entrega.estadoEntrega === 'entregada' && entrega.estadoPago === 'pagado' && entrega.agregadoAlStock) && (
+                          <div className="flex flex-col gap-2">
+                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Pago</Label>
+                            <Select 
+                              value={entrega.estadoPago} 
+                              onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
+                            >
+                              <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
+                                <SelectValue>
+                                  {entrega.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pendiente_pago">Pendiente</SelectItem>
+                                <SelectItem value="pagado">Pagado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         {entrega.estadoEntrega === 'entregada' && !entrega.agregadoAlStock && (
                           <Button onClick={() => handleAddStock(entrega.id)} className="mt-4 w-full">
                             Añadir a Stock
