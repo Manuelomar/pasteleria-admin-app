@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { Search, Plus, Trash2, Minus, Printer, Save, Eraser } from "lucide-react"
+import { Search, Plus, Trash2, Minus, Printer, Save, Eraser, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -52,6 +52,7 @@ export function VentasModule() {
   const [uberEatsTotal, setUberEatsTotal] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [lastVentaId, setLastVentaId] = useState<string | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
@@ -91,6 +92,53 @@ export function VentasModule() {
   useEffect(() => {
     loadProductos()
   }, [currentPage, search, tipo])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("bizcochao_current_sale")
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.items) setItems(parsed.items)
+        if (parsed.clienteId) setClienteId(parsed.clienteId)
+        if (parsed.descuento) setDescuento(parsed.descuento)
+        if (parsed.descuentoPorcentaje) setDescuentoPorcentaje(parsed.descuentoPorcentaje)
+        if (parsed.aplicarItbis !== undefined) setAplicarItbis(parsed.aplicarItbis)
+        if (parsed.metodoPago) setMetodoPago(parsed.metodoPago)
+        if (parsed.estadoPago) setEstadoPago(parsed.estadoPago)
+        if (parsed.montoPagado) setMontoPagado(parsed.montoPagado)
+        if (parsed.efectivoRecibido) setEfectivoRecibido(parsed.efectivoRecibido)
+        if (parsed.uberEatsTotal) setUberEatsTotal(parsed.uberEatsTotal)
+      }
+    } catch (e) {
+      console.error("Error loading cart state", e)
+    }
+    setIsLoaded(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      const stateToSave = {
+        items,
+        clienteId,
+        descuento,
+        descuentoPorcentaje,
+        aplicarItbis,
+        metodoPago,
+        estadoPago,
+        montoPagado,
+        efectivoRecibido,
+        uberEatsTotal
+      }
+      localStorage.setItem("bizcochao_current_sale", JSON.stringify(stateToSave))
+    } catch (e) {
+      console.error("Error saving cart state", e)
+    }
+  }, [
+    items, clienteId, descuento, descuentoPorcentaje, 
+    aplicarItbis, metodoPago, estadoPago, montoPagado, 
+    efectivoRecibido, uberEatsTotal, isLoaded
+  ])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -399,8 +447,16 @@ export function VentasModule() {
             placeholder="Buscar producto..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-9"
           />
+          {search && (
+            <button
+              onClick={() => handleSearchChange("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
         <ToggleGroup
           value={[tipo]}
