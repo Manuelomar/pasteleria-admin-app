@@ -269,30 +269,30 @@ export function EntregasModule() {
                   <div className="flex flex-col gap-4 p-4 md:w-56 md:border-l md:border-border md:p-6 lg:w-72 bg-muted/10">
                     {isAdmin ? (
                       <>
-                        <div className="flex flex-col gap-2">
-                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Entrega</Label>
-                          <Select 
-                            value={entrega.estadoEntrega} 
-                            onValueChange={(v) => v && handleUpdateEstado(entrega.id, v)}
-                            disabled={entrega.agregadoAlStock}
-                          >
-                            <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                              <SelectValue>
-                                {entrega.estadoEntrega === 'entregada' ? 'Entregada' : 'En espera'}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="en_espera">En espera</SelectItem>
-                              <SelectItem value="entregada">Entregada</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {!entrega.agregadoAlStock && (
+                          <div className="flex flex-col gap-2">
+                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Entrega</Label>
+                            <Select 
+                              value={entrega.estadoEntrega} 
+                              onValueChange={(v) => v && handleUpdateEstado(entrega.id, v)}
+                            >
+                              <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
+                                <SelectValue>
+                                  {entrega.estadoEntrega === 'entregada' ? 'Entregada' : 'En espera'}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="en_espera">En espera</SelectItem>
+                                <SelectItem value="entregada">Entregada</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         <div className="flex flex-col gap-2">
                           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado Pago</Label>
                           <Select 
                             value={entrega.estadoPago} 
                             onValueChange={(v) => v && handleUpdatePago(entrega.id, v)}
-                            disabled={entrega.agregadoAlStock}
                           >
                             <SelectTrigger className="bg-background shadow-sm h-9 border-muted-foreground/20 hover:border-primary/50 transition-colors">
                               <SelectValue>
