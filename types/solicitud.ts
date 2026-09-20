@@ -1,6 +1,6 @@
 export interface Solicitud {
   id: string
-  tipo: 'bizcocho' | 'combo'
+  tipo: 'bizcocho' | 'combo' | 'orden'
   nombre: string
   apellido: string
   correo: string | null

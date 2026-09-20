@@ -22,6 +22,7 @@ const titles: Record<ModuleId, string> = {
   reportes: "Reportes",
   "solicitudes-bizcocho": "Solicitudes de Bizcochos",
   "solicitudes-combo": "Solicitudes de Combos",
+  "solicitudes-orden": "Órdenes",
 }
 
 export default function ModuloLayout({ children }: { children: React.ReactNode }) {

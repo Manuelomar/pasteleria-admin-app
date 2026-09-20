@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Cake, Package } from "lucide-react"
+import { Search, Cake, Package, ShoppingCart } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -95,6 +95,14 @@ export function MenuPublicoModule() {
             >
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Personaliza tu Combo</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleNavigate('/ordenes')}
+              className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">Órdenes</span>
             </Button>
             
             <Button 

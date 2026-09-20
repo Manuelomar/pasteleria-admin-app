@@ -41,6 +41,7 @@ export type ModuleId =
   | "historial"
   | "solicitudes-bizcocho"
   | "solicitudes-combo"
+  | "solicitudes-orden"
 
 interface NavItem {
   id: ModuleId
@@ -64,6 +65,7 @@ const modulos: NavItem[] = [
 const solicitudes: NavItem[] = [
   { id: "solicitudes-bizcocho", label: "Bizcochos", icon: Cake },
   { id: "solicitudes-combo", label: "Combos", icon: Package },
+  { id: "solicitudes-orden", label: "Órdenes", icon: ShoppingCart },
 ]
 
 const administracion: NavItem[] = [{ id: "usuarios", label: "Usuarios", icon: ShieldCheck }]

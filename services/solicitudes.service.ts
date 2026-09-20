@@ -17,12 +17,19 @@ class SolicitudesService {
     })
   }
 
-  async getAll(tipo?: 'bizcocho' | 'combo') {
+  async createOrden(formData: FormData) {
+    return await fetchPublicAPI('/solicitudes/orden', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  async getAll(tipo?: 'bizcocho' | 'combo' | 'orden') {
     const url = tipo ? `/solicitudes?tipo=${tipo}` : '/solicitudes'
     return await fetchAPI(url) as Promise<Solicitud[]>
   }
 
-  async getPaged(pageNumber: number, pageSize: number, tipo?: 'bizcocho' | 'combo'): Promise<PaginatedResponse<Solicitud>> {
+  async getPaged(pageNumber: number, pageSize: number, tipo?: 'bizcocho' | 'combo' | 'orden'): Promise<PaginatedResponse<Solicitud>> {
     let url = `/solicitudes/paged?pageNumber=${pageNumber}&pageSize=${pageSize}`;
     if (tipo) {
       url += `&tipo=${tipo}`;
