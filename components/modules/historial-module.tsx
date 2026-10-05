@@ -29,6 +29,7 @@ const METODO_LABEL: Record<string, string> = {
   tarjeta: "Tarjeta",
   transferencia: "Transferencia",
   uberEats: "UberEats",
+  pedidosYa: "Pedidos Ya",
 }
 
 const ESTADO_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {

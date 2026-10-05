@@ -133,7 +133,9 @@ export function SolicitudesOrdenModule() {
       inputOptions: {
         'efectivo': 'Efectivo',
         'tarjeta': 'Tarjeta',
-        'transferencia': 'Transferencia'
+        'transferencia': 'Transferencia',
+        'uberEats': 'UberEats',
+        'pedidosYa': 'Pedidos Ya'
       },
       inputPlaceholder: 'Selecciona un método',
       showCancelButton: true,

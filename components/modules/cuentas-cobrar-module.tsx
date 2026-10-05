@@ -408,6 +408,8 @@ export function CuentasCobrarModule() {
                   <SelectItem value="efectivo">Efectivo</SelectItem>
                   <SelectItem value="tarjeta">Tarjeta de Crédito / Débito</SelectItem>
                   <SelectItem value="transferencia">Transferencia Bancaria</SelectItem>
+                  <SelectItem value="uberEats">UberEats</SelectItem>
+                  <SelectItem value="pedidosYa">Pedidos Ya</SelectItem>
                 </SelectContent>
               </Select>
             </div>
