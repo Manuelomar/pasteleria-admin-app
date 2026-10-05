@@ -310,11 +310,11 @@ export function DashboardModule() {
             {metodosPago.length > 0 ? (
               <ChartContainer
                 config={{ 
-                  efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
-                  tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
-                  transferencia: { label: "Transferencia", color: "var(--chart-3)" },
-                  uberEats: { label: "Uber Eats", color: "var(--chart-4)" },
-                  pedidosYa: { label: "Pedidos Ya", color: "var(--chart-5)" }
+                  Efectivo: { label: "Efectivo", color: "var(--chart-1)" }, 
+                  Tarjeta: { label: "Tarjeta", color: "var(--chart-2)" }, 
+                  Transferencia: { label: "Transferencia", color: "var(--chart-3)" },
+                  UberEats: { label: "Uber Eats", color: "var(--chart-4)" },
+                  PedidosYa: { label: "Pedidos Ya", color: "var(--chart-5)" }
                 }}
                 className="mx-auto h-[280px] w-full"
               >

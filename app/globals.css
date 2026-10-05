@@ -70,8 +70,8 @@
   --chart-1: #e63946;
   --chart-2: #f4a261;
   --chart-3: #8ab07d;
-  --chart-4: #2a1b18;
-  --chart-5: #7d6b67;
+  --chart-4: #457b9d;
+  --chart-5: #e9c46a;
   --radius: 0.75rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #2a1b18;
@@ -102,11 +102,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --chart-1: #ff6b77;
+  --chart-2: #ffb880;
+  --chart-3: #a3cc96;
+  --chart-4: #6aa8ce;
+  --chart-5: #ffe08a;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -157,3 +157,4 @@
     display: none; /* Chrome, Safari and Opera */
   }
 }
+
