@@ -1,4 +1,4 @@
-export type MetodoPago = "efectivo" | "tarjeta" | "transferencia" | "uberEats"
+export type MetodoPago = "efectivo" | "tarjeta" | "transferencia" | "uberEats" | "pedidosYa"
 export type EstadoPago = "pagado" | "pendiente" | "parcial"
 
 export interface VentaItem {

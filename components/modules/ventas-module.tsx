@@ -107,7 +107,6 @@ export function VentasModule() {
         if (parsed.estadoPago) setEstadoPago(parsed.estadoPago)
         if (parsed.montoPagado) setMontoPagado(parsed.montoPagado)
         if (parsed.efectivoRecibido) setEfectivoRecibido(parsed.efectivoRecibido)
-        if (parsed.uberEatsTotal) setUberEatsTotal(parsed.uberEatsTotal)
       }
     } catch (e) {
       console.error("Error loading cart state", e)
@@ -127,8 +126,7 @@ export function VentasModule() {
         metodoPago,
         estadoPago,
         montoPagado,
-        efectivoRecibido,
-        uberEatsTotal
+        efectivoRecibido
       }
       localStorage.setItem("bizcochao_current_sale", JSON.stringify(stateToSave))
     } catch (e) {
@@ -137,7 +135,7 @@ export function VentasModule() {
   }, [
     items, clienteId, descuento, descuentoPorcentaje, 
     aplicarItbis, metodoPago, estadoPago, montoPagado, 
-    efectivoRecibido, uberEatsTotal, isLoaded
+    efectivoRecibido, isLoaded
   ])
 
   const handleSearchChange = (val: string) => {
@@ -298,7 +296,16 @@ export function VentasModule() {
   const imp = aplicarItbis ? (subtotal - descTotal) * 0.18 : 0
   const baseTotal = Math.max(0, subtotal - descTotal + imp)
   
-  const total = metodoPago === "uberEats" ? (Number(uberEatsTotal) || 0) : baseTotal
+  let total = baseTotal;
+  let platformMarkup = 0;
+  if (metodoPago === "uberEats") {
+    platformMarkup = baseTotal * 0.33; // 33% markup
+    total = baseTotal + platformMarkup;
+  } else if (metodoPago === "pedidosYa") {
+    platformMarkup = baseTotal * 0.26; // 26% markup
+    total = baseTotal + platformMarkup;
+  }
+
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
   const devuelta = metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
@@ -317,7 +324,6 @@ export function VentasModule() {
     setEstadoPago("pagado")
     setMetodoPago("efectivo")
     setClienteId("general")
-    setUberEatsTotal("")
   }
 
   const imprimirFactura = async (id: string) => {
@@ -593,6 +599,7 @@ export function VentasModule() {
                   <SelectItem value="tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="transferencia">Transferencia</SelectItem>
                   <SelectItem value="uberEats">UberEats</SelectItem>
+                  <SelectItem value="pedidosYa">Pedidos Ya</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -613,28 +620,11 @@ export function VentasModule() {
 
           <Separator />
 
-          {metodoPago === "uberEats" ? (
-             <div className="flex flex-col gap-2 text-sm">
-                <Field>
-                  <FieldLabel>Total Venta (Uber Eats)</FieldLabel>
-                  <Input 
-                     type="number"
-                     value={uberEatsTotal}
-                     onChange={e => setUberEatsTotal(e.target.value)}
-                     placeholder="Ingrese total cobrado en la plataforma..."
-                  />
-                </Field>
-                <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
-                  <span className="font-heading text-base font-semibold">Total Final</span>
-                  <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
-                </div>
-             </div>
-          ) : (
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">{currency(subtotal)}</span>
-              </div>
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-medium">{currency(subtotal)}</span>
+            </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground">Descuento ($)</span>
                 <Input
@@ -668,10 +658,21 @@ export function VentasModule() {
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <span className="font-heading text-base font-semibold">Total</span>
+                <span className="font-heading text-lg font-semibold">{currency(baseTotal)}</span>
+              </div>
+              
+              {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
+                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                  <span>Recargo {metodoPago === "uberEats" ? "UberEats (33%)" : "Pedidos Ya (26%)"}</span>
+                  <span className="font-medium">{currency(platformMarkup)}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
+                <span className="font-heading text-base font-semibold">Total Final</span>
                 <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
               </div>
             </div>
-          )}
 
           {estadoPago === "pagado" && metodoPago === "efectivo" ? (
             <div className="flex flex-col gap-3">
