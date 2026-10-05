@@ -259,7 +259,7 @@ export function EntregasModule() {
             />
           </div>
           {isAdmin && (
-            <Select value={proveedorId} onValueChange={setProveedorId}>
+            <Select value={proveedorId} onValueChange={(v) => v && setProveedorId(v)}>
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Proveedor" />
               </SelectTrigger>
@@ -471,7 +471,7 @@ export function EntregasModule() {
       <EntregaDialog 
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search)}
+        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)}
         currentUser={currentUser}
       />
     </div>
