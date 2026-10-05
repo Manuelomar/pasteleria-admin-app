@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Plus, Calendar, Trash2 } from "lucide-react"
+import { Search, Plus, Calendar, Trash2, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,8 +35,11 @@ export function EntregasModule() {
   const [search, setSearch] = useState("")
   const [filtroEstado, setFiltroEstado] = useState("pendiente")
   const [proveedores, setProveedores] = useState<Usuario[]>([])
-  const [proveedorId, setProveedorId] = useState<string>("todos")
+  const [proveedoresIds, setProveedoresIds] = useState<string[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  
+  const [isProveedorDropdownOpen, setIsProveedorDropdownOpen] = useState(false)
+  const [searchProveedor, setSearchProveedor] = useState("")
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -44,9 +47,10 @@ export function EntregasModule() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
 
-  const fetchEntregas = (page: number, size: number, filtro: string, query: string, provId: string) => {
+  const fetchEntregas = (page: number, size: number, filtro: string, query: string, provIds: string[]) => {
     setIsLoading(true)
-    api.entregas.getPaged(page, size, filtro, query, provId !== 'todos' ? provId : undefined)
+    const provIdStr = provIds.length > 0 ? provIds.join(',') : undefined;
+    api.entregas.getPaged(page, size, filtro, query, provIdStr)
       .then((data) => {
         setEntregas(data.data)
         setTotalPages(data.totalPages)
@@ -60,7 +64,7 @@ export function EntregasModule() {
   }
 
   const debouncedFetch = useDebounce(
-    (page: number, size: number, filtro: string, query: string, provId: string) => fetchEntregas(page, size, filtro, query, provId),
+    (page: number, size: number, filtro: string, query: string, provIds: string[]) => fetchEntregas(page, size, filtro, query, provIds),
     300
   )
 
@@ -75,15 +79,15 @@ export function EntregasModule() {
   }, [])
 
   useEffect(() => {
-    debouncedFetch(currentPage, pageSize, filtroEstado, search, proveedorId)
+    debouncedFetch(currentPage, pageSize, filtroEstado, search, proveedoresIds)
     return () => debouncedFetch.cancel()
-  }, [currentPage, pageSize, filtroEstado, search, proveedorId, debouncedFetch])
+  }, [currentPage, pageSize, filtroEstado, search, proveedoresIds, debouncedFetch])
 
   // Reset page and selection when search, filtro or proveedor changes
   useEffect(() => {
     setCurrentPage(1)
     setSelectedIds([])
-  }, [search, filtroEstado, proveedorId])
+  }, [search, filtroEstado, proveedoresIds])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
     const result = await Swal.fire({
@@ -100,7 +104,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoEntrega(id, estado)
         toast.success("Estado de entrega actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
       } catch (e) {
         toast.error("Error al actualizar estado")
       }
@@ -122,7 +126,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoPago(id, estado)
         toast.success("Estado de pago actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
       } catch (e) {
         toast.error("Error al actualizar pago")
       }
@@ -159,7 +163,7 @@ export function EntregasModule() {
           await Promise.all(selectedIds.map(id => api.entregas.updateEstadoPago(id, 'pagado')))
           toast.success("Entregas pagadas correctamente")
           setSelectedIds([])
-          fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+          fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
         } catch (e) {
           toast.error("Error al actualizar entregas")
         } finally {
@@ -184,7 +188,7 @@ export function EntregasModule() {
       try {
         await api.entregas.addToStock(id)
         toast.success("Productos añadidos al stock correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
       } catch (e: any) {
         toast.error(e.message || "Error al añadir al stock")
       }
@@ -206,7 +210,7 @@ export function EntregasModule() {
       try {
         await api.entregas.remove(id)
         toast.success("Entrega descartada correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
       } catch (e: any) {
         toast.error(e.message || "Error al descartar la entrega")
       }
@@ -224,6 +228,12 @@ export function EntregasModule() {
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
+
+  const toggleProveedorId = (id: string) => {
+    setProveedoresIds(prev => 
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+  };
 
   const isProveedor = currentUser?.rol === "proveedor"
   const isAdmin = currentUser?.rol === "admin"
@@ -259,19 +269,64 @@ export function EntregasModule() {
             />
           </div>
           {isAdmin && (
-            <Select value={proveedorId} onValueChange={(v) => v && setProveedorId(v)}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Proveedor">
-                  {proveedorId === 'todos' ? 'Todos los proveedores' : proveedores.find(p => p.id === proveedorId)?.nombre || 'Proveedor'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los proveedores</SelectItem>
-                {proveedores.map(prov => (
-                  <SelectItem key={prov.id} value={prov.id}>{prov.nombre}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative w-full sm:w-[250px]">
+              <div 
+                className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm cursor-pointer hover:bg-accent/50"
+                onClick={() => setIsProveedorDropdownOpen(!isProveedorDropdownOpen)}
+              >
+                <span className="truncate">
+                  {proveedoresIds.length === 0 
+                    ? "Todos los proveedores" 
+                    : `${proveedoresIds.length} proveedor(es) seleccionado(s)`}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </div>
+
+              {isProveedorDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                  <div className="p-1 pb-2 border-b">
+                    <Input
+                      placeholder="Buscar proveedor..."
+                      value={searchProveedor}
+                      onChange={(e) => setSearchProveedor(e.target.value)}
+                      className="h-8"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto p-1">
+                    <div 
+                      className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => {
+                        setProveedoresIds([]);
+                        setIsProveedorDropdownOpen(false);
+                      }}
+                    >
+                      Todos los proveedores (Limpiar)
+                    </div>
+                    {proveedores
+                      .filter(p => (p.nombre || 'Sin nombre').toLowerCase().includes(searchProveedor.toLowerCase()))
+                      .map(p => {
+                        const isSelected = proveedoresIds.includes(p.id);
+                        
+                        return (
+                          <div 
+                            key={p.id} 
+                            className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => toggleProveedorId(p.id)}
+                          >
+                            <Checkbox 
+                              checked={isSelected} 
+                              onCheckedChange={() => {}} 
+                              className="pointer-events-none"
+                            />
+                            <span>{p.nombre || 'Sin nombre'}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="flex gap-2">
@@ -473,7 +528,7 @@ export function EntregasModule() {
       <EntregaDialog 
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)}
+        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)}
         currentUser={currentUser}
       />
     </div>
