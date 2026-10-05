@@ -223,7 +223,7 @@ export function VentasModule() {
                 }
                 return [
                   ...prevItems,
-                  { productoId: id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 },
+                  { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, cantidad: 1 },
                 ]
              })
          }
@@ -241,7 +241,7 @@ export function VentasModule() {
       }
       return [
         ...prev,
-        { productoId: id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 },
+        { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, cantidad: 1 },
       ]
     })
   }
@@ -301,11 +301,11 @@ export function VentasModule() {
   let comisionPlataforma = 0;
   
   if (metodoPago === "uberEats") {
-    ventaPlataforma = baseTotal * 1.33; // se infla 33%
+    ventaPlataforma = items.reduce((s, i) => s + (Number(i.precioUber) || Number(i.precio)) * i.cantidad, 0);
     comisionPlataforma = ventaPlataforma * 0.33; // cobran 33%
     total = ventaPlataforma - comisionPlataforma;
   } else if (metodoPago === "pedidosYa") {
-    ventaPlataforma = baseTotal * 1.26; // se infla 26%
+    ventaPlataforma = items.reduce((s, i) => s + (Number(i.precioUber) || Number(i.precio)) * i.cantidad, 0);
     comisionPlataforma = ventaPlataforma * 0.26; // cobran 26%
     total = ventaPlataforma - comisionPlataforma;
   }

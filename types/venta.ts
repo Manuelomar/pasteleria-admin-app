@@ -5,6 +5,7 @@ export interface VentaItem {
   productoId: string
   nombre: string
   precio: number
+  precioUber?: number
   cantidad: number
   precioCosto?: number
 }
