@@ -261,7 +261,9 @@ export function EntregasModule() {
           {isAdmin && (
             <Select value={proveedorId} onValueChange={(v) => v && setProveedorId(v)}>
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Proveedor" />
+                <SelectValue placeholder="Proveedor">
+                  {proveedorId === 'todos' ? 'Todos los proveedores' : proveedores.find(p => p.id === proveedorId)?.nombre || 'Proveedor'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos los proveedores</SelectItem>
