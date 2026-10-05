@@ -3,10 +3,11 @@ import { Entrega, PaginatedResponse } from "@/types";
 
 export const entregasService = {
   getAll: (filtro?: string): Promise<Entrega[]> => fetchAPI(`/entregas${filtro && filtro !== 'todos' ? `?filtro=${filtro}` : ''}`),
-  getPaged: (page: number, limit: number, filtro?: string, search?: string): Promise<PaginatedResponse<Entrega>> => {
+  getPaged: (page: number, limit: number, filtro?: string, search?: string, proveedorId?: string): Promise<PaginatedResponse<Entrega>> => {
     let query = `?pageNumber=${page}&pageSize=${limit}`;
     if (filtro && filtro !== 'todos') query += `&filtro=${filtro}`;
     if (search) query += `&search=${encodeURIComponent(search)}`;
+    if (proveedorId) query += `&proveedorId=${proveedorId}`;
     return fetchAPI(`/entregas/paged${query}`).then((res: any) => ({
       ...res,
       data: (res.data || res.items || []).map((e: any) => e)

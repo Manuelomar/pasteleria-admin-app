@@ -12,6 +12,7 @@ import { type Entrega, type Usuario } from "@/types"
 import { currency, formatDate } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
+import { Checkbox } from "@/components/ui/checkbox"
 import { EntregaDialog } from "../dialogs/entrega-dialog"
 import {
   Select,
@@ -33,6 +34,9 @@ export function EntregasModule() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [filtroEstado, setFiltroEstado] = useState("pendiente")
+  const [proveedores, setProveedores] = useState<Usuario[]>([])
+  const [proveedorId, setProveedorId] = useState<string>("todos")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -40,9 +44,9 @@ export function EntregasModule() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
 
-  const fetchEntregas = (page: number, size: number, filtro: string, query: string) => {
+  const fetchEntregas = (page: number, size: number, filtro: string, query: string, provId: string) => {
     setIsLoading(true)
-    api.entregas.getPaged(page, size, filtro, query)
+    api.entregas.getPaged(page, size, filtro, query, provId !== 'todos' ? provId : undefined)
       .then((data) => {
         setEntregas(data.data)
         setTotalPages(data.totalPages)
@@ -56,7 +60,7 @@ export function EntregasModule() {
   }
 
   const debouncedFetch = useDebounce(
-    (page: number, size: number, filtro: string, query: string) => fetchEntregas(page, size, filtro, query),
+    (page: number, size: number, filtro: string, query: string, provId: string) => fetchEntregas(page, size, filtro, query, provId),
     300
   )
 
@@ -64,17 +68,22 @@ export function EntregasModule() {
     api.auth.getMe().then(user => {
       setCurrentUser(user)
     }).catch(console.error)
+
+    api.usuarios.getAll().then(users => {
+      setProveedores(users.filter(u => u.rol === 'proveedor' && u.activo))
+    }).catch(console.error)
   }, [])
 
   useEffect(() => {
-    debouncedFetch(currentPage, pageSize, filtroEstado, search)
+    debouncedFetch(currentPage, pageSize, filtroEstado, search, proveedorId)
     return () => debouncedFetch.cancel()
-  }, [currentPage, pageSize, filtroEstado, search, debouncedFetch])
+  }, [currentPage, pageSize, filtroEstado, search, proveedorId, debouncedFetch])
 
-  // Reset page when search or filtro changes
+  // Reset page and selection when search, filtro or proveedor changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, filtroEstado])
+    setSelectedIds([])
+  }, [search, filtroEstado, proveedorId])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
     const result = await Swal.fire({
@@ -91,7 +100,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoEntrega(id, estado)
         toast.success("Estado de entrega actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
       } catch (e) {
         toast.error("Error al actualizar estado")
       }
@@ -113,9 +122,49 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoPago(id, estado)
         toast.success("Estado de pago actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
       } catch (e) {
         toast.error("Error al actualizar pago")
+      }
+    }
+  }
+
+  const handleBulkPagar = async () => {
+    if (selectedIds.length === 0) return
+    const result = await Swal.fire({
+      title: '¿Pagar entregas seleccionadas?',
+      text: `¿Deseas marcar ${selectedIds.length} entrega(s) como pagadas? (Doble validación)`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#22c55e'
+    });
+
+    if (result.isConfirmed) {
+      // Doble validación
+      const secondResult = await Swal.fire({
+        title: 'Confirmación final',
+        text: 'Esta acción actualizará el estado de pago de todas las entregas seleccionadas a "Pagado". ¿Estás seguro?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, pagar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#22c55e'
+      });
+
+      if (secondResult.isConfirmed) {
+        setIsLoading(true)
+        try {
+          await Promise.all(selectedIds.map(id => api.entregas.updateEstadoPago(id, 'pagado')))
+          toast.success("Entregas pagadas correctamente")
+          setSelectedIds([])
+          fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
+        } catch (e) {
+          toast.error("Error al actualizar entregas")
+        } finally {
+          setIsLoading(false)
+        }
       }
     }
   }
@@ -135,7 +184,7 @@ export function EntregasModule() {
       try {
         await api.entregas.addToStock(id)
         toast.success("Productos añadidos al stock correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
       } catch (e: any) {
         toast.error(e.message || "Error al añadir al stock")
       }
@@ -157,11 +206,23 @@ export function EntregasModule() {
       try {
         await api.entregas.remove(id)
         toast.success("Entrega descartada correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedorId)
       } catch (e: any) {
         toast.error(e.message || "Error al descartar la entrega")
       }
     }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === entregas.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(entregas.map(e => e.id))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
 
   const isProveedor = currentUser?.rol === "proveedor"
@@ -187,22 +248,57 @@ export function EntregasModule() {
       </Tabs>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar entrega o proveedor..." 
-            className="pl-9" 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-1">
+          <div className="relative w-full lg:max-w-sm">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar entrega o proveedor..." 
+              className="pl-9" 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          {isAdmin && (
+            <Select value={proveedorId} onValueChange={setProveedorId}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Proveedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los proveedores</SelectItem>
+                {proveedores.map(prov => (
+                  <SelectItem key={prov.id} value={prov.id}>{prov.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        {(isProveedor || isAdmin) && (
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Programar Entrega
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && selectedIds.length > 0 && (
+            <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleBulkPagar}>
+              Pagar Seleccionadas ({selectedIds.length})
+            </Button>
+          )}
+          {(isProveedor || isAdmin) && (
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Programar Entrega
+            </Button>
+          )}
+        </div>
       </div>
+
+      {entregas.length > 0 && isAdmin && (
+        <div className="flex items-center space-x-2 px-1">
+          <Checkbox 
+            id="selectAll" 
+            checked={selectedIds.length === entregas.length && entregas.length > 0} 
+            onCheckedChange={toggleSelectAll} 
+          />
+          <Label htmlFor="selectAll" className="text-sm cursor-pointer select-none">
+            Seleccionar todas en esta página
+          </Label>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         {entregas.length === 0 ? (
@@ -211,10 +307,18 @@ export function EntregasModule() {
           </div>
         ) : (
           entregas.map((entrega) => (
-            <Card key={entrega.id} className="overflow-hidden">
+            <Card key={entrega.id} className="overflow-hidden relative">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  <div className="flex flex-1 flex-col p-6">
+                  {isAdmin && (
+                    <div className="absolute top-4 right-4 md:top-6 md:left-6 md:right-auto z-10 bg-background/80 rounded-full p-0.5">
+                      <Checkbox 
+                        checked={selectedIds.includes(entrega.id)}
+                        onCheckedChange={() => toggleSelect(entrega.id)}
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-1 flex-col p-6 md:pl-14">
                     {/* Encabezado con Proveedor, Fecha y Monto */}
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 pb-4 border-b border-border/50 gap-4">
                       <div>
@@ -348,10 +452,11 @@ export function EntregasModule() {
         )}
       </div>
 
-      {totalPages > 1 && (
+      {entregas.length > 0 && (
         <AppPagination
           currentPage={currentPage}
           pageSize={pageSize}
+          pageSizeOptions={[10, 20, 50, 100]}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
