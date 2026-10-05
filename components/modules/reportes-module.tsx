@@ -589,7 +589,7 @@ export function ReportesModule() {
                       <span className="truncate">
                         {gananciasProductosIds.length === 0 
                           ? "Agregar producto al filtro..." 
-                          : `${gananciasProductosIds.length} producto(s) seleccionado(s)`}
+                          : `${Array.from(new Set(gananciasProductosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).length} producto(s) seleccionado(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </div>
@@ -761,7 +761,7 @@ export function ReportesModule() {
                       <span className="truncate">
                         {costosProductosIds.length === 0 
                           ? "Agregar producto al filtro..." 
-                          : `${costosProductosIds.length} producto(s) seleccionado(s)`}
+                          : `${Array.from(new Set(costosProductosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).length} producto(s) seleccionado(s)`}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </div>

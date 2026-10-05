@@ -258,7 +258,7 @@ export function HistorialModule() {
                     <span className="truncate">
                       {productosIds.length === 0 
                         ? "Todos los productos" 
-                        : `${productosIds.length} producto(s) seleccionado(s)`}
+                        : `${Array.from(new Set(productosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).length} producto(s) seleccionado(s)`}
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
