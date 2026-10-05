@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, History, CalendarIcon, TrendingUp, Package, ShoppingCart } from "lucide-react"
+import { Search, History, CalendarIcon, TrendingUp, Package, ShoppingCart, ChevronDown, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -51,7 +52,9 @@ function formatFecha(fecha: string | Date) {
 export function HistorialModule() {
   const [desde, setDesde] = useState<string>("")
   const [hasta, setHasta] = useState<string>("")
-  const [productoId, setProductoId] = useState<string>("all")
+  const [productosIds, setProductosIds] = useState<string[]>([])
+  const [searchProducto, setSearchProducto] = useState("")
+  const [isProductoDropdownOpen, setIsProductoDropdownOpen] = useState(false)
   const [estadoPago, setEstadoPago] = useState<string>("pagadas")
   const [ventaSearch, setVentaSearch] = useState<string>("")
   const [vista, setVista] = useState<Vista>("producto")
@@ -71,12 +74,46 @@ export function HistorialModule() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Cargar productos para el select
+  // Cargar productos para el filtro
   useEffect(() => {
     api.productos.getAll()
       .then(res => setProductos(res.filter((p: any) => p.tipo !== 'material')))
       .catch((err) => console.error("Error al cargar productos", err))
   }, [])
+
+  const getUniqueProducts = () => {
+    const unique: Producto[] = [];
+    const seen = new Set<string>();
+    for (const p of productos) {
+      const name = p.nombre.toLowerCase().trim();
+      if (!seen.has(name)) {
+        seen.add(name);
+        unique.push(p);
+      }
+    }
+    return unique;
+  }
+
+  const toggleProductName = (
+    productName: string, 
+    selectedIds: string[], 
+    setSelectedIds: (ids: string[]) => void
+  ) => {
+    const normalizedName = productName.toLowerCase().trim();
+    const matchingIds = productos
+      .filter(p => p.nombre.toLowerCase().trim() === normalizedName)
+      .map(p => p.id);
+    
+    const isSelected = matchingIds.every(id => selectedIds.includes(id)) && matchingIds.length > 0;
+    
+    if (isSelected) {
+      setSelectedIds(selectedIds.filter(id => !matchingIds.includes(id)));
+    } else {
+      const newIds = new Set(selectedIds);
+      matchingIds.forEach(id => newIds.add(id));
+      setSelectedIds(Array.from(newIds));
+    }
+  }
 
   const loadHistorial = (
     desdeVal?: string,
@@ -135,19 +172,20 @@ export function HistorialModule() {
 
   // Carga inicial
   useEffect(() => {
-    loadHistorial(desde, hasta, productoId, 1, estadoPago)
+    loadHistorial(desde, hasta, "all", 1, estadoPago)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleFiltrar = () => {
     setCurrentPage(1)
-    loadHistorial(desde, hasta, productoId, 1, estadoPago, undefined, ventaSearch)
+    const prodIdParam = productosIds.length > 0 ? productosIds.join(",") : "all"
+    loadHistorial(desde, hasta, prodIdParam, 1, estadoPago, undefined, ventaSearch)
   }
 
   const handleLimpiar = () => {
     setDesde("")
     setHasta("")
-    setProductoId("all")
+    setProductosIds([])
     setEstadoPago("pagadas")
     setVentaSearch("")
     setCurrentPage(1)
@@ -158,13 +196,15 @@ export function HistorialModule() {
     setVista(v)
     setCurrentPage(1)
     setHistorial([])
-    loadHistorial(desde, hasta, productoId, 1, estadoPago, undefined, ventaSearch, v)
+    const prodIdParam = productosIds.length > 0 ? productosIds.join(",") : "all"
+    loadHistorial(desde, hasta, prodIdParam, 1, estadoPago, undefined, ventaSearch, v)
   }
 
   // Load when page changes
   useEffect(() => {
     if (!isLoading) {
-      loadHistorial(desde, hasta, productoId, currentPage, estadoPago, undefined, ventaSearch)
+      const prodIdParam = productosIds.length > 0 ? productosIds.join(",") : "all"
+      loadHistorial(desde, hasta, prodIdParam, currentPage, estadoPago, undefined, ventaSearch)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage])
@@ -210,19 +250,83 @@ export function HistorialModule() {
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Producto
                 </label>
-                <Select value={productoId} onValueChange={(val) => setProductoId(val || "all")}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Todos los productos">
-                      {productoId === "all" ? "Todos los productos" : productos.find(p => p.id === productoId)?.nombre || "Todos los productos"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="min-w-fit max-w-[90vw] sm:max-w-[400px]">
-                    <SelectItem value="all">Todos los productos</SelectItem>
-                    {productos.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                <div className="relative">
+                  <div 
+                    className="flex w-full items-center justify-between rounded-md border border-input bg-transparent px-3 h-10 text-sm shadow-sm cursor-pointer hover:bg-accent/50"
+                    onClick={() => setIsProductoDropdownOpen(!isProductoDropdownOpen)}
+                  >
+                    <span className="truncate">
+                      {productosIds.length === 0 
+                        ? "Todos los productos" 
+                        : `${productosIds.length} producto(s) seleccionado(s)`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </div>
+
+                  {isProductoDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                      <div className="p-1 pb-2 border-b">
+                        <Input
+                          placeholder="Buscar producto..."
+                          value={searchProducto}
+                          onChange={(e) => setSearchProducto(e.target.value)}
+                          className="h-8"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto p-1">
+                        <div 
+                          className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                          onClick={() => {
+                            setProductosIds([]);
+                            setIsProductoDropdownOpen(false);
+                          }}
+                        >
+                          Todos los productos (Limpiar)
+                        </div>
+                        {getUniqueProducts()
+                          .filter(p => p.nombre.toLowerCase().includes(searchProducto.toLowerCase()))
+                          .map(p => {
+                            const matchingIds = productos
+                              .filter(prod => prod.nombre.toLowerCase().trim() === p.nombre.toLowerCase().trim())
+                              .map(prod => prod.id);
+                            const isSelected = matchingIds.every(id => productosIds.includes(id)) && matchingIds.length > 0;
+                            
+                            return (
+                              <div 
+                                key={p.nombre} 
+                                className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                onClick={() => toggleProductName(p.nombre, productosIds, setProductosIds)}
+                              >
+                                <Checkbox 
+                                  checked={isSelected} 
+                                  onCheckedChange={() => {}} 
+                                  className="pointer-events-none"
+                                />
+                                <span>{p.nombre}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {productosIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {Array.from(new Set(productosIds.map(id => productos.find(p => p.id === id)?.nombre).filter(Boolean))).map(nombre => (
+                        <Badge key={nombre} variant="secondary" className="flex items-center gap-1.5 py-0.5 px-2 text-xs">
+                          {nombre}
+                          <button 
+                            onClick={() => toggleProductName(nombre as string, productosIds, setProductosIds)}
+                            className="ml-1 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
             )}
 
@@ -454,7 +558,8 @@ export function HistorialModule() {
               onPageChange={setCurrentPage}
               onPageSizeChange={(size) => {
                 setPageSize(size)
-                loadHistorial(desde, hasta, productoId, 1, estadoPago, size, ventaSearch)
+                const prodIdParam = productosIds.length > 0 ? productosIds.join(",") : "all"
+                loadHistorial(desde, hasta, prodIdParam, 1, estadoPago, size, ventaSearch)
               }}
               itemName="registros"
             />

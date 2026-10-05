@@ -3,7 +3,13 @@ import { mapProductoToFrontend } from "./mappers";
 import { Producto, PaginatedResponse } from "@/types";
 
 export const productosService = {
-  getAll: (): Promise<Producto[]> => fetchAPI('/productos?disponible=true').then((list: any[]) => list.map(mapProductoToFrontend)),
+  getAll: (disponible?: boolean): Promise<Producto[]> => {
+    let url = '/productos';
+    if (disponible !== undefined) {
+      url += `?disponible=${disponible}`;
+    }
+    return fetchAPI(url).then((list: any[]) => list.map(mapProductoToFrontend));
+  },
   getPaged: (
     page: number,
     pageSize: number,
