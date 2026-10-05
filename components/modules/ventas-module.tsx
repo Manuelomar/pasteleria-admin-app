@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import Swal from "sweetalert2"
 import {
   ToggleGroup,
@@ -55,6 +56,7 @@ export function VentasModule() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   const [isLoadingData, setIsLoadingData] = useState(true)
+  const [mobileCartOpen, setMobileCartOpen] = useState(false)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
   const [fetchedClientes, setFetchedClientes] = useState<Cliente[]>([])
 
@@ -331,6 +333,7 @@ export function VentasModule() {
     setEstadoPago("pagado")
     setMetodoPago("efectivo")
     setClienteId("general")
+    setMobileCartOpen(false)
   }
 
   const imprimirFactura = async (id: string) => {
@@ -449,89 +452,10 @@ export function VentasModule() {
 
   
 
-  return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr] relative min-h-[400px]">
-      <LoadingOverlay active={isLoadingData} />
-      {/* Columna izquierda: productos */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar producto..."
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          {search && (
-            <Button
-              variant="secondary"
-              onClick={() => handleSearchChange("")}
-            >
-              Limpiar
-            </Button>
-          )}
-        </div>
-        <ToggleGroup
-          value={[tipo]}
-          onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
-          variant="outline"
-        >
-          <ToggleGroupItem value="productos">Todos</ToggleGroupItem>
-          <ToggleGroupItem value="dulce">Dulce</ToggleGroupItem>
-          <ToggleGroupItem value="salado">Salado</ToggleGroupItem>
-          <ToggleGroupItem value="bebida">Bebida</ToggleGroupItem>
-        </ToggleGroup>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => addItem(p.id)}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left transition hover:border-primary hover:shadow-sm"
-            >
-              <div className="aspect-square w-full overflow-hidden bg-muted">
-                <img
-                  src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
-                  alt={p.nombre}
-                  onError={(e) => {
-                    e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
-                  }}
-                  className="size-full object-cover transition group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-col gap-1 p-2.5">
-                <span className="line-clamp-1 text-sm font-medium text-foreground">{p.nombre}</span>
-                <span className="text-[10px] text-muted-foreground">Stock: {p.contable === false ? '∞' : (p.cantidad ?? 0)}</span>
-                <div className="flex items-center justify-between gap-1 mt-0.5">
-                  <span className="text-sm font-semibold text-primary">{currency(p.precio)}</span>
-                  <Plus className="size-4 text-muted-foreground group-hover:text-primary" />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+  const invoiceContent = (
+    <div className="flex flex-col gap-4 pb-24 xl:pb-0">
 
-        {/* Paginación */}
-        <AppPagination
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-          pageSizeOptions={[9, 20, 40, 60, 100]}
-          itemName="productos"
-        />
-      </div>
-
-      {/* Columna derecha: factura */}
-      <Card className="h-fit xl:sticky xl:top-20">
-        <CardHeader>
-          <CardTitle>Factura actual</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
           <Field>
             <FieldLabel>Cliente</FieldLabel>
             <Select value={clienteId} onValueChange={(v) => v !== null && setClienteId(v)}>
@@ -752,8 +676,97 @@ export function VentasModule() {
               </Button>
             </div>
           </div>
-        </CardContent>
+        
+    </div>
+  )
+
+  return (
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr] relative min-h-[400px]">
+      <LoadingOverlay active={isLoadingData} />
+      {/* Columna izquierda: productos */}
+      <div className="flex flex-col gap-4 pb-24 xl:pb-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar producto..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {search && (
+            <Button
+              variant="secondary"
+              onClick={() => handleSearchChange("")}
+            >
+              Limpiar
+            </Button>
+          )}
+        </div>
+        <ToggleGroup
+          value={[tipo]}
+          onValueChange={(v) => v.length > 0 && handleTipoChange(v[0] as typeof tipo)}
+          variant="outline"
+        >
+          <ToggleGroupItem value="productos">Todos</ToggleGroupItem>
+          <ToggleGroupItem value="dulce">Dulce</ToggleGroupItem>
+          <ToggleGroupItem value="salado">Salado</ToggleGroupItem>
+          <ToggleGroupItem value="bebida">Bebida</ToggleGroupItem>
+        </ToggleGroup>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {filtered.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => addItem(p.id)}
+              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left transition hover:border-primary hover:shadow-sm"
+            >
+              <div className="aspect-square w-full overflow-hidden bg-muted">
+                <img
+                  src={(p.imagen && p.imagen.trim() !== '' && p.imagen !== 'null' && p.imagen !== 'undefined') ? (p.imagen.startsWith('data:') ? p.imagen : API_URL.replace('/api', '') + p.imagen) : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4]}
+                  alt={p.nombre}
+                  onError={(e) => {
+                    e.currentTarget.src = ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1557925923-cd4648e211a0?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=400&h=300&fit=crop","https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=400&h=300&fit=crop"][p.id.charCodeAt(0) % 4];
+                  }}
+                  className="size-full object-cover transition group-hover:scale-105"
+                />
+              </div>
+              <div className="flex flex-col gap-1 p-2.5">
+                <span className="line-clamp-1 text-sm font-medium text-foreground">{p.nombre}</span>
+                <span className="text-[10px] text-muted-foreground">Stock: {p.contable === false ? '∞' : (p.cantidad ?? 0)}</span>
+                <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <span className="text-sm font-semibold text-primary">{currency(p.precio)}</span>
+                  <Plus className="size-4 text-muted-foreground group-hover:text-primary" />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Paginación */}
+        <AppPagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[9, 20, 40, 60, 100]}
+          itemName="productos"
+        />
+      </div>
+
+      {/* Columna derecha: factura */}
+      <Card className="hidden xl:block h-fit xl:sticky xl:top-20">
+        <CardHeader>
+          <CardTitle>Factura actual</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">{invoiceContent}</CardContent>
       </Card>
     </div>
   )
 }
+
+
+
