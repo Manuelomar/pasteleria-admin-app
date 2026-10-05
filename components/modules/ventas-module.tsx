@@ -306,7 +306,7 @@ export function VentasModule() {
   let comisionPlataforma = 0;
   
   if (metodoPago === "uberEats") {
-    comisionPlataforma = baseTotal * 0.33; // cobran 33%
+    comisionPlataforma = baseTotal * 0.3304; // 28% comisión + 18% ITBIS = 33.04%
     total = baseTotal - comisionPlataforma;
   } else if (metodoPago === "pedidosYa") {
     comisionPlataforma = baseTotal * 0.26; // cobran 26%
@@ -673,7 +673,7 @@ export function VentasModule() {
               
               {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
                 <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-2">
-                  <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33%" : "26%"})</span>
+                  <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33.04%" : "26%"})</span>
                   <span>-{currency(comisionPlataforma)}</span>
                 </div>
               )}
