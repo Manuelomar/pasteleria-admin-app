@@ -91,7 +91,7 @@ export function VentasModule() {
 
   useEffect(() => {
     loadProductos()
-  }, [currentPage, search, tipo])
+  }, [currentPage, search, tipo, pageSize])
 
   useEffect(() => {
     try {
@@ -507,6 +507,8 @@ export function VentasModule() {
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[9, 20, 40, 60, 100]}
           itemName="productos"
         />
       </div>

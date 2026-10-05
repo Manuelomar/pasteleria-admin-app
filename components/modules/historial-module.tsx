@@ -218,7 +218,7 @@ export function HistorialModule() {
         </p>
       </div>
 
-      <Card className="border-border bg-card/50 shadow-sm">
+      <Card className="border-border bg-card/50 shadow-sm overflow-visible">
         <CardContent className="p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="flex flex-col gap-1.5 flex-1">
