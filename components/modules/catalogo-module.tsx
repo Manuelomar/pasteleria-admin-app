@@ -306,7 +306,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               className="pl-9"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             {(!isAdmin || selectedProviderId) && selectedProviderId !== "internos" && !(providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null))?.vendeMateriales && (
                <Button variant="outline" onClick={handleEnableMaterials} disabled={enablingMaterials}>
                  Habilitar Venta de Materiales

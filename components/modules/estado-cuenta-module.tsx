@@ -115,7 +115,7 @@ export function EstadoCuentaModule() {
     <div className="flex flex-col gap-6">
       <Tabs defaultValue="caja" className="w-full">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <TabsList className="grid w-full grid-cols-3 sm:w-[500px]">
+          <TabsList className="w-full flex-nowrap justify-start sm:justify-center overflow-x-auto whitespace-nowrap scrollbar-hide sm:w-[500px]">
             <TabsTrigger value="caja">Cierre de Caja</TabsTrigger>
             <TabsTrigger value="reporte">Reporte de Ventas</TabsTrigger>
             <TabsTrigger value="distribucion">Distribución</TabsTrigger>

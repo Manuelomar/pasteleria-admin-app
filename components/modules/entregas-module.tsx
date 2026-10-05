@@ -248,7 +248,7 @@ export function EntregasModule() {
       </div>
 
       <Tabs value={filtroEstado} onValueChange={setFiltroEstado} className="w-full">
-        <TabsList variant="line" className="w-full flex-wrap justify-start border-b border-border pb-0 mb-2 gap-4 h-auto">
+        <TabsList variant="line" className="w-full flex-nowrap justify-start border-b border-border pb-0 mb-2 gap-4 h-auto overflow-x-auto whitespace-nowrap scrollbar-hide">
           <TabsTrigger value="pendiente" className="px-1 py-3 text-sm font-medium">Pendientes</TabsTrigger>
           <TabsTrigger value="pagado_no_entregado" className="px-1 py-3 text-sm font-medium">Pagado, no entregado</TabsTrigger>
           <TabsTrigger value="entregado_no_pagado" className="px-1 py-3 text-sm font-medium">Entregado, no pagado</TabsTrigger>

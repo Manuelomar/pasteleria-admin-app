@@ -202,7 +202,7 @@ export function ReportesModule() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="w-full flex-nowrap justify-start overflow-x-auto whitespace-nowrap scrollbar-hide">
           <TabsTrigger value="proveedor">Reporte de Proveedores</TabsTrigger>
           {!isProveedor && (
             <>
