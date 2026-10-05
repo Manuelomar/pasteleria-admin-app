@@ -776,8 +776,11 @@ export function VentasModule() {
               </div>
               <span className="text-lg font-bold">{currency(total)}</span>
             </SheetTrigger><SheetContent side="bottom" className="h-[90dvh] rounded-t-2xl flex flex-col p-0">
-            <SheetHeader className="p-4 border-b shrink-0 bg-background z-10 sticky top-0 text-left">
-              <SheetTitle>Factura actual</SheetTitle>
+                        <SheetHeader className="p-4 border-b shrink-0 bg-background z-10 sticky top-0 flex flex-row items-center justify-between">
+              <SheetTitle className="m-0 text-left">Factura actual</SheetTitle>
+              <Button variant="ghost" size="icon" onClick={() => setMobileCartOpen(false)} className="-mr-2 mt-0">
+                <X className="size-5" />
+              </Button>
             </SheetHeader>
             <div className="overflow-y-auto p-4 flex-1">
               {invoiceContent}
@@ -788,4 +791,5 @@ export function VentasModule() {
     </div>
   )
 }
+
 
