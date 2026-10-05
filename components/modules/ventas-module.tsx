@@ -297,13 +297,17 @@ export function VentasModule() {
   const baseTotal = Math.max(0, subtotal - descTotal + imp)
   
   let total = baseTotal;
-  let platformMarkup = 0;
+  let ventaPlataforma = baseTotal;
+  let comisionPlataforma = 0;
+  
   if (metodoPago === "uberEats") {
-    platformMarkup = baseTotal * 0.33; // 33% markup
-    total = baseTotal + platformMarkup;
+    ventaPlataforma = baseTotal * 1.33; // se infla 33%
+    comisionPlataforma = ventaPlataforma * 0.33; // cobran 33%
+    total = ventaPlataforma - comisionPlataforma;
   } else if (metodoPago === "pedidosYa") {
-    platformMarkup = baseTotal * 0.26; // 26% markup
-    total = baseTotal + platformMarkup;
+    ventaPlataforma = baseTotal * 1.26; // se infla 26%
+    comisionPlataforma = ventaPlataforma * 0.26; // cobran 26%
+    total = ventaPlataforma - comisionPlataforma;
   }
 
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
@@ -657,19 +661,25 @@ export function VentasModule() {
                 </div>
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
-                <span className="font-heading text-base font-semibold">Total</span>
+                <span className="font-heading text-base font-semibold">Total Base</span>
                 <span className="font-heading text-lg font-semibold">{currency(baseTotal)}</span>
               </div>
               
               {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
-                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-                  <span>Recargo {metodoPago === "uberEats" ? "UberEats (33%)" : "Pedidos Ya (26%)"}</span>
-                  <span className="font-medium">{currency(platformMarkup)}</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between text-muted-foreground mt-4 border-t border-border pt-2">
+                    <span>Venta en Plataforma (inc. markup)</span>
+                    <span>{currency(ventaPlataforma)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                    <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33%" : "26%"})</span>
+                    <span>-{currency(comisionPlataforma)}</span>
+                  </div>
+                </>
               )}
 
               <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
-                <span className="font-heading text-base font-semibold">Total Final</span>
+                <span className="font-heading text-base font-semibold">Total Final (Net Payout)</span>
                 <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
               </div>
             </div>
