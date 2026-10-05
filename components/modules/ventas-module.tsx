@@ -764,9 +764,28 @@ export function VentasModule() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">{invoiceContent}</CardContent>
       </Card>
+      <div className="fixed bottom-4 left-4 right-4 z-40 xl:hidden">
+        <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+          
+            <SheetTrigger className="w-full h-14 rounded-full shadow-2xl flex items-center justify-between px-6 bg-primary text-primary-foreground hover:bg-primary/90">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center bg-white/20 rounded-full h-8 w-8 font-bold">
+                  {items.length}
+                </div>
+                <span className="font-semibold text-base">Ver Factura</span>
+              </div>
+              <span className="text-lg font-bold">{currency(total)}</span>
+            </SheetTrigger><SheetContent side="bottom" className="h-[90dvh] rounded-t-2xl flex flex-col p-0">
+            <SheetHeader className="p-4 border-b shrink-0 bg-background z-10 sticky top-0 text-left">
+              <SheetTitle>Factura actual</SheetTitle>
+            </SheetHeader>
+            <div className="overflow-y-auto p-4 flex-1">
+              {invoiceContent}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
     </div>
   )
 }
-
-
 
