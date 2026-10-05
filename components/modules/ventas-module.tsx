@@ -286,8 +286,14 @@ export function VentasModule() {
   }
 
   const subtotal = useMemo(
-    () => items.reduce((s, i) => s + i.precio * i.cantidad, 0),
-    [items],
+    () => items.reduce((s, i) => {
+      let p = Number(i.precio);
+      if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+        p = Number(i.precioUber) || p;
+      }
+      return s + p * i.cantidad;
+    }, 0),
+    [items, metodoPago],
   )
   const descMonto = Number(descuento) || 0
   const descPorcentaje = Number(descuentoPorcentaje) || 0
@@ -297,17 +303,14 @@ export function VentasModule() {
   const baseTotal = Math.max(0, subtotal - descTotal + imp)
   
   let total = baseTotal;
-  let ventaPlataforma = baseTotal;
   let comisionPlataforma = 0;
   
   if (metodoPago === "uberEats") {
-    ventaPlataforma = items.reduce((s, i) => s + (Number(i.precioUber) || Number(i.precio)) * i.cantidad, 0);
-    comisionPlataforma = ventaPlataforma * 0.33; // cobran 33%
-    total = ventaPlataforma - comisionPlataforma;
+    comisionPlataforma = baseTotal * 0.33; // cobran 33%
+    total = baseTotal - comisionPlataforma;
   } else if (metodoPago === "pedidosYa") {
-    ventaPlataforma = items.reduce((s, i) => s + (Number(i.precioUber) || Number(i.precio)) * i.cantidad, 0);
-    comisionPlataforma = ventaPlataforma * 0.26; // cobran 26%
-    total = ventaPlataforma - comisionPlataforma;
+    comisionPlataforma = baseTotal * 0.26; // cobran 26%
+    total = baseTotal - comisionPlataforma;
   }
 
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
@@ -560,7 +563,10 @@ export function VentasModule() {
             <div className="flex flex-col gap-2">
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
-                let displayPrice = i.precio
+                let displayPrice = Number(i.precio)
+                if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+                  displayPrice = Number(i.precioUber) || displayPrice;
+                }
                 
                 return (
                   <div key={i.productoId} className="flex items-center gap-2 rounded-lg border border-border p-2">
@@ -661,21 +667,15 @@ export function VentasModule() {
                 </div>
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
-                <span className="font-heading text-base font-semibold">Total Base</span>
+                <span className="font-heading text-base font-semibold">Subtotal Bruto</span>
                 <span className="font-heading text-lg font-semibold">{currency(baseTotal)}</span>
               </div>
               
               {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
-                <>
-                  <div className="flex items-center justify-between text-muted-foreground mt-4 border-t border-border pt-2">
-                    <span>Venta en Plataforma (inc. markup)</span>
-                    <span>{currency(ventaPlataforma)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-                    <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33%" : "26%"})</span>
-                    <span>-{currency(comisionPlataforma)}</span>
-                  </div>
-                </>
+                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-2">
+                  <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33%" : "26%"})</span>
+                  <span>-{currency(comisionPlataforma)}</span>
+                </div>
               )}
 
               <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
