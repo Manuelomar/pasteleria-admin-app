@@ -519,7 +519,9 @@ export function HistorialModule() {
                       <TableRow key={v.id || index}>
                         <TableCell className="whitespace-nowrap">{v.fecha ? formatFecha(v.fecha) : "-"}</TableCell>
                         <TableCell className="font-medium">{v.factura}</TableCell>
-                        <TableCell className="max-w-[160px] truncate">{v.clienteNombre}</TableCell>
+                        <TableCell className="max-w-[160px] truncate">
+                          {v.clienteNombre || (v.metodoPago === 'pedidosYa' ? 'Pedidos Ya' : v.metodoPago === 'uberEats' ? 'Uber Eats' : "Cliente General")}
+                        </TableCell>
                         <TableCell className="text-center hidden sm:table-cell">
                           <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold px-2 py-0.5">
                             {v.totalItems}
