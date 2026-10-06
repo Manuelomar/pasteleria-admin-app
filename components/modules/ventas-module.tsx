@@ -484,7 +484,7 @@ export function VentasModule() {
               No hay productos agregados. Selecciona productos del catálogo.
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 max-h-[35vh] xl:max-h-[300px] overflow-y-auto pr-1">
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = Number(i.precio)
