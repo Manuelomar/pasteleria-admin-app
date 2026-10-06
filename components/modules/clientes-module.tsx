@@ -107,22 +107,27 @@ export function ClientesModule() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Correo</TableHead>
-                <TableHead>Dirección</TableHead>
+                <TableHead className="hidden sm:table-cell">Teléfono</TableHead>
+                <TableHead className="hidden md:table-cell">Correo</TableHead>
+                <TableHead className="hidden md:table-cell">Dirección</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
-                <TableHead>Última compra</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead className="hidden lg:table-cell">Última compra</TableHead>
+                <TableHead className="hidden sm:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium text-foreground">{c.nombre}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.telefono}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.correo}</TableCell>
-                  <TableCell className="max-w-[180px] truncate text-muted-foreground">
+                  <TableCell className="font-medium text-foreground">
+                    <div className="flex flex-col">
+                      <span>{c.nombre}</span>
+                      <span className="text-xs text-muted-foreground sm:hidden">{c.telefono}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden sm:table-cell">{c.telefono}</TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">{c.correo}</TableCell>
+                  <TableCell className="max-w-[180px] truncate text-muted-foreground hidden md:table-cell">
                     {c.direccion}
                   </TableCell>
                   <TableCell className="text-right font-medium">
@@ -130,8 +135,8 @@ export function ClientesModule() {
                       {currency(c.balance)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{c.ultimaCompra}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-muted-foreground hidden lg:table-cell">{c.ultimaCompra}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <ActivoBadge activo={c.activo} />
                   </TableCell>
                   <TableCell className="text-right">
