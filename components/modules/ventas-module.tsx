@@ -454,7 +454,7 @@ export function VentasModule() {
 
 
   const invoiceContent = (
-    <div className="flex flex-col gap-4 pb-24 xl:pb-0">
+    <div className="flex flex-col gap-4">
 
           <Field>
             <FieldLabel>Cliente</FieldLabel>
@@ -484,7 +484,7 @@ export function VentasModule() {
               No hay productos agregados. Selecciona productos del catálogo.
             </p>
           ) : (
-            <div className="flex flex-col gap-2 max-h-[35vh] xl:max-h-[300px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 xl:max-h-[300px] xl:overflow-y-auto xl:pr-1">
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = Number(i.precio)
@@ -651,7 +651,7 @@ export function VentasModule() {
             </>
           ) : null}
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sticky bottom-0 bg-background/95 backdrop-blur-sm py-2 mt-auto border-t">
             <Button onClick={guardar} disabled={isLoading || items.length === 0}>
               <Save data-icon="inline-start" />
               {isLoading ? "Procesando..." : "Procesar Pago"}
