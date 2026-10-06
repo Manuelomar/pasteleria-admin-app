@@ -468,7 +468,7 @@ export function HistorialModule() {
                   <TableHead>Producto</TableHead>
                   <TableHead className="text-center">Cantidad</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Precio</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Precio de venta</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
