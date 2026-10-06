@@ -97,8 +97,10 @@ export function EntregaDialog({
         if (max <= 0) return;
         
         const existing = newItems.find(i => i.productoId === id);
-        if (!existing) {
-          newItems.push({ productoId: id, cantidad: 1, nombre: prod.nombre });
+        if (existing) {
+          existing.cantidad = max;
+        } else {
+          newItems.push({ productoId: id, cantidad: max, nombre: prod.nombre });
         }
       });
       return newItems;
