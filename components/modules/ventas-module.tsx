@@ -399,7 +399,13 @@ export function VentasModule() {
     
     setIsLoading(true)
     try {
-      const payloadItems = items.map(i => ({ ...i }))
+      const payloadItems = items.map(i => {
+        let finalPrecio = Number(i.precio);
+        if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+          finalPrecio = Number(i.precioUber) || finalPrecio;
+        }
+        return { ...i, precio: finalPrecio };
+      })
       
       const finalSubtotal = subtotal
       const finalImp = metodoPago === "uberEats" ? 0 : imp
