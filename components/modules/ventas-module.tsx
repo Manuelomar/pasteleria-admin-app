@@ -306,13 +306,15 @@ export function VentasModule() {
   
   let total = baseTotal;
   let comisionPlataforma = 0;
+  let impuestosPlataforma = 0;
   
   if (metodoPago === "uberEats") {
     comisionPlataforma = baseTotal * 0.3304; // 28% comisión + 18% ITBIS = 33.04%
     total = baseTotal - comisionPlataforma;
   } else if (metodoPago === "pedidosYa") {
     comisionPlataforma = baseTotal * 0.26; // cobran 26%
-    total = baseTotal - comisionPlataforma;
+    impuestosPlataforma = baseTotal * 0.0072; // impuestos 0.72%
+    total = baseTotal - comisionPlataforma - impuestosPlataforma;
   }
 
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
@@ -602,10 +604,18 @@ export function VentasModule() {
               </div>
               
               {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
-                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-2">
-                  <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33.04%" : "26%"})</span>
-                  <span>-{currency(comisionPlataforma)}</span>
-                </div>
+                <>
+                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-2">
+                    <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33.04%" : "26%"})</span>
+                    <span>-{currency(comisionPlataforma)}</span>
+                  </div>
+                  {metodoPago === "pedidosYa" && (
+                    <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-1">
+                      <span>Impuestos Plataforma (0.72%)</span>
+                      <span>-{currency(impuestosPlataforma)}</span>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
