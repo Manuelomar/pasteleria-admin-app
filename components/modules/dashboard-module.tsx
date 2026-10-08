@@ -242,7 +242,7 @@ export function DashboardModule() {
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Ventas de la semana</CardTitle>
-            <CardDescription>Total facturado por día (últimos 7 días)</CardDescription>
+            <CardDescription>Total facturado por día (semana actual)</CardDescription>
           </CardHeader>
           <CardContent>
             {ventasSemanales.some((v: any) => v.ventas > 0) ? (

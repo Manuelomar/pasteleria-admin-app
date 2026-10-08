@@ -112,11 +112,14 @@ export function ReportesModule() {
     const start = new Date()
 
     if (type === 'semana') {
-      start.setDate(end.getDate() - 7)
+      const day = start.getDay();
+      const diff = start.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+      start.setDate(diff);
     } else if (type === 'mes') {
-      start.setMonth(end.getMonth() - 1)
+      start.setDate(1);
     } else if (type === 'año') {
-      start.setFullYear(end.getFullYear() - 1)
+      start.setMonth(0);
+      start.setDate(1);
     }
 
     if (targetTab === 'ventas') {
