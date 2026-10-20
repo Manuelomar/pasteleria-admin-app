@@ -10,6 +10,7 @@ export interface EntregaItem {
   productoId: string
   cantidad: number
   precioCosto: number
+  nombre?: string
   producto?: Producto
 }
 

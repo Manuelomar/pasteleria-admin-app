@@ -381,7 +381,7 @@ export function EntregasModule() {
                       <div>
                         {isAdmin && entrega.proveedor ? (
                           <h3 className="text-lg font-semibold text-foreground">
-                            {entrega.proveedor.nombre || (entrega.proveedor as any).name}
+                            {entrega.proveedor.nombre || entrega.proveedor.name}
                           </h3>
                         ) : (
                           <h3 className="text-lg font-semibold text-foreground">
@@ -419,7 +419,7 @@ export function EntregasModule() {
                               {item.cantidad}
                             </div>
                             <p className="text-sm font-medium">
-                              {item.producto?.nombre || "Producto desconocido"}
+                              {item.producto?.nombre || item.nombre || "Producto desconocido"}
                             </p>
                           </div>
                         ))}

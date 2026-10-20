@@ -3,6 +3,8 @@ export type Rol = "admin" | "usuario" | "proveedor" | "vendedor"
 export interface Usuario {
   id: string
   nombre: string
+  name?: string
+  username?: string
   correo: string
   rol: Rol
   activo: boolean
