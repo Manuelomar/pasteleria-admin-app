@@ -8,6 +8,7 @@ import { entregasService } from "./entregas.service";
 import { reportesService } from "./reportes.service";
 import { categoriasService } from "./categorias.service";
 import { solicitudesService } from "./solicitudes.service";
+import { sucursalesService } from "./sucursales.service";
 
 export const api = {
   auth: authService,
@@ -20,6 +21,7 @@ export const api = {
   reportes: reportesService,
   categorias: categoriasService,
   solicitudes: solicitudesService,
+  sucursales: sucursalesService,
 };
 
 export {
@@ -33,4 +35,5 @@ export {
   reportesService,
   categoriasService,
   solicitudesService,
+  sucursalesService,
 };

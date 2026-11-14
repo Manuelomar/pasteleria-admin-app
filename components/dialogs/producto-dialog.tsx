@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currency, type Producto, type Usuario, type Categoria } from "@/types"
+import { currency, type Producto, type Usuario, type Categoria, type Sucursal } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 
@@ -39,6 +39,7 @@ export function ProductoDialog({
   currentUser,
   defaultProveedorId,
   defaultTipo,
+  currentSucursalId,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -47,7 +48,9 @@ export function ProductoDialog({
   currentUser?: Usuario | null
   defaultProveedorId?: string | null
   defaultTipo?: string
+  currentSucursalId?: string | null
 }) {
+  const isSuperAdmin = currentUser?.rol === "superadmin"
   const [nombre, setNombre] = useState("")
   const [categoria, setCategoria] = useState("Pasteles")
   const [tipo, setTipo] = useState("dulce")
@@ -60,6 +63,8 @@ export function ProductoDialog({
   const [contable, setContable] = useState(true)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [sucursalId, setSucursalId] = useState<string>("")
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [isSaving, setIsSaving] = useState(false)
 
   // Categorias state
@@ -86,6 +91,10 @@ export function ProductoDialog({
   useEffect(() => {
     if (open) {
       fetchCategorias()
+      if (isSuperAdmin) {
+        api.sucursales.getAll().then(setSucursales).catch(console.error)
+      }
+      setSucursalId(producto?.sucursalId || currentSucursalId || currentUser?.sucursalId || "")
       setNombre(producto?.nombre ?? "")
       if (defaultTipo === 'material') {
          setCategoria(producto?.categoria ?? "Materiales")
@@ -104,7 +113,7 @@ export function ProductoDialog({
       setFile(null)
       setPreviewUrl(producto?.imagen ?? null)
     }
-  }, [open, producto, defaultTipo])
+  }, [open, producto, defaultTipo, currentSucursalId, currentUser, isSuperAdmin])
 
   const handleSaveCat = async () => {
     if (!newCatNombre.trim()) {
@@ -185,10 +194,14 @@ export function ProductoDialog({
         derivedTipo = "material";
       }
 
-      const data: any = {
+      const targetSucursal = isSuperAdmin
+        ? (sucursalId || null)
+        : (producto?.sucursalId || currentSucursalId || currentUser?.sucursalId || null);
+
+      const data: Partial<Producto> = {
         nombre,
         categoria: defaultTipo === 'material' ? 'Materiales' : categoria,
-        tipo: derivedTipo,
+        tipo: derivedTipo as Producto['tipo'],
         precio: parseFloat(precio) || 0,
         precioCosto: parseFloat(precioCosto) || 0,
         precioUber: parseFloat(precioUber) || 0,
@@ -197,6 +210,7 @@ export function ProductoDialog({
         disponible,
         contable,
         imagen: imagenUrl,
+        sucursalId: targetSucursal,
       }
       
       if (defaultProveedorId && (!producto || !producto.id)) {
@@ -242,6 +256,32 @@ export function ProductoDialog({
                 placeholder="Pastel de chocolate"
               />
             </Field>
+
+            {isSuperAdmin ? (
+              <Field>
+                <FieldLabel>Sucursal Asignada</FieldLabel>
+                <Select
+                  value={sucursalId || "ninguna"}
+                  onValueChange={(v) => setSucursalId(v === "ninguna" ? "" : (v ?? ""))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar sucursal..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ninguna">Sin sucursal (Común / Global)</SelectItem>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre} ({s.codigo})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : currentUser?.sucursalNombre ? (
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+                Sucursal: <span className="font-semibold text-foreground">{currentUser.sucursalNombre}</span>
+              </div>
+            ) : null}
             {defaultTipo !== 'material' && (
             <div className="grid gap-4">
               <Field>

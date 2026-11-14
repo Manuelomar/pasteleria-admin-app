@@ -30,7 +30,7 @@ export function OrdenProductGrid({ productos, cart, onUpdateQuantity }: OrdenPro
         icon: 'warning',
         title: 'Límite de inventario',
         text: `Esta es la máxima cantidad de este producto (${p.nombre}) disponible.`,
-        confirmButtonColor: 'hsl(var(--primary))'
+        confirmButtonColor: '#e11d48'
       })
       return
     }

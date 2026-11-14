@@ -9,13 +9,17 @@ export const usuariosService = {
     pageSize: number,
     search?: string,
     role?: string,
-    activo?: string
+    activo?: string,
+    sucursalId?: string
   ): Promise<PaginatedResponse<Usuario>> => {
     let url = `/users/paged?pageNumber=${page}&pageSize=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (role && role !== 'todos') url += `&role=${role}`;
     if (activo && activo !== 'todos') {
       url += `&activo=${activo === 'activo' ? 'true' : 'false'}`;
+    }
+    if (sucursalId && sucursalId !== 'todas') {
+      url += `&sucursalId=${sucursalId}`;
     }
     return fetchAPI(url).then((res: any) => ({
       ...res,

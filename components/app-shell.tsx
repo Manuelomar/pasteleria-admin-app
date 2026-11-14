@@ -8,6 +8,7 @@ import {
   BarChart3,
   Wallet,
   ShieldCheck,
+  Building2,
   LayoutDashboard,
   Cake,
   Menu,
@@ -42,6 +43,7 @@ export type ModuleId =
   | "solicitudes-bizcocho"
   | "solicitudes-combo"
   | "solicitudes-orden"
+  | "sucursales"
 
 interface NavItem {
   id: ModuleId
@@ -68,7 +70,10 @@ const solicitudes: NavItem[] = [
   { id: "solicitudes-orden", label: "Órdenes", icon: ShoppingCart },
 ]
 
-const administracion: NavItem[] = [{ id: "usuarios", label: "Usuarios", icon: ShieldCheck }]
+const administracion: NavItem[] = [
+  { id: "usuarios", label: "Usuarios", icon: ShieldCheck },
+  { id: "sucursales", label: "Sucursales", icon: Building2 },
+]
 
 function NavGroupComponent({
   label,
@@ -307,7 +312,8 @@ function SidebarContent({
   isCollapsed?: boolean
   onToggleCollapse?: () => void
 }) {
-  const isAdmin = currentUser?.rol === "admin"
+  const isSuperAdmin = currentUser?.rol === "superadmin"
+  const isAdmin = isSuperAdmin || currentUser?.rol === "admin"
   const isProveedor = currentUser?.rol === "proveedor"
   const permisos = currentUser?.permisos || {}
 
@@ -325,6 +331,7 @@ function SidebarContent({
     })
   const administracionVisibles = administracion
     .filter((m) => {
+      if (m.id === "sucursales") return isSuperAdmin
       if (m.id === "usuarios") return true
       return isAdmin || permisos[m.id] === true
     })

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Plus, Calendar, Trash2, ChevronDown } from "lucide-react"
+import { Search, Plus, Calendar, Trash2, ChevronDown, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EntregaDialog } from "../dialogs/entrega-dialog"
+import { EditarEntregaItemsDialog } from "../dialogs/editar-entrega-items-dialog"
 import {
   Select,
   SelectContent,
@@ -37,6 +38,14 @@ export function EntregasModule() {
   const [proveedores, setProveedores] = useState<Usuario[]>([])
   const [proveedoresIds, setProveedoresIds] = useState<string[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  
+  const [editingEntrega, setEditingEntrega] = useState<Entrega | null>(null)
+  const [editarItemsDialogOpen, setEditarItemsDialogOpen] = useState(false)
+
+  const handleEditarItems = (entrega: Entrega) => {
+    setEditingEntrega(entrega)
+    setEditarItemsDialogOpen(true)
+  }
   
   const [isProveedorDropdownOpen, setIsProveedorDropdownOpen] = useState(false)
   const [searchProveedor, setSearchProveedor] = useState("")
@@ -236,7 +245,7 @@ export function EntregasModule() {
   };
 
   const isProveedor = currentUser?.rol === "proveedor"
-  const isAdmin = currentUser?.rol === "admin"
+  const isAdmin = currentUser?.rol === "superadmin" || currentUser?.rol === "admin"
 
   return (
     <div className="flex flex-col gap-5 relative min-h-[400px]">
@@ -411,16 +420,47 @@ export function EntregasModule() {
                     
                     {/* Lista de Productos */}
                     <div>
-                      <p className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Productos a entregar</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                          Productos a entregar
+                        </p>
+                        {isAdmin && entrega.estadoPago === "pendiente_pago" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary"
+                            onClick={() => handleEditarItems(entrega)}
+                          >
+                            <Pencil className="size-3" />
+                            Modificar artículos
+                          </Button>
+                        )}
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {entrega.items.map(item => (
-                          <div key={item.id} className="flex items-center gap-3 p-3 rounded-md bg-muted/20 border border-border/50 transition-colors hover:bg-muted/40">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary font-bold text-sm">
-                              {item.cantidad}
+                        {entrega.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-border/50 transition-colors hover:bg-muted/40"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary font-bold text-sm">
+                                {item.cantidad}
+                              </div>
+                              <p className="text-sm font-medium">
+                                {item.producto?.nombre || item.nombre || "Producto desconocido"}
+                              </p>
                             </div>
-                            <p className="text-sm font-medium">
-                              {item.producto?.nombre || item.nombre || "Producto desconocido"}
-                            </p>
+                            {isAdmin && entrega.estadoPago === "pendiente_pago" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => handleEditarItems(entrega)}
+                                title="Editar cantidad o quitar"
+                              >
+                                <Pencil className="size-3" />
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -530,6 +570,13 @@ export function EntregasModule() {
         onOpenChange={setDialogOpen}
         onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)}
         currentUser={currentUser}
+      />
+
+      <EditarEntregaItemsDialog
+        open={editarItemsDialogOpen}
+        onOpenChange={setEditarItemsDialogOpen}
+        entrega={editingEntrega}
+        onSaved={() => fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)}
       />
     </div>
   )

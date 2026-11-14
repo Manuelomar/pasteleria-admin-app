@@ -32,7 +32,7 @@ import { ActivoBadge } from "@/components/badges"
 import { Badge } from "@/components/ui/badge"
 import { formatDateTime } from "@/lib/utils"
 import { UsuarioDialog } from "@/components/dialogs/usuario-dialog"
-import { rolLabel, type Usuario, type Rol } from "@/types"
+import { rolLabel, type Usuario, type Rol, type Sucursal } from "@/types"
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
@@ -42,6 +42,8 @@ export function UsuariosModule() {
   const [search, setSearch] = useState("")
   const [rol, setRol] = useState<"todos" | Rol>("todos")
   const [estado, setEstado] = useState<"todos" | "activo" | "inactivo">("todos")
+  const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas")
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Usuario | null>(null)
   const [items, setItems] = useState<Usuario[]>([])
@@ -53,16 +55,20 @@ export function UsuariosModule() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
+  useEffect(() => {
+    api.sucursales.getAll().then(setSucursales).catch(console.error)
+  }, [])
+
   const fetchUsuarios = () => {
     setIsLoading(true)
     Promise.all([
-      api.usuarios.getPaged(currentPage, pageSize, search, rol, estado),
+      api.usuarios.getPaged(currentPage, pageSize, search, rol, estado, sucursalFiltro),
       api.auth.getMe(),
-      new Promise((resolve) => setTimeout(resolve, 1000))
+      new Promise((resolve) => setTimeout(resolve, 500))
     ])
       .then(([res, user]) => {
         setCurrentUser(user)
-        const isAdmin = user.rol === "admin" || user.permisos?.usuarios === true
+        const isAdmin = user.rol === "superadmin" || user.rol === "admin" || user.permisos?.usuarios === true
         
         if (isAdmin) {
           setItems(res.data)
@@ -82,7 +88,7 @@ export function UsuariosModule() {
           icon: "error",
           title: "Error",
           text: "Error de conexión al cargar usuarios",
-          confirmButtonColor: "hsl(var(--primary))"
+          confirmButtonColor: "#e11d48"
         })
       })
       .finally(() => setIsLoading(false))
@@ -90,7 +96,7 @@ export function UsuariosModule() {
 
   useEffect(() => {
     fetchUsuarios()
-  }, [currentPage, pageSize, search, rol, estado])
+  }, [currentPage, pageSize, search, rol, estado, sucursalFiltro])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -116,7 +122,7 @@ export function UsuariosModule() {
         icon: "success",
         title: "Éxito",
         text: `${usuario.nombre} ha sido ${!usuario.activo ? "activado" : "inactivado"}`,
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
       fetchUsuarios()
     } catch (err: any) {
@@ -125,7 +131,7 @@ export function UsuariosModule() {
         icon: "error",
         title: "Error",
         text: err.message || "Error al cambiar el estado del usuario",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
     }
   }
@@ -150,7 +156,7 @@ export function UsuariosModule() {
         icon: "success",
         title: "Éxito",
         text: `Usuario ${usuario.nombre} eliminado`,
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
       fetchUsuarios()
     } catch (err: any) {
@@ -159,22 +165,21 @@ export function UsuariosModule() {
         icon: "error",
         title: "Error",
         text: err.message || "Error al eliminar el usuario",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
     }
   }
 
   const filtered = items
-  const isAdminUser = currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
-
-  
+  const isSuperAdmin = currentUser?.rol === "superadmin"
+  const isAdminUser = isSuperAdmin || currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
 
   return (
     <div className="flex flex-col gap-5 relative min-h-[400px]">
       <LoadingOverlay active={isLoading} />
       <p className="text-sm text-muted-foreground">
         {isAdminUser 
-          ? "Administra los usuarios del sistema, sus roles y accesos." 
+          ? "Administra los usuarios del sistema, sus roles, sucursales y accesos." 
           : "Visualiza y edita la información de tu perfil."}
       </p>
 
@@ -190,12 +195,26 @@ export function UsuariosModule() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {isSuperAdmin && (
+            <Select value={sucursalFiltro} onValueChange={(val) => { setSucursalFiltro(val ?? "todas"); setCurrentPage(1); }}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Sucursal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las sucursales</SelectItem>
+                {sucursales.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={rol} onValueChange={handleRolChange}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Rol" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los roles</SelectItem>
+              <SelectItem value="superadmin">Super Admin</SelectItem>
               <SelectItem value="admin">Administrador</SelectItem>
               <SelectItem value="usuario">Usuario</SelectItem>
               <SelectItem value="proveedor">Proveedor</SelectItem>
@@ -232,6 +251,7 @@ export function UsuariosModule() {
               <TableRow>
                 <TableHead>Usuario</TableHead>
                 <TableHead>Rol</TableHead>
+                <TableHead>Sucursal</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Último acceso</TableHead>
                 <TableHead className="text-right pr-6">Acciones</TableHead>
@@ -249,6 +269,11 @@ export function UsuariosModule() {
                   <TableCell>
                     <Badge variant="secondary" className="font-medium">
                       {rolLabel[u.rol]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal text-xs">
+                      {u.sucursalNombre || (u.rol === 'superadmin' ? 'Global' : 'Sin asignar')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -284,7 +309,7 @@ export function UsuariosModule() {
                                  icon: "info",
                                  title: "Información",
                                  text: `Cambiar rol de ${u.nombre}`,
-                                 confirmButtonColor: "hsl(var(--primary))"
+                                 confirmButtonColor: "#e11d48"
                                })}
                               >
                                 <Shield className="size-4" />
@@ -299,7 +324,7 @@ export function UsuariosModule() {
                                   icon: "success",
                                   title: "Éxito",
                                   text: `Contraseña restablecida para ${u.nombre}`,
-                                  confirmButtonColor: "hsl(var(--primary))"
+                                  confirmButtonColor: "#e11d48"
                                 })}
                               >
                                 <KeyRound className="size-4" />

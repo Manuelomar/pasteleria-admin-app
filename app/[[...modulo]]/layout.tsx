@@ -23,6 +23,7 @@ const titles: Record<ModuleId, string> = {
   "solicitudes-bizcocho": "Solicitudes de Bizcochos",
   "solicitudes-combo": "Solicitudes de Combos",
   "solicitudes-orden": "Órdenes",
+  sucursales: "Sucursales",
 }
 
 export default function ModuloLayout({ children }: { children: React.ReactNode }) {
@@ -83,8 +84,9 @@ export default function ModuloLayout({ children }: { children: React.ReactNode }
   }
 
   const hasPermission = (moduloId: string) => {
+    if (moduloId === "sucursales") return currentUser?.rol === "superadmin"
     if (moduloId === "usuarios") return true
-    if (currentUser?.rol === "admin") return true
+    if (currentUser?.rol === "superadmin" || currentUser?.rol === "admin") return true
     if (currentUser?.rol === "proveedor" && (moduloId === "catalogo" || moduloId === "entregas" || moduloId === "reportes")) return true
     return currentUser?.permisos?.[moduloId] === true
   }

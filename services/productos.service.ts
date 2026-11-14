@@ -3,12 +3,12 @@ import { mapProductoToFrontend } from "./mappers";
 import { Producto, PaginatedResponse } from "@/types";
 
 export const productosService = {
-  getAll: (disponible?: boolean): Promise<Producto[]> => {
-    let url = '/productos';
-    if (disponible !== undefined) {
-      url += `?disponible=${disponible}`;
-    }
-    return fetchAPI(url).then((list: any[]) => list.map(mapProductoToFrontend));
+  getAll: (disponible?: boolean, sucursalId?: string): Promise<Producto[]> => {
+    const params = new URLSearchParams();
+    if (disponible !== undefined) params.append('disponible', String(disponible));
+    if (sucursalId && sucursalId !== 'todas') params.append('sucursalId', sucursalId);
+    const queryString = params.toString();
+    return fetchAPI(queryString ? `/productos?${queryString}` : '/productos').then((list: any[]) => list.map(mapProductoToFrontend));
   },
   getPaged: (
     page: number,
@@ -16,7 +16,8 @@ export const productosService = {
     search?: string,
     tipo?: string,
     disponible?: string,
-    proveedorId?: string
+    proveedorId?: string,
+    sucursalId?: string
   ): Promise<PaginatedResponse<Producto>> => {
     let url = `/productos/paged?pageNumber=${page}&pageSize=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -25,6 +26,7 @@ export const productosService = {
       url += `&disponible=${disponible === 'disponible' ? 'true' : 'false'}`;
     }
     if (proveedorId) url += `&proveedorId=${proveedorId}`;
+    if (sucursalId && sucursalId !== 'todas') url += `&sucursalId=${sucursalId}`;
     return fetchAPI(url).then((res: any) => ({
       ...res,
       data: (res.data || []).map(mapProductoToFrontend)

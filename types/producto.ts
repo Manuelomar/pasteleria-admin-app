@@ -17,6 +17,8 @@ export interface Producto {
   precioCosto?: number
   precioUber?: number
   historialCostos?: number[]
+  sucursalId?: string | null
+  sucursalNombre?: string | null
 }
 
 export const tipoLabel: Record<Tipo, string> = {

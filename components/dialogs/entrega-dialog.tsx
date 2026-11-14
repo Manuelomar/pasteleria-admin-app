@@ -40,7 +40,7 @@ export function EntregaDialog({
   const [isProductSelectorOpen, setIsProductSelectorOpen] = useState(false)
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
 
-  const isAdmin = currentUser?.rol === "admin"
+  const isAdmin = currentUser?.rol === "superadmin" || currentUser?.rol === "admin"
   const selectedProviderObj = isAdmin ? proveedores.find(p => p.id === selectedProveedor) : currentUser;
   const vendeMateriales = selectedProviderObj?.vendeMateriales;
 

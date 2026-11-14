@@ -1,4 +1,4 @@
-export type Rol = "admin" | "usuario" | "proveedor" | "vendedor"
+export type Rol = "superadmin" | "admin" | "usuario" | "proveedor" | "vendedor"
 
 export interface Usuario {
   id: string
@@ -11,9 +11,12 @@ export interface Usuario {
   ultimoAcceso: string
   permisos?: Record<string, boolean>
   vendeMateriales?: boolean
+  sucursalId?: string | null
+  sucursalNombre?: string | null
 }
 
 export const rolLabel: Record<Rol, string> = {
+  superadmin: "Super Admin",
   admin: "Administrador",
   usuario: "Usuario",
   proveedor: "Proveedor",

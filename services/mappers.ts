@@ -2,15 +2,28 @@ import { Usuario, Producto, Cliente, Movimiento, Venta } from "@/types";
 
 export const mapUsuarioToFrontend = (u: any): Usuario => {
   if (!u) return u;
+  const roleStr = String(u.role || '').toLowerCase();
+  const rol = roleStr === 'superadmin'
+    ? 'superadmin'
+    : (roleStr === 'admin' || roleStr === 'administrador')
+    ? 'admin'
+    : roleStr === 'proveedor'
+    ? 'proveedor'
+    : roleStr === 'vendedor'
+    ? 'vendedor'
+    : 'usuario';
+
   return {
     id: u.id,
     nombre: u.name || u.username || '',
     correo: u.username || '',
-    rol: (u.role === 'admin' || u.role === 'administrador') ? 'admin' : (u.role === 'proveedor' ? 'proveedor' : 'usuario'),
+    rol,
     activo: u.activo ?? true,
     ultimoAcceso: u.createdAt || new Date().toISOString(),
     permisos: u.permissions || {},
     vendeMateriales: u.vendeMateriales || false,
+    sucursalId: u.sucursalId ?? null,
+    sucursalNombre: u.sucursal?.nombre ?? u.sucursalNombre ?? null,
   };
 };
 
@@ -23,6 +36,7 @@ export const mapUsuarioToBackend = (u: any): any => {
   if (u.rol !== undefined) result.role = u.rol;
   if (u.activo !== undefined) result.activo = u.activo;
   if (u.permisos !== undefined) result.permissions = u.permisos;
+  if (u.sucursalId !== undefined) result.sucursalId = u.sucursalId;
   return result;
 };
 
@@ -31,6 +45,8 @@ export const mapProductoToFrontend = (p: any): Producto => {
   return {
     ...p,
     precio: Number(p.precio || 0),
+    sucursalId: p.sucursalId ?? null,
+    sucursalNombre: p.sucursal?.nombre ?? p.sucursalNombre ?? null,
   };
 };
 

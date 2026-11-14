@@ -6,7 +6,103 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+interface SelectContextValue {
+  itemMap: Map<string, React.ReactNode>
+  registerItem: (value: unknown, label: React.ReactNode) => void
+}
+
+const SelectContext = React.createContext<SelectContextValue | null>(null)
+
+function extractText(node: React.ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(extractText).join("")
+  if (React.isValidElement(node)) {
+    const props = node.props
+    if (props && typeof props === "object" && "children" in props) {
+      return extractText((props as { children?: React.ReactNode }).children)
+    }
+  }
+  return ""
+}
+
+function extractItems(children: React.ReactNode): Map<string, React.ReactNode> {
+  const map = new Map<string, React.ReactNode>()
+
+  function walk(node: React.ReactNode) {
+    if (!node) return
+    if (Array.isArray(node)) {
+      node.forEach(walk)
+      return
+    }
+    if (React.isValidElement(node)) {
+      const props = node.props
+      if (props && typeof props === "object") {
+        const itemProps = props as { value?: unknown; label?: React.ReactNode; children?: React.ReactNode }
+        if (itemProps.value !== undefined && itemProps.value !== null) {
+          const valStr = String(itemProps.value)
+          const label =
+            itemProps.label ??
+            (typeof itemProps.children === "string" ? itemProps.children : extractText(itemProps.children))
+          if (label) {
+            map.set(valStr, label)
+          }
+        }
+        if (itemProps.children) {
+          walk(itemProps.children)
+        }
+      }
+    }
+  }
+
+  walk(children)
+  return map
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  children,
+  items: explicitItems,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const [dynamicMap, setDynamicMap] = React.useState<Map<string, React.ReactNode>>(() => new Map())
+
+  const staticMap = React.useMemo(() => extractItems(children), [children])
+
+  const mergedMap = React.useMemo(() => {
+    const m = new Map<string, React.ReactNode>(staticMap)
+    dynamicMap.forEach((v, k) => m.set(k, v))
+    return m
+  }, [staticMap, dynamicMap])
+
+  const registerItem = React.useCallback((value: unknown, label: React.ReactNode) => {
+    if (value === undefined || value === null || !label) return
+    const key = String(value)
+    setDynamicMap((prev) => {
+      if (prev.get(key) === label) return prev
+      const next = new Map(prev)
+      next.set(key, label)
+      return next
+    })
+  }, [])
+
+  const baseUiItems = React.useMemo(() => {
+    if (explicitItems) return explicitItems
+    if (mergedMap.size === 0) return undefined
+    const record: Record<string, React.ReactNode> = {}
+    mergedMap.forEach((label, val) => {
+      record[val] = label
+    })
+    return record
+  }, [explicitItems, mergedMap])
+
+  return (
+    <SelectContext.Provider value={{ itemMap: mergedMap, registerItem }}>
+      <SelectPrimitive.Root items={baseUiItems} {...props}>
+        {children}
+      </SelectPrimitive.Root>
+    </SelectContext.Provider>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -18,13 +114,30 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({ className, children, placeholder, ...props }: SelectPrimitive.Value.Props) {
+  const ctx = React.useContext(SelectContext)
+
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
+      placeholder={placeholder}
       {...props}
-    />
+    >
+      {typeof children === "function"
+        ? (children as (val: unknown) => React.ReactNode)
+        : (val: unknown) => {
+            if (val === null || val === undefined || val === "") {
+              return placeholder
+            }
+            if (children) return children
+            if (ctx) {
+              const mapped = ctx.itemMap.get(String(val))
+              if (mapped) return mapped
+            }
+            return String(val)
+          }}
+    </SelectPrimitive.Value>
   )
 }
 
@@ -83,7 +196,10 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          className={cn("relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn(
+            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            className
+          )}
           {...props}
         >
           <SelectScrollUpButton />
@@ -111,11 +227,27 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  value,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const ctx = React.useContext(SelectContext)
+
+  React.useEffect(() => {
+    if (ctx && value !== undefined && value !== null) {
+      const computedLabel =
+        label ?? (typeof children === "string" ? children : extractText(children))
+      if (computedLabel) {
+        ctx.registerItem(value, computedLabel)
+      }
+    }
+  }, [ctx, value, label, children])
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      value={value}
+      label={typeof label === "string" ? label : typeof children === "string" ? children : undefined}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
@@ -162,8 +294,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <ChevronUpIcon />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -181,8 +312,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <ChevronDownIcon />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

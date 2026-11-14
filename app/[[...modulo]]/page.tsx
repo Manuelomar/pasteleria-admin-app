@@ -14,6 +14,7 @@ import { HistorialModule } from "@/components/modules/historial-module"
 import { SolicitudesBizcochoModule } from "@/components/modules/solicitudes-bizcocho-module"
 import { SolicitudesComboModule } from "@/components/modules/solicitudes-combo-module"
 import { SolicitudesOrdenModule } from "@/components/modules/solicitudes-orden-module"
+import { SucursalesModule } from "@/components/modules/sucursales-module"
 import { useParams } from "next/navigation"
 
 export default function Page() {
@@ -36,6 +37,7 @@ export default function Page() {
       {currentModule === "solicitudes-bizcocho" && <SolicitudesBizcochoModule />}
       {currentModule === "solicitudes-combo" && <SolicitudesComboModule />}
       {currentModule === "solicitudes-orden" && <SolicitudesOrdenModule />}
+      {currentModule === "sucursales" && <SucursalesModule />}
     </>
   )
 }

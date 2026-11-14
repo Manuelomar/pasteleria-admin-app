@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Usuario } from "@/types"
+import type { Usuario, Sucursal } from "@/types"
 import Swal from "sweetalert2"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Sparkles, Copy, Check } from "lucide-react"
 
 import { api } from "@/services"
 
@@ -39,7 +39,8 @@ export function UsuarioDialog({
   onSaved?: () => void
   currentUser?: Usuario | null
 }) {
-  const isAdminUser = currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
+  const isSuperAdmin = currentUser?.rol === "superadmin"
+  const isAdminUser = isSuperAdmin || currentUser?.rol === "admin" || currentUser?.permisos?.usuarios === true
   const [nombre, setNombre] = useState("")
   const [correo, setCorreo] = useState("")
   const [password, setPassword] = useState("")
@@ -48,6 +49,8 @@ export function UsuarioDialog({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [cambiarPassword, setCambiarPassword] = useState(false)
   const [rol, setRol] = useState("usuario")
+  const [sucursalId, setSucursalId] = useState<string>("")
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [activo, setActivo] = useState(true)
   const defaultPermisos = {
     dashboard: true,
@@ -62,19 +65,49 @@ export function UsuarioDialog({
   }
   const [permisos, setPermisos] = useState<Record<string, boolean>>(defaultPermisos)
   const [isSaving, setIsSaving] = useState(false)
+  const [copiedPassword, setCopiedPassword] = useState(false)
+
+  const handleGenerarPassword = () => {
+    const palabras = ["Dulce", "Bizcocho", "Pastel", "Canela", "Vainilla", "Fresa", "Glaseado"]
+    const palabra = palabras[Math.floor(Math.random() * palabras.length)]
+    const num = Math.floor(100 + Math.random() * 900)
+    const simbolos = ["!", "@", "#", "$", "*"]
+    const sim = simbolos[Math.floor(Math.random() * simbolos.length)]
+    const generated = `${palabra}${num}${sim}`
+
+    setPassword(generated)
+    setConfirmPassword(generated)
+    setShowPassword(true)
+    setShowConfirmPassword(true)
+
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(generated)
+      setCopiedPassword(true)
+      setTimeout(() => setCopiedPassword(false), 3000)
+    }
+  }
+
+  const handleCopiarPassword = () => {
+    if (!password || !navigator?.clipboard) return
+    navigator.clipboard.writeText(password)
+    setCopiedPassword(true)
+    setTimeout(() => setCopiedPassword(false), 3000)
+  }
 
   useEffect(() => {
     if (open) {
+      api.sucursales.getAll().then(setSucursales).catch(console.error)
       setNombre(usuario?.nombre ?? "")
       setCorreo(usuario?.correo ?? "")
       setPassword("")
       setConfirmPassword("")
       setRol(usuario?.rol ?? "usuario")
+      setSucursalId(usuario?.sucursalId ?? (currentUser?.sucursalId || ""))
       setActivo(usuario?.activo ?? true)
       setCambiarPassword(false)
       setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
-  }, [open, usuario])
+  }, [open, usuario, currentUser])
 
   useEffect(() => {
     if (rol === "proveedor") {
@@ -110,7 +143,7 @@ export function UsuarioDialog({
         icon: "error",
         title: "Error de validación",
         text: "El nombre es requerido",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
       return
     }
@@ -121,7 +154,7 @@ export function UsuarioDialog({
         icon: "error",
         title: "Error de validación",
         text: "Por favor, introduce un correo electrónico válido (ej. usuario@ejemplo.com)",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
       return
     }
@@ -131,7 +164,7 @@ export function UsuarioDialog({
         icon: "error",
         title: "Error de validación",
         text: "La contraseña es requerida para nuevos usuarios",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
       return
     }
@@ -142,7 +175,7 @@ export function UsuarioDialog({
           icon: "error",
           title: "Error de validación",
           text: "Las contraseñas no coinciden",
-          confirmButtonColor: "hsl(var(--primary))"
+          confirmButtonColor: "#e11d48"
         })
         return
       }
@@ -152,7 +185,7 @@ export function UsuarioDialog({
           icon: "error",
           title: "Error de validación",
           text: "La contraseña debe contener al menos una letra mayúscula",
-          confirmButtonColor: "hsl(var(--primary))"
+          confirmButtonColor: "#e11d48"
         })
         return
       }
@@ -160,16 +193,17 @@ export function UsuarioDialog({
 
     setIsSaving(true)
     try {
-      const data: any = {
+      const data: Partial<Usuario> & { password?: string } = {
         nombre,
         correo,
         username: correo, // username equals correo for now
       }
       
       if (isAdminUser) {
-        data.rol = rol
+        data.rol = rol as Usuario["rol"]
         data.activo = activo
         data.permisos = permisos
+        data.sucursalId = (rol === "superadmin" || !sucursalId || sucursalId === "ninguna") ? null : sucursalId
       }
       
       if (!usuario || cambiarPassword) {
@@ -182,7 +216,7 @@ export function UsuarioDialog({
           icon: "success",
           title: "Éxito",
           text: "Usuario actualizado",
-          confirmButtonColor: "hsl(var(--primary))"
+          confirmButtonColor: "#e11d48"
         })
       } else {
         await api.usuarios.create(data)
@@ -190,7 +224,7 @@ export function UsuarioDialog({
           icon: "success",
           title: "Éxito",
           text: "Usuario creado",
-          confirmButtonColor: "hsl(var(--primary))"
+          confirmButtonColor: "#e11d48"
         })
       }
       
@@ -202,7 +236,7 @@ export function UsuarioDialog({
         icon: "error",
         title: "Error",
         text: error.message || "Error al guardar el usuario",
-        confirmButtonColor: "hsl(var(--primary))"
+        confirmButtonColor: "#e11d48"
       })
     } finally {
       setIsSaving(false)
@@ -236,16 +270,56 @@ export function UsuarioDialog({
           )}
 
           {(!usuario || cambiarPassword) && (
-            <>
+            <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-3.5 my-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {usuario ? "Nueva contraseña" : "Crear contraseña"}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerarPassword}
+                  className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary"
+                >
+                  <Sparkles className="size-3.5" />
+                  Generar contraseña segura
+                </Button>
+              </div>
+
               <Field>
-                <FieldLabel htmlFor="usr-pass">Contraseña</FieldLabel>
+                <div className="flex items-center justify-between">
+                  <FieldLabel htmlFor="usr-pass">
+                    {usuario ? "Nueva Contraseña" : "Contraseña"}
+                  </FieldLabel>
+                  {password && (
+                    <button
+                      type="button"
+                      onClick={handleCopiarPassword}
+                      className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+                    >
+                      {copiedPassword ? (
+                        <>
+                          <Check className="size-3 text-emerald-500" />
+                          <span className="text-emerald-500">¡Copiada!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-3" />
+                          <span>Copiar</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Input
                     id="usr-pass"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={usuario ? "Dejar en blanco para mantener" : "••••••••"}
+                    placeholder={usuario ? "Ingresa la nueva contraseña" : "••••••••"}
+                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <button
@@ -253,11 +327,16 @@ export function UsuarioDialog({
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Mínimo 6 caracteres y al menos una letra mayúscula.
+                </p>
               </Field>
+
               <Field>
                 <FieldLabel htmlFor="usr-pass-confirm">Confirmar Contraseña</FieldLabel>
                 <div className="relative">
@@ -267,6 +346,7 @@ export function UsuarioDialog({
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repite la contraseña"
+                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <button
@@ -274,12 +354,13 @@ export function UsuarioDialog({
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     tabIndex={-1}
+                    title={showConfirmPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   >
                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </Field>
-            </>
+            </div>
           )}
 
           {isAdminUser && (
@@ -291,6 +372,9 @@ export function UsuarioDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    {isSuperAdmin && (
+                      <SelectItem value="superadmin">Super Administrador (Global)</SelectItem>
+                    )}
                     <SelectItem value="admin">Administrador</SelectItem>
                     <SelectItem value="usuario">Usuario</SelectItem>
                     <SelectItem value="proveedor">Proveedor</SelectItem>
@@ -298,6 +382,36 @@ export function UsuarioDialog({
                   </SelectContent>
                 </Select>
               </Field>
+
+              {isSuperAdmin ? (
+                <Field>
+                  <FieldLabel>Sucursal Asignada</FieldLabel>
+                  <Select 
+                    value={sucursalId || "ninguna"} 
+                    onValueChange={(val) => setSucursalId(val === "ninguna" ? "" : (val ?? ""))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccionar sucursal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ninguna">Sin sucursal (Super Admin / Global)</SelectItem>
+                      {sucursales.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.nombre} ({s.codigo})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              ) : currentUser?.sucursalNombre ? (
+                <Field>
+                  <FieldLabel>Sucursal Asignada</FieldLabel>
+                  <div className="text-sm font-medium py-2 px-3 bg-muted rounded-md text-muted-foreground">
+                    {currentUser.sucursalNombre}
+                  </div>
+                </Field>
+              ) : null}
+
               <Field orientation="horizontal" className="items-center justify-between">
                 <FieldLabel htmlFor="usr-activo">Usuario activo</FieldLabel>
                 <Switch id="usr-activo" checked={activo} onCheckedChange={setActivo} />
@@ -306,8 +420,8 @@ export function UsuarioDialog({
           )}
         </FieldGroup>
 
-        {/* Sección de Permisos - Ocultar si es administrador ya que tiene todo por defecto */}
-        {isAdminUser && rol !== "admin" && (
+        {/* Sección de Permisos - Ocultar si es superadmin o administrador ya que tienen todo */}
+        {isAdminUser && rol !== "admin" && rol !== "superadmin" && (
           <div className="mt-6 flex flex-col gap-3">
             <h4 className="text-sm font-medium leading-none">Permisos de Módulos</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border p-4">

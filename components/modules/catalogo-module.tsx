@@ -23,13 +23,14 @@ import { TipoBadge, DisponibleBadge } from "@/components/badges"
 import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
 import { SelectExistingProductDialog } from "@/components/dialogs/select-existing-product-dialog"
-import { currency, type Producto, type Tipo, type Usuario } from "@/types"
+import { ClonarCatalogoDialog } from "@/components/dialogs/clonar-catalogo-dialog"
+import { currency, type Producto, type Tipo, type Usuario, type Sucursal } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
-import { Folder, ArrowLeft } from "lucide-react"
+import { Folder, ArrowLeft, Copy } from "lucide-react"
 
 export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [items, setItems] = useState<Producto[]>([])
@@ -53,12 +54,21 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [enablingMaterials, setEnablingMaterials] = useState(false)
   const [providers, setProviders] = useState<Usuario[]>([])
 
-  const isAdmin = currentUser?.rol === "admin"
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas")
+  const [clonarDialogOpen, setClonarDialogOpen] = useState<boolean>(false)
+
+  const isSuperAdmin = currentUser?.rol === "superadmin"
+  const isAdmin = isSuperAdmin || currentUser?.rol === "admin"
+
+  useEffect(() => {
+    api.sucursales.getAll().then(setSucursales).catch(console.error)
+  }, [])
 
   useEffect(() => {
     api.auth.getMe().then(user => {
       setCurrentUser(user)
-      if (user.rol === "admin") {
+      if (user.rol === "admin" || user.rol === "superadmin") {
         api.usuarios.getAll().then(users => {
           const provs = users.filter(u => u.rol === "proveedor")
           setProviders(provs)
@@ -91,7 +101,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
     }
 
     setIsLoading(true)
-    let effectiveTipo: any = tipo;
+    let effectiveTipo: string = tipo;
     if (selectedProviderId && selectedProviderId !== "internos") {
        if (selectedProvider?.vendeMateriales) {
          if (providerCategory === 'materiales') effectiveTipo = 'materiales';
@@ -110,9 +120,10 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         search, 
         effectiveTipo, 
         disp, 
-        selectedProviderId === "internos" || (!isAdmin && currentUser?.rol !== 'proveedor') ? "internos" : selectedProviderId || undefined
+        selectedProviderId === "internos" || (!isAdmin && currentUser?.rol !== 'proveedor') ? "internos" : selectedProviderId || undefined,
+        isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : undefined
       ),
-      new Promise(resolve => setTimeout(resolve, 1000))
+      new Promise(resolve => setTimeout(resolve, 500))
     ])
       .then(([res]) => {
         setItems(res.data)
@@ -128,7 +139,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
   useEffect(() => {
     fetchProductos()
-  }, [currentPage, pageSize, search, tipo, disp, selectedProviderId, isAdmin, providerCategory, currentUser])
+  }, [currentPage, pageSize, search, tipo, disp, selectedProviderId, isAdmin, providerCategory, currentUser, sucursalFiltro])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -149,9 +160,11 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
 
   const handleAddExisting = async (p: Partial<Producto>) => {
     try {
-      const data: any = {
+      const targetSucursalId = isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : currentUser?.sucursalId;
+      const data: Partial<Producto> = {
         ...p,
         cantidad: 0,
+        sucursalId: targetSucursalId,
         proveedorId: selectedProviderId === "internos" ? undefined : selectedProviderId || undefined,
       }
       
@@ -164,9 +177,10 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
       await api.productos.create(data);
       toast.success("Producto añadido al catálogo");
       fetchProductos();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      toast.error(error.message || "Error al añadir el producto");
+      const msg = error instanceof Error ? error.message : "Error al añadir el producto";
+      toast.error(msg);
     }
   }
 
@@ -306,7 +320,32 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               className="pl-9"
             />
           </div>
-          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            {isSuperAdmin && (
+              <Select value={sucursalFiltro} onValueChange={(val) => { setSucursalFiltro(val ?? "todas"); setCurrentPage(1); }}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las sucursales</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {isSuperAdmin && sucursales.length >= 2 && (
+              <Button
+                variant="outline"
+                className="gap-2 border-primary/40 text-primary hover:border-primary hover:bg-primary/5"
+                onClick={() => setClonarDialogOpen(true)}
+              >
+                <Copy className="size-4" />
+                Clonar catálogo
+              </Button>
+            )}
+
             {(!isAdmin || selectedProviderId) && selectedProviderId !== "internos" && !(providers.find(p => p.id === selectedProviderId) || (currentUser?.rol === 'proveedor' ? currentUser : null))?.vendeMateriales && (
                <Button variant="outline" onClick={handleEnableMaterials} disabled={enablingMaterials}>
                  Habilitar Venta de Materiales
@@ -477,7 +516,14 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
                   <h3 className="font-medium leading-tight text-foreground">{p.nombre}</h3>
-                  <span className="text-xs text-muted-foreground">{p.categoria}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <span className="text-xs text-muted-foreground">{p.categoria}</span>
+                    {isSuperAdmin && p.sucursalNombre && (
+                      <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        📍 {p.sucursalNombre}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col items-end">
                   {currentUser?.rol !== "proveedor" && (
@@ -485,7 +531,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                       {currency(p.precio)}
                     </span>
                   )}
-                  {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
+                  {(currentUser?.rol === "superadmin" || currentUser?.rol === "admin" || currentUser?.rol === "proveedor") && (
                     <span className={cn(
                       currentUser?.rol === "proveedor" 
                         ? "font-heading text-lg font-semibold text-primary" 
@@ -596,6 +642,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         currentUser={currentUser}
         defaultProveedorId={selectedProviderId === "internos" ? undefined : selectedProviderId || undefined}
         defaultTipo={providerCategory === 'materiales' ? 'material' : undefined}
+        currentSucursalId={isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : currentUser?.sucursalId}
       />
 
       <SelectExistingProductDialog
@@ -610,6 +657,13 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         onOpenChange={(open) => !open && setViewing(null)}
         producto={viewing}
         currentUser={currentUser}
+      />
+
+      <ClonarCatalogoDialog
+        open={clonarDialogOpen}
+        onOpenChange={setClonarDialogOpen}
+        onCloned={fetchProductos}
+        defaultDestinoId={isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : undefined}
       />
     </div>
   )
