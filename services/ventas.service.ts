@@ -1,6 +1,6 @@
 import { fetchAPI, API_URL } from "./api.config";
 import { mapVentaToFrontend } from "./mappers";
-import { Venta, PaginatedResponse } from "@/types";
+import { Venta, PaginatedResponse, DashboardMetrics } from "@/types";
 
 export const ventasService = {
   getAll: (): Promise<Venta[]> => fetchAPI('/ventas').then((list: any[]) => list.map(mapVentaToFrontend)),
@@ -30,12 +30,18 @@ export const ventasService = {
       data: (res.data || []).map(mapVentaToFrontend)
     }));
   },
-  getDashboardMetrics: (fechaInicio?: string, fechaFin?: string, filterType?: string): Promise<any> => {
+  getDashboardMetrics: (
+    fechaInicio?: string, 
+    fechaFin?: string, 
+    filterType?: string, 
+    sucursalId?: string
+  ): Promise<DashboardMetrics> => {
     let url = `/ventas/dashboard-metrics`;
     const params = new URLSearchParams();
     if (fechaInicio) params.append('fechaInicio', fechaInicio);
     if (fechaFin) params.append('fechaFin', fechaFin);
     if (filterType) params.append('filterType', filterType);
+    if (sucursalId && sucursalId !== 'todas') params.append('sucursalId', sucursalId);
     if (params.toString()) {
        url += `?${params.toString()}`;
     }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect, useCallback } from "react"
-import { DollarSign, ShoppingBag, Users, Package, AlertCircle, TrendingUp, Wallet, Percent } from "lucide-react"
+import { DollarSign, ShoppingBag, Users, Package, AlertCircle, TrendingUp, Wallet, Percent, Building2 } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -29,7 +29,16 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { EstadoPagoBadge } from "@/components/badges"
-import { currency, type Venta, type Cliente, type Producto } from "@/types"
+import { 
+  currency, 
+  type Venta, 
+  type Cliente, 
+  type Producto, 
+  type Usuario, 
+  type Sucursal, 
+  type DashboardMetrics, 
+  type MetricSummary 
+} from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
 import { Loader } from "@/components/ui/loader"
@@ -37,7 +46,7 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 
-const MetricsRow = ({ title, data }: { title?: string, data: any }) => {
+const MetricsRow = ({ title, data }: { title?: string; data: MetricSummary | null | undefined }) => {
   const d = data || { ventas: 0, ganancia: 0, sinItbis: 0, itbis: 0, ordenes: 0 }
   return (
   <div className="mb-8">
@@ -110,12 +119,26 @@ const MetricsRow = ({ title, data }: { title?: string, data: any }) => {
 }
 
 export function DashboardModule() {
-  const [metrics, setMetrics] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas")
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const [filterType, setFilterType] = useState("hoy")
   const [customStart, setCustomStart] = useState("")
   const [customEnd, setCustomEnd] = useState("")
+
+  useEffect(() => {
+    api.auth.getMe()
+      .then((user) => {
+        setCurrentUser(user)
+        if (user.rol === "superadmin") {
+          api.sucursales.getAll().then(setSucursales).catch(console.error)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const loadMetrics = useCallback(() => {
     setIsLoading(true)
@@ -123,18 +146,22 @@ export function DashboardModule() {
     const start = isCustom ? customStart : undefined
     const end = isCustom ? customEnd : undefined
 
-    api.ventas.getDashboardMetrics(start, end, filterType)
-      .then((data: any) => {
+    const sucursalToQuery = currentUser?.rol === "superadmin"
+      ? (selectedSucursal === "todas" ? undefined : selectedSucursal)
+      : (currentUser?.sucursalId || undefined)
+
+    api.ventas.getDashboardMetrics(start, end, filterType, sucursalToQuery)
+      .then((data: DashboardMetrics) => {
         setMetrics(data)
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.error(err)
         toast.error("Error cargando dashboard")
       })
       .finally(() => {
         setIsLoading(false)
       })
-  }, [filterType, customStart, customEnd])
+  }, [filterType, customStart, customEnd, currentUser, selectedSucursal])
 
   useEffect(() => {
     if (filterType !== "custom") {
@@ -160,22 +187,51 @@ export function DashboardModule() {
     ventasRecientes = []
   } = metrics || {}
 
-  
-
   return (
     <div className="flex flex-col gap-8 relative min-h-[400px]">
       <LoadingOverlay active={isLoading} />
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-xl font-heading font-semibold text-foreground">
-            Resumen de Métricas
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
+          <div>
+            <h2 className="text-xl font-heading font-semibold text-foreground">
+              Resumen de Métricas
+            </h2>
+            {currentUser && currentUser.rol !== "superadmin" && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                <Building2 className="size-3.5 text-primary" />
+                <span>Sucursal: <strong className="text-foreground font-medium">{currentUser.sucursalNombre || "Sucursal asignada"}</strong></span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+            {currentUser?.rol === "superadmin" && (
+              <div className="w-full sm:w-[220px]">
+                <Select value={selectedSucursal} onValueChange={(val: string | null) => setSelectedSucursal(val || "todas")}>
+                  <SelectTrigger className="w-full">
+                    <Building2 className="size-4 text-muted-foreground mr-1.5 shrink-0" />
+                    <SelectValue placeholder="Todas las sucursales">
+                      {selectedSucursal === "todas"
+                        ? "Todas las sucursales"
+                        : sucursales.find((s) => s.id === selectedSucursal)?.nombre || "Sucursal"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las sucursales</SelectItem>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre} ({s.codigo})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {filterType === "custom" && (
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Input type="date" value={customStart} onChange={(e: any) => setCustomStart(e.target.value)} className="w-full sm:w-[140px]" />
+                <Input type="date" value={customStart} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomStart(e.target.value)} className="w-full sm:w-[140px]" />
                 <span className="text-muted-foreground hidden sm:inline">-</span>
-                <Input type="date" value={customEnd} onChange={(e: any) => setCustomEnd(e.target.value)} className="w-full sm:w-[140px]" />
+                <Input type="date" value={customEnd} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomEnd(e.target.value)} className="w-full sm:w-[140px]" />
               </div>
             )}
             <Select value={filterType} onValueChange={(val: string | null) => setFilterType(val || "hoy")}>
@@ -213,7 +269,7 @@ export function DashboardModule() {
             <CardDescription>Comparativa de facturación con y sin impuestos en el año</CardDescription>
           </CardHeader>
           <CardContent>
-            {ventasMensuales.some((v: any) => v.ventas > 0) ? (
+            {ventasMensuales.some((v) => v.ventas > 0) ? (
               <ChartContainer 
                 config={{ 
                   subtotal: { label: "Sin ITBIS", color: "var(--chart-2)" }, 
@@ -245,7 +301,7 @@ export function DashboardModule() {
             <CardDescription>Total facturado por día (semana actual)</CardDescription>
           </CardHeader>
           <CardContent>
-            {ventasSemanales.some((v: any) => v.ventas > 0) ? (
+            {ventasSemanales.some((v) => v.ventas > 0) ? (
               <ChartContainer
                 config={{ ventas: { label: "Ventas", color: "var(--chart-1)" } }}
                 className="h-[280px] w-full"
@@ -286,7 +342,7 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={ventasPorCategoria} dataKey="valor" nameKey="categoria" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {ventasPorCategoria.map((entry: any) => (
+                    {ventasPorCategoria.map((entry) => (
                       <Cell key={entry.categoria} fill={`var(--color-${entry.categoria})`} />
                     ))}
                   </Pie>
@@ -321,7 +377,7 @@ export function DashboardModule() {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie data={metodosPago} dataKey="valor" nameKey="metodo" innerRadius={60} outerRadius={85} paddingAngle={4}>
-                    {metodosPago.map((entry: any) => (
+                    {metodosPago.map((entry) => (
                       <Cell key={entry.metodo} fill={`var(--color-${entry.metodo})`} />
                     ))}
                   </Pie>
@@ -345,7 +401,7 @@ export function DashboardModule() {
             <CardDescription>Movimientos recientes</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {ventasRecientes.length > 0 ? ventasRecientes.map((v: any) => (
+            {ventasRecientes.length > 0 ? ventasRecientes.map((v) => (
               <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-foreground">
@@ -374,7 +430,7 @@ export function DashboardModule() {
             <CardDescription>Top 5 general</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {masVendidos.length > 0 ? masVendidos.map((p: any, i: number) => (
+            {masVendidos.length > 0 ? masVendidos.map((p, i: number) => (
               <div key={p.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
                 <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                   {i + 1}
