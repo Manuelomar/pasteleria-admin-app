@@ -83,7 +83,7 @@ export function EntregasModule() {
     }).catch(console.error)
 
     api.usuarios.getAll().then(users => {
-      setProveedores(users.filter(u => u.rol === 'proveedor' && u.activo))
+      setProveedores(users.filter(u => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))
     }).catch(console.error)
   }, [])
 

@@ -11,6 +11,7 @@ export interface Usuario {
   ultimoAcceso: string
   permisos?: Record<string, boolean>
   vendeMateriales?: boolean
+  isProvider?: boolean
   sucursalId?: string | null
   sucursalNombre?: string | null
 }

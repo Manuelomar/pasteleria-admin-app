@@ -24,7 +24,7 @@ export function ReportesModule() {
   useEffect(() => {
     api.auth.getMe().then(setCurrentUser).catch(console.error)
     api.productos.getAll().then(setProductos).catch(console.error)
-    api.usuarios.getAll().then(res => setProveedores(res.filter(u => u.rol === 'proveedor'))).catch(console.error)
+    api.usuarios.getAll().then(res => setProveedores(res.filter(u => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))).catch(console.error)
   }, [])
 
   const isProveedor = currentUser?.rol === "proveedor"

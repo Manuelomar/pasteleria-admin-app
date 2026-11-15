@@ -22,6 +22,7 @@ export const mapUsuarioToFrontend = (u: any): Usuario => {
     ultimoAcceso: u.createdAt || new Date().toISOString(),
     permisos: u.permissions || {},
     vendeMateriales: u.vendeMateriales || false,
+    isProvider: u.role === 'proveedor' || Boolean(u.isProvider),
     sucursalId: u.sucursalId ?? null,
     sucursalNombre: u.sucursal?.nombre ?? u.sucursalNombre ?? null,
   };
@@ -36,6 +37,7 @@ export const mapUsuarioToBackend = (u: any): any => {
   if (u.rol !== undefined) result.role = u.rol;
   if (u.activo !== undefined) result.activo = u.activo;
   if (u.permisos !== undefined) result.permissions = u.permisos;
+  if (u.isProvider !== undefined) result.isProvider = u.isProvider;
   if (u.sucursalId !== undefined) result.sucursalId = u.sucursalId;
   return result;
 };

@@ -53,7 +53,7 @@ export function EntregaDialog({
       
       if (isAdmin) {
         api.usuarios.getAll().then(users => {
-          setProveedores(users.filter((u: any) => u.rol === 'proveedor'))
+          setProveedores(users.filter((u: any) => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))
         }).catch(console.error)
       } else if (currentUser) {
         api.productos.getAll().then(prods => {

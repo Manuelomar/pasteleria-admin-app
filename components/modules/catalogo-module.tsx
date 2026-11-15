@@ -70,7 +70,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
       setCurrentUser(user)
       if (user.rol === "admin" || user.rol === "superadmin") {
         api.usuarios.getAll().then(users => {
-          const provs = users.filter(u => u.rol === "proveedor")
+          const provs = users.filter(u => (u.rol === "proveedor" || u.isProvider) && u.activo !== false)
           setProviders(provs)
           
           if (subModule) {

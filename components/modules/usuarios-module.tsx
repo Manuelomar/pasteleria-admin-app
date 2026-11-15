@@ -267,9 +267,16 @@ export function UsuariosModule() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="font-medium">
-                      {rolLabel[u.rol]}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="secondary" className="font-medium">
+                        {rolLabel[u.rol]}
+                      </Badge>
+                      {u.rol !== "proveedor" && u.isProvider && (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] py-0 px-1.5 font-medium">
+                          + Proveedor
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-normal text-xs">

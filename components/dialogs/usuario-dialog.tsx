@@ -52,6 +52,7 @@ export function UsuarioDialog({
   const [sucursalId, setSucursalId] = useState<string>("")
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [activo, setActivo] = useState(true)
+  const [isProvider, setIsProvider] = useState(false)
   const defaultPermisos = {
     dashboard: true,
     clientes: true,
@@ -104,6 +105,7 @@ export function UsuarioDialog({
       setRol(usuario?.rol ?? "usuario")
       setSucursalId(usuario?.sucursalId ?? (currentUser?.sucursalId || ""))
       setActivo(usuario?.activo ?? true)
+      setIsProvider(usuario?.rol === "proveedor" || Boolean(usuario?.isProvider))
       setCambiarPassword(false)
       setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
@@ -111,6 +113,7 @@ export function UsuarioDialog({
 
   useEffect(() => {
     if (rol === "proveedor") {
+      setIsProvider(true)
       setPermisos({
         dashboard: false,
         clientes: false,
@@ -202,6 +205,7 @@ export function UsuarioDialog({
       if (isAdminUser) {
         data.rol = rol as Usuario["rol"]
         data.activo = activo
+        data.isProvider = rol === "proveedor" ? true : isProvider
         data.permisos = permisos
         data.sucursalId = (rol === "superadmin" || !sucursalId || sucursalId === "ninguna") ? null : sucursalId
       }
@@ -416,6 +420,18 @@ export function UsuarioDialog({
                 <FieldLabel htmlFor="usr-activo">Usuario activo</FieldLabel>
                 <Switch id="usr-activo" checked={activo} onCheckedChange={setActivo} />
               </Field>
+
+              {rol !== "proveedor" && (
+                <Field orientation="horizontal" className="items-center justify-between pt-1">
+                  <div className="space-y-0.5 pr-2">
+                    <FieldLabel htmlFor="usr-es-proveedor">¿También actúa como proveedor?</FieldLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Permite que este usuario aparezca en las listas de proveedores para suministrar productos a otras sucursales.
+                    </p>
+                  </div>
+                  <Switch id="usr-es-proveedor" checked={isProvider} onCheckedChange={setIsProvider} />
+                </Field>
+              )}
             </>
           )}
         </FieldGroup>
