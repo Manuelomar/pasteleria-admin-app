@@ -61,7 +61,7 @@ export function VentasModule() {
   const [fetchedClientes, setFetchedClientes] = useState<Cliente[]>([])
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(9)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -767,8 +767,11 @@ export function VentasModule() {
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-          pageSizeOptions={[9, 20, 40, 60, 100]}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setCurrentPage(1)
+          }}
+          pageSizeOptions={[20, 40, 60, 100]}
           itemName="productos"
         />
       </div>
