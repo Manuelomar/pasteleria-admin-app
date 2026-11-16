@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
-import { Search, Plus, Trash2, Minus, Printer, Save, Eraser, X } from "lucide-react"
+import { useMemo, useState, useEffect, useCallback } from "react"
+import { Search, Plus, Trash2, Minus, Printer, Save, Eraser, X, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,8 @@ import {
   type VentaItem,
   type MetodoPago,
   type EstadoPago,
+  type Usuario,
+  type Sucursal,
 } from "@/types"
 import { api } from "@/services"
 import { AppPagination } from "@/components/ui/app-pagination"
@@ -39,6 +41,10 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { API_URL } from "@/services/api.config"
 
 export function VentasModule() {
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("")
+
   const [search, setSearch] = useState("")
   const [tipo, setTipo] = useState<"productos" | Tipo>("productos")
   const [items, setItems] = useState<VentaItem[]>([])
@@ -69,23 +75,36 @@ export function VentasModule() {
     api.clientes.getAll().then(setFetchedClientes).catch(console.error)
   }
 
-  const loadProductos = () => {
+  useEffect(() => {
+    api.auth.getMe().then((user) => {
+      setCurrentUser(user)
+      if (user.rol === "superadmin") {
+        api.sucursales.getAll().then((list) => {
+          setSucursales(list)
+          const defaultSuc = list.find((s) => s.codigo === "AR")?.id || list[0]?.id || ""
+          setSelectedSucursal(defaultSuc)
+        }).catch(console.error)
+      } else {
+        setSelectedSucursal(user.sucursalId || "")
+      }
+    }).catch(console.error)
+  }, [])
+
+  const loadProductos = useCallback(() => {
     setIsLoadingData(true)
-    Promise.all([
-      api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible", "internos"),
-      new Promise(resolve => setTimeout(resolve, 1000))
-    ])
-      .then(([res]) => {
+    const targetSuc = selectedSucursal || undefined
+    api.productos.getPaged(currentPage, pageSize, search, tipo, "disponible", "internos", targetSuc)
+      .then((res) => {
         setFetchedProductos(res.data)
         setTotalItems(res.total)
         setTotalPages(res.totalPages)
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error(err)
         toast.error("Error cargando productos")
       })
       .finally(() => setIsLoadingData(false))
-  }
+  }, [currentPage, pageSize, search, tipo, selectedSucursal])
 
   useEffect(() => {
     loadClientes()
@@ -93,7 +112,7 @@ export function VentasModule() {
 
   useEffect(() => {
     loadProductos()
-  }, [currentPage, search, tipo, pageSize])
+  }, [loadProductos])
 
   useEffect(() => {
     try {
@@ -414,10 +433,12 @@ export function VentasModule() {
       const finalDescuento = metodoPago === "uberEats" ? Math.max(0, subtotal - total) : descTotal
       const finalPagado = estadoPago === "pagado" ? total : (Number(montoPagado) || 0)
       const finalBalance = Math.max(0, total - finalPagado)
+      const targetSucursalId = selectedSucursal || currentUser?.sucursalId || null
 
       const res = await api.ventas.create({
         clienteId: esCredito ? clienteId : undefined,
-        cajeroId: "d69d45cc-d820-4e55-9a8c-a1112b32f22b", // Todo: real session user
+        cajeroId: currentUser?.id || undefined,
+        sucursalId: targetSucursalId,
         subtotal: finalSubtotal,
         descuento: finalDescuento,
         impuesto: finalImp,
@@ -701,7 +722,40 @@ export function VentasModule() {
       <LoadingOverlay active={isLoadingData} />
       {/* Columna izquierda: productos */}
       <div className="flex flex-col gap-4 pb-24 xl:pb-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {currentUser?.rol === "superadmin" && sucursales.length > 0 && (
+            <div className="w-full sm:w-56 shrink-0">
+              <Select 
+                value={selectedSucursal} 
+                onValueChange={(val) => { 
+                  setSelectedSucursal(val || ""); 
+                  setCurrentPage(1); 
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <Building2 className="size-4 text-muted-foreground mr-1.5 shrink-0" />
+                  <SelectValue placeholder="Sucursal de Caja">
+                    {sucursales.find((s) => s.id === selectedSucursal)?.nombre || "Sucursal"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre} ({s.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {currentUser && currentUser.rol !== "superadmin" && (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card/60 text-xs font-medium text-muted-foreground shrink-0">
+              <Building2 className="size-3.5 text-primary" />
+              <span>{currentUser.sucursalNombre || "Sucursal Local"}</span>
+            </div>
+          )}
+
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

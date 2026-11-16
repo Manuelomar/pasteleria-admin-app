@@ -103,13 +103,16 @@ export function UsuarioDialog({
       setPassword("")
       setConfirmPassword("")
       setRol(usuario?.rol ?? "usuario")
-      setSucursalId(usuario?.sucursalId ?? (currentUser?.sucursalId || ""))
+      const defaultSucursal = usuario
+        ? (usuario.sucursalId || "ninguna")
+        : (isSuperAdmin ? "ninguna" : (currentUser?.sucursalId || "ninguna"))
+      setSucursalId(defaultSucursal)
       setActivo(usuario?.activo ?? true)
       setIsProvider(usuario?.rol === "proveedor" || Boolean(usuario?.isProvider))
       setCambiarPassword(false)
       setPermisos(usuario?.permisos ? { ...defaultPermisos, ...usuario.permisos } : defaultPermisos)
     }
-  }, [open, usuario, currentUser])
+  }, [open, usuario, currentUser, isSuperAdmin])
 
   useEffect(() => {
     if (rol === "proveedor") {
@@ -207,7 +210,7 @@ export function UsuarioDialog({
         data.activo = activo
         data.isProvider = rol === "proveedor" ? true : isProvider
         data.permisos = permisos
-        data.sucursalId = (rol === "superadmin" || !sucursalId || sucursalId === "ninguna") ? null : sucursalId
+        data.sucursalId = (!sucursalId || sucursalId === "ninguna") ? null : sucursalId
       }
       
       if (!usuario || cambiarPassword) {
@@ -234,12 +237,13 @@ export function UsuarioDialog({
       
       if (onSaved) onSaved()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
+      const msg = error instanceof Error ? error.message : "Error al guardar el usuario"
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: error.message || "Error al guardar el usuario",
+        text: msg,
         confirmButtonColor: "#e11d48"
       })
     } finally {
@@ -395,7 +399,11 @@ export function UsuarioDialog({
                     onValueChange={(val) => setSucursalId(val === "ninguna" ? "" : (val ?? ""))}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar sucursal" />
+                      <SelectValue placeholder="Seleccionar sucursal">
+                        {sucursalId === "ninguna" || !sucursalId
+                          ? "Sin sucursal (Super Admin / Global)"
+                          : sucursales.find((s) => s.id === sucursalId)?.nombre || "Seleccionar sucursal"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ninguna">Sin sucursal (Super Admin / Global)</SelectItem>

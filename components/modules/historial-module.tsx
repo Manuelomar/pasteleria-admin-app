@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Search, History, CalendarIcon, TrendingUp, Package, ShoppingCart, ChevronDown, X } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Search, History, CalendarIcon, TrendingUp, Package, ShoppingCart, ChevronDown, X, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { AppPagination } from "@/components/ui/app-pagination"
-import { currency, type Producto } from "@/types"
+import { currency, type Producto, type Usuario, type Sucursal } from "@/types"
 import { api } from "@/services"
 
 type Vista = "producto" | "venta"
@@ -60,6 +60,10 @@ export function HistorialModule() {
   const [ventaSearch, setVentaSearch] = useState<string>("")
   const [vista, setVista] = useState<Vista>("producto")
 
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas")
+
   const [productos, setProductos] = useState<Producto[]>([])
   const [historial, setHistorial] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -75,8 +79,16 @@ export function HistorialModule() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Cargar productos para el filtro
   useEffect(() => {
+    api.auth.getMe().then((user) => {
+      setCurrentUser(user)
+      if (user.rol === "superadmin") {
+        api.sucursales.getAll().then(setSucursales).catch(console.error)
+      } else {
+        setSelectedSucursal(user.sucursalId || "todas")
+      }
+    }).catch(console.error)
+
     api.productos.getAll()
       .then(res => setProductos(res.filter((p: any) => p.tipo !== 'material')))
       .catch((err) => console.error("Error al cargar productos", err))
@@ -125,13 +137,18 @@ export function HistorialModule() {
     newPageSize?: number,
     ventaSearchVal?: string,
     vistaVal?: Vista,
+    sucursalVal?: string,
   ) => {
     setIsLoadingFiltro(true)
     const ps = newPageSize ?? pageSize
     const vs = vistaVal ?? vista
+    const activeSucursal = sucursalVal ?? selectedSucursal
+    const sucursalToQuery = currentUser?.rol === "superadmin"
+      ? (activeSucursal === "todas" ? undefined : activeSucursal)
+      : (currentUser?.sucursalId || undefined)
 
     if (vs === "venta") {
-      api.ventas.getHistorialVentas(desdeVal, hastaVal, estadoPagoVal, ventaSearchVal ?? ventaSearch, page, ps)
+      api.ventas.getHistorialVentas(desdeVal, hastaVal, estadoPagoVal, ventaSearchVal ?? ventaSearch, page, ps, sucursalToQuery)
         .then((res: any) => {
           setHistorial(res.data)
           setTotalItems(res.total)
@@ -150,7 +167,7 @@ export function HistorialModule() {
           setIsLoadingFiltro(false)
         })
     } else {
-      api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, ps, estadoPagoVal, ventaSearchVal ?? ventaSearch)
+      api.ventas.getHistorialProductos(desdeVal, hastaVal, prodId, page, ps, estadoPagoVal, ventaSearchVal ?? ventaSearch, sucursalToQuery)
         .then((res: any) => {
           setHistorial(res.data)
           setTotalItems(res.total)
@@ -189,8 +206,11 @@ export function HistorialModule() {
     setProductosIds([])
     setEstadoPago("pagadas")
     setVentaSearch("")
+    if (currentUser?.rol === "superadmin") {
+      setSelectedSucursal("todas")
+    }
     setCurrentPage(1)
-    loadHistorial("", "", "all", 1, "pagadas", undefined, "")
+    loadHistorial("", "", "all", 1, "pagadas", undefined, "", undefined, currentUser?.rol === "superadmin" ? "todas" : undefined)
   }
 
   const handleVistaChange = (v: Vista) => {
@@ -210,13 +230,27 @@ export function HistorialModule() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage])
 
+  useEffect(() => {
+    if (!isLoading) {
+      const prodIdParam = productosIds.length > 0 ? productosIds.join(",") : "all"
+      loadHistorial(desde, hasta, prodIdParam, 1, estadoPago, undefined, ventaSearch, vista, selectedSucursal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSucursal])
+
   return (
     <div className="flex flex-col gap-5 relative min-h-[400px]">
       <LoadingOverlay active={isLoading} />
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <p className="text-sm text-muted-foreground">
           Consulta el historial de ventas por producto o por venta, filtrando por rango de fechas, producto específico, número de factura o cliente.
         </p>
+        {currentUser && currentUser.rol !== "superadmin" && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card/60 text-xs font-medium text-muted-foreground shrink-0">
+            <Building2 className="size-3.5 text-primary" />
+            <span>Sucursal: <strong className="text-foreground">{currentUser.sucursalNombre || "Sucursal Local"}</strong></span>
+          </div>
+        )}
       </div>
 
       <Card className="border-border bg-card/50 shadow-sm overflow-visible">
@@ -348,6 +382,32 @@ export function HistorialModule() {
                 />
               </div>
             </div>
+
+            {currentUser?.rol === "superadmin" && (
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[160px]">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Sucursal
+                </label>
+                <Select value={selectedSucursal} onValueChange={(val) => setSelectedSucursal(val || "todas")}>
+                  <SelectTrigger className="w-full">
+                    <Building2 className="size-4 text-muted-foreground mr-1.5 shrink-0" />
+                    <SelectValue placeholder="Todas">
+                      {selectedSucursal === "todas"
+                        ? "Todas las sucursales"
+                        : sucursales.find((s) => s.id === selectedSucursal)?.nombre || "Sucursal"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las sucursales</SelectItem>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre} ({s.codigo})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

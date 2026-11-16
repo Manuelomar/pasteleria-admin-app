@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { api } from "@/services"
-import type { Producto, Usuario } from "@/types"
+import type { Producto, Usuario, Sucursal } from "@/types"
 import { Plus, Minus, Trash2 } from "lucide-react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
@@ -36,6 +36,8 @@ export function EntregaDialog({
   const [selectedProducto, setSelectedProducto] = useState("")
   const [proveedores, setProveedores] = useState<Usuario[]>([])
   const [selectedProveedor, setSelectedProveedor] = useState("")
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [selectedSucursal, setSelectedSucursal] = useState("")
   const [tipoItem, setTipoItem] = useState<"productos" | "materiales" | "">("")
   const [isProductSelectorOpen, setIsProductSelectorOpen] = useState(false)
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
@@ -50,10 +52,20 @@ export function EntregaDialog({
       setItems([])
       setSelectedProducto("")
       setSelectedProveedor("")
+
+      api.sucursales.getAll().then((list) => {
+        setSucursales(list)
+        if (currentUser?.sucursalId) {
+          setSelectedSucursal(currentUser.sucursalId)
+        } else {
+          const defaultSuc = list.find((s) => s.codigo === "AR")?.id || list[0]?.id || ""
+          setSelectedSucursal(defaultSuc)
+        }
+      }).catch(console.error)
       
       if (isAdmin) {
         api.usuarios.getAll().then(users => {
-          setProveedores(users.filter((u: any) => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))
+          setProveedores(users.filter(u => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))
         }).catch(console.error)
       } else if (currentUser) {
         api.productos.getAll().then(prods => {
@@ -178,9 +190,10 @@ export function EntregaDialog({
     try {
       await api.entregas.create({
         proveedorId: isAdmin ? selectedProveedor : undefined,
+        sucursalId: selectedSucursal || undefined,
         fechaPrevista: new Date(fechaPrevista).toISOString(),
         items: items.map(i => ({ productoId: i.productoId, cantidad: i.cantidad }))
-      } as any)
+      })
       
       toast.success("Entrega programada con éxito")
       if (onSaved) onSaved()
@@ -212,6 +225,22 @@ export function EntregaDialog({
               value={fechaPrevista}
               onChange={(e) => setFechaPrevista(e.target.value)}
             />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="entrega-sucursal">Sucursal de Destino</FieldLabel>
+            <select
+              id="entrega-sucursal"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              value={selectedSucursal}
+              onChange={(e) => setSelectedSucursal(e.target.value)}
+            >
+              {sucursales.map((s) => (
+                <option key={s.id} value={s.id} className="bg-background text-foreground">
+                  {s.nombre} ({s.codigo})
+                </option>
+              ))}
+            </select>
           </Field>
           
           {isAdmin && (

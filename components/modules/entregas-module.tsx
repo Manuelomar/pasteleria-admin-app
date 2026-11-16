@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { api } from "@/services"
-import { type Entrega, type Usuario } from "@/types"
+import { type Entrega, type Usuario, type Sucursal } from "@/types"
 import { currency, formatDate } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
@@ -41,6 +41,8 @@ export function EntregasModule() {
   
   const [editingEntrega, setEditingEntrega] = useState<Entrega | null>(null)
   const [editarItemsDialogOpen, setEditarItemsDialogOpen] = useState(false)
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas")
 
   const handleEditarItems = (entrega: Entrega) => {
     setEditingEntrega(entrega)
@@ -56,10 +58,17 @@ export function EntregasModule() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
 
-  const fetchEntregas = (page: number, size: number, filtro: string, query: string, provIds: string[]) => {
+  const fetchEntregas = (
+    page: number,
+    size: number,
+    filtro: string,
+    query: string,
+    provIds: string[],
+    sucId: string = selectedSucursal
+  ) => {
     setIsLoading(true)
     const provIdStr = provIds.length > 0 ? provIds.join(',') : undefined;
-    api.entregas.getPaged(page, size, filtro, query, provIdStr)
+    api.entregas.getPaged(page, size, filtro, query, provIdStr, sucId)
       .then((data) => {
         setEntregas(data.data)
         setTotalPages(data.totalPages)
@@ -73,7 +82,8 @@ export function EntregasModule() {
   }
 
   const debouncedFetch = useDebounce(
-    (page: number, size: number, filtro: string, query: string, provIds: string[]) => fetchEntregas(page, size, filtro, query, provIds),
+    (page: number, size: number, filtro: string, query: string, provIds: string[], sucId?: string) =>
+      fetchEntregas(page, size, filtro, query, provIds, sucId),
     300
   )
 
@@ -82,21 +92,23 @@ export function EntregasModule() {
       setCurrentUser(user)
     }).catch(console.error)
 
+    api.sucursales.getAll().then(setSucursales).catch(console.error)
+
     api.usuarios.getAll().then(users => {
       setProveedores(users.filter(u => (u.rol === 'proveedor' || u.isProvider) && u.activo !== false))
     }).catch(console.error)
   }, [])
 
   useEffect(() => {
-    debouncedFetch(currentPage, pageSize, filtroEstado, search, proveedoresIds)
+    debouncedFetch(currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal)
     return () => debouncedFetch.cancel()
-  }, [currentPage, pageSize, filtroEstado, search, proveedoresIds, debouncedFetch])
+  }, [currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal, debouncedFetch])
 
-  // Reset page and selection when search, filtro or proveedor changes
+  // Reset page and selection when search, filtro, proveedor or sucursal changes
   useEffect(() => {
     setCurrentPage(1)
     setSelectedIds([])
-  }, [search, filtroEstado, proveedoresIds])
+  }, [search, filtroEstado, proveedoresIds, selectedSucursal])
 
   const handleUpdateEstado = async (id: string, estado: string) => {
     const result = await Swal.fire({
@@ -198,8 +210,9 @@ export function EntregasModule() {
         await api.entregas.addToStock(id)
         toast.success("Productos añadidos al stock correctamente")
         fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
-      } catch (e: any) {
-        toast.error(e.message || "Error al añadir al stock")
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Error al añadir al stock"
+        toast.error(msg)
       }
     }
   }
@@ -337,6 +350,24 @@ export function EntregasModule() {
               )}
             </div>
           )}
+
+          {currentUser?.rol === "superadmin" && (
+            <div className="w-full sm:w-[220px]">
+              <Select value={selectedSucursal} onValueChange={(val) => setSelectedSucursal(val ?? "todas")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Todas las sucursales" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las sucursales</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre} ({s.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           {isAdmin && selectedIds.length > 0 && (
@@ -398,6 +429,13 @@ export function EntregasModule() {
                           </h3>
                         )}
                         <div className="flex flex-col space-y-1 mt-3">
+                          {entrega.sucursal && (
+                            <div className="mb-1">
+                              <Badge variant="outline" className="text-xs bg-muted/40 font-normal">
+                                📍 {entrega.sucursal.nombre}
+                              </Badge>
+                            </div>
+                          )}
                           <span className="text-sm">
                             <span className="font-semibold">Prevista:</span>{" "}
                             {formatDate(entrega.fechaPrevista)}
