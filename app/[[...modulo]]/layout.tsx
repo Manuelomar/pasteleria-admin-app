@@ -15,6 +15,7 @@ const titles: Record<ModuleId, string> = {
   ventas: "Ventas y Facturación",
   "cuentas-cobrar": "Cuentas por Cobrar",
   "estado-cuenta": "Finanzas y Caja",
+  pedidosya: "Liquidaciones PedidosYa",
   usuarios: "Usuarios",
   entregas: "Entregas de Proveedores",
   inventario: "Inventario de Materiales",

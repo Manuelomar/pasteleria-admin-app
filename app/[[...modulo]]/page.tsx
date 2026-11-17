@@ -15,6 +15,7 @@ import { SolicitudesBizcochoModule } from "@/components/modules/solicitudes-bizc
 import { SolicitudesComboModule } from "@/components/modules/solicitudes-combo-module"
 import { SolicitudesOrdenModule } from "@/components/modules/solicitudes-orden-module"
 import { SucursalesModule } from "@/components/modules/sucursales-module"
+import { PedidosYaModule } from "@/components/modules/pedidosya-module"
 import { useParams } from "next/navigation"
 
 export default function Page() {
@@ -29,6 +30,7 @@ export default function Page() {
       {currentModule === "ventas" && <VentasModule />}
       {currentModule === "cuentas-cobrar" && <CuentasCobrarModule />}
       {currentModule === "estado-cuenta" && <EstadoCuentaModule />}
+      {currentModule === "pedidosya" && <PedidosYaModule />}
       {currentModule === "usuarios" && <UsuariosModule />}
       {currentModule === "entregas" && <EntregasModule />}
       {currentModule === "inventario" && <InventarioModule />}

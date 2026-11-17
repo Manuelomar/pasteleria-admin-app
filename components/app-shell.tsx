@@ -17,6 +17,7 @@ import {
   Banknote,
   Package,
   History,
+  FileSpreadsheet,
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
@@ -35,6 +36,7 @@ export type ModuleId =
   | "ventas"
   | "cuentas-cobrar"
   | "estado-cuenta"
+  | "pedidosya"
   | "usuarios"
   | "entregas"
   | "inventario"
@@ -60,6 +62,7 @@ const modulos: NavItem[] = [
   { id: "ventas", label: "Ventas", icon: ShoppingCart },
   { id: "cuentas-cobrar", label: "Cuentas por Cobrar", icon: Banknote },
   { id: "estado-cuenta", label: "Finanzas y Caja", icon: Wallet },
+  { id: "pedidosya", label: "PedidosYa", icon: FileSpreadsheet },
   { id: "historial", label: "Historial", icon: History },
   { id: "reportes", label: "Reportes", icon: FileText },
 ]
@@ -204,7 +207,7 @@ function NavSection({
   
   const catalogItems = items.filter((i) => ["catalogo", "inventario"].includes(i.id))
   const clientsItems = items.filter((i) => ["clientes", "entregas"].includes(i.id))
-  const financeItems = items.filter((i) => ["cuentas-cobrar", "estado-cuenta"].includes(i.id))
+  const financeItems = items.filter((i) => ["cuentas-cobrar", "estado-cuenta", "pedidosya"].includes(i.id))
   const reportItems = items.filter((i) => ["historial", "reportes"].includes(i.id))
 
   return (
