@@ -20,6 +20,8 @@ import {
   ClipboardPaste,
   ShieldCheck,
   Tag,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,7 +47,8 @@ import { currency } from "@/lib/utils"
 import { toast } from "sonner"
 import type { PedidoYaRow, SucursalLiquidacion, LiquidacionResumen } from "@/types"
 
-const DEMO_CSV_DATA = `Número de pedido,Sucursal,Fecha de pedido,Monto bruto de la venta,Descuento otorgado por el local,Envio a cargo del local,Descuento comercial neto otorgado x PeYa,Cupon otorgado por el local,Desc. neto otorgado por Peya a usuarios,Desc. comerciales Retiro en el local,Descuento por Comodín pago por el local,Monto venta + envió cobrado por el local,Monto neto de la Venta ($),Monto comisionable Servicios PedidosYa,Servicio Ventas PedidosYA (%),Servicio Logística PedidosYA (%),Servicio Ventas PedidoYa ($),Servicio Logística PedidosYa ($),Cargo por Pedidos con Plus,Descuento tarifa de servicio al cliente,Pedido con Comodin,PLUS,Método de pago,Cobrado por,Método de entrega
+// Datos demo Semana 02/11/2026 al 08/11/2026 (Liquidación RD$ 8,959.59)
+const DEMO_CSV_DATA_NOV = `Número de pedido,Sucursal,Fecha de pedido,Monto bruto de la venta,Descuento otorgado por el local,Envio a cargo del local,Descuento comercial neto otorgado x PeYa,Cupon otorgado por el local,Desc. neto otorgado por Peya a usuarios,Desc. comerciales Retiro en el local,Descuento por Comodín pago por el local,Monto venta + envió cobrado por el local,Monto neto de la Venta ($),Monto comisionable Servicios PedidosYa,Servicio Ventas PedidosYA (%),Servicio Logística PedidosYA (%),Servicio Ventas PedidoYa ($),Servicio Logística PedidosYa ($),Cargo por Pedidos con Plus,Descuento tarifa de servicio al cliente,Pedido con Comodin,PLUS,Método de pago,Cobrado por,Método de entrega
 2358800362,Bizcochao,05/11/2026,225,22.5,0,0,0,0,0,0,0,202.5,202.5,4.00%,22.00%,8.1,44.55,80,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
 2359166260,Bizcochao,06/11/2026,850,85,0,0,0,0,0,0,0,765,765,4.00%,22.00%,30.6,168.3,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
 2359685118,Bizcochao,06/11/2026,440,44,0,0,0,0,0,0,0,396,396,4.00%,22.00%,15.84,87.12,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
@@ -91,6 +94,63 @@ const DEMO_CSV_DATA = `Número de pedido,Sucursal,Fecha de pedido,Monto bruto de
 2358112934,Bizcochao,05/11/2026,300,0,0,0,0,0,0,0,0,300,300,4.00%,22.00%,12,66,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
 2358446667,Bizcochao Los Jardines,05/11/2026,250,100,0,0,0,0,0,0,0,150,150,4.00%,16.00%,6,24,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa`
 
+// Datos demo Semana 26/10/2026 al 01/11/2026 (Liquidación RD$ 7,044.86)
+const DEMO_CSV_DATA_OCT = `Número de pedido,Sucursal,Fecha de pedido,Monto bruto de la venta,Descuento otorgado por el local,Envio a cargo del local,Descuento comercial neto otorgado x PeYa,Cupon otorgado por el local,Desc. neto otorgado por Peya a usuarios,Desc. comerciales Retiro en el local,Descuento por Comodín pago por el local,Monto venta + envió cobrado por el local,Monto neto de la Venta ($),Monto comisionable Servicios PedidosYa,Servicio Ventas PedidosYA (%),Servicio Logística PedidosYA (%),Servicio Ventas PedidoYa ($),Servicio Logística PedidosYa ($),Cargo por Pedidos con Plus,Descuento tarifa de servicio al cliente,Pedido con Comodin,PLUS,Método de pago,Cobrado por,Método de entrega
+2352934729,Bizcochao,01/11/2026,450,0,0,0,0,0,0,0,0,450,450,4.00%,22.00%,18,99,110,0,No,Si,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+2353132995,Bizcochao,01/11/2026,225,0,0,0,0,0,0,0,0,225,225,4.00%,22.00%,9,49.5,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+2352934177,Bizcochao,01/11/2026,330,0,0,0,0,0,0,0,0,330,330,4.00%,22.00%,13.2,72.6,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2353073393,Bizcochao,01/11/2026,550,0,0,0,0,0,0,0,0,550,550,4.00%,22.00%,22,121,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2352699086,Bizcochao,01/11/2026,715,0,0,0,0,0,0,0,0,715,715,4.00%,22.00%,28.6,157.3,40,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2352759831,Bizcochao Los Jardines,01/11/2026,225,49.5,0,0,0,0,0,0,0,175.5,175.5,4.00%,16.00%,7.02,28.08,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2352595588,Bizcochao,01/11/2026,600,0,0,0,0,0,0,0,0,600,600,4.00%,22.00%,24,132,155,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2352410349,Bizcochao Los Jardines,01/11/2026,400,149.95,0,0,0,0,0,0,0,250.05,250.05,4.00%,16.00%,10,40.01,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+2351751463,Bizcochao,01/11/2026,360,0,0,0,0,0,0,0,0,360,360,4.00%,22.00%,14.4,79.2,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+2351750845,Bizcochao,01/11/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+2351474577,Bizcochao,31/10/2026,380,0,0,0,0,0,0,0,0,380,380,4.00%,22.00%,15.2,83.6,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2351422810,Bizcochao,31/10/2026,500,0,0,0,0,102.75,0,0,0,378.75,500,4.00%,22.00%,20,110,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2351358363,Bizcochao,31/10/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,65,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2350834251,Bizcochao,31/10/2026,550,0,0,0,0,0,0,0,0,550,550,4.00%,22.00%,22,121,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2350744208,Bizcochao,31/10/2026,500,0,0,0,0,0,0,0,0,500,500,4.00%,22.00%,20,110,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2350615468,Bizcochao,31/10/2026,740,0,0,0,0,0,0,0,0,740,740,4.00%,22.00%,29.6,162.8,55,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2350475865,Bizcochao Los Jardines,31/10/2026,650,249.95,0,0,0,0,0,0,0,400.05,400.05,4.00%,16.00%,16,64.01,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2350140664,Bizcochao,31/10/2026,700,0,0,0,0,0,0,0,0,700,700,4.00%,22.00%,28,154,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2349941552,Bizcochao,30/10/2026,225,0,0,0,0,0,0,0,0,225,225,4.00%,22.00%,9,49.5,80,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2349356276,Bizcochao Los Jardines,30/10/2026,890,356,0,0,0,59.32,0,0,0,464,534,4.00%,16.00%,21.36,85.44,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2349208457,Bizcochao Los Jardines,30/10/2026,250,100,0,0,0,0,0,0,0,150,150,4.00%,16.00%,6,24,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2348756116,Bizcochao,30/10/2026,300,0,0,0,0,0,0,0,0,300,300,4.00%,22.00%,12,66,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2348215206,Bizcochao,29/10/2026,550,0,0,0,0,0,0,0,0,550,550,4.00%,22.00%,22,121,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2348171927,Bizcochao,29/10/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,80,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2347757652,Bizcochao,29/10/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,65,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2347206338,Bizcochao,29/10/2026,380,0,0,0,0,0,0,0,0,380,380,4.00%,22.00%,15.2,83.6,90,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2346887471,Bizcochao Los Jardines,28/10/2026,150,0,0,0,0,0,0,0,0,150,150,4.00%,16.00%,6,24,0,0,No,,Pago en la aplicación,PedidosYa,Retiro en el local
+2346854183,Bizcochao,28/10/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,80,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2346349878,Bizcochao Los Jardines,28/10/2026,150,0,0,0,0,0,0,0,0,150,150,4.00%,16.00%,6,24,0,0,No,,Pago en la aplicación,PedidosYa,Retiro en el local
+2345590876,Bizcochao,27/10/2026,190,0,0,0,0,0,0,0,0,190,190,4.00%,22.00%,7.6,41.8,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2345512834,Bizcochao,27/10/2026,380,0,0,0,0,0,0,0,0,380,380,4.00%,22.00%,15.2,83.6,95,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2344429123,Bizcochao,26/10/2026,225,0,0,0,0,0,0,0,0,225,225,4.00%,22.00%,9,49.5,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2344312133,Bizcochao,26/10/2026,310,0,0,0,0,0,0,0,0,310,310,4.00%,22.00%,12.4,68.2,130,0,No,Si,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2344157282,Bizcochao,26/10/2026,250,0,0,0,0,0,0,0,0,250,250,4.00%,22.00%,10,55,0,0,No,,Pago en la aplicación,PedidosYa,Envío de PedidosYa
+2343939319,Bizcochao,26/10/2026,490,0,0,0,0,0,0,0,0,490,490,4.00%,22.00%,19.6,107.8,0,0,No,,Pago fuera de la aplicación,PedidosYa,Envío de PedidosYa
+Tipo de Cargo,Número de pedido,Estado del pedido,Sucursal,Fecha del pedido,Hora,Motivo,Monto del Pedido,Comisión PeYa,Monto final
+Cargos por cancelaciones,2350819750,RECHAZADO,Bizcochao,31/10/2026,16:48:58,Hay mucha demanda en el local,360,93.6,-93.6
+Cargos por cancelaciones,2348467964,RECHAZADO,Bizcochao,30/10/2026,08:42:45,Falta de productos,360,93.6,-93.6
+Cargos por cancelaciones,2345313782,RECHAZADO,Bizcochao Los Jardines,27/10/2026,19:32:47,Falta de productos,250,50,-50
+Cargos por cancelaciones,2343892023,RECHAZADO,Bizcochao,26/10/2026,16:22:42,Falta de productos,675,175.5,-175.5
+Tipo de Cargo,Número de pedido,Estado del pedido,Sucursal,Fecha del pedido,Hora,Motivo,Comentarios de los usuarios,Monto del Pedido,Reintegro al usuario por reclamo,% de cargo sobre el reintegro al usuario,Cargos por reclamos de los usuarios
+Cargos por reclamos,2347206338,CONFIRMADO,Bizcochao,29/10/2026,11:32:03,Producto faltante,,380,13,100.0 %,-13
+Tipo de Reintegro,Número de pedido,Estado del pedido,Orden entregada al repartidor,Sucursal,Fecha del pedido,Hora confirmada del pedido,Monto del Pedido,% Servicios PedidosYA,Servicios PedidosYa,% de Reintegro,Monto Bruto a reintegrar,Impuesto sobre reintegro,Monto neto a reintegrar
+Reintegros,2346354209,RECHAZADO,NO,Bizcochao Los Jardines,28/10/2026,16:48:55,500,20.00%,100,50.0 %,200,0,200
+Reintegros,2345590448,RECHAZADO,NO,Bizcochao Los Jardines,27/10/2026,21:34:07,150,20.00%,30,50.0 %,60,0,60`
+
+function norm(s: unknown): string {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/^["']|["']$/g, "")
+    .trim()
+}
+
 function parseNumber(val: unknown): number {
   if (typeof val === "number") return isNaN(val) ? 0 : val
   if (!val) return 0
@@ -110,12 +170,16 @@ function normalizeSucursalName(raw: string): string {
 export function PedidosYaModule() {
   const [activeTab, setActiveTab] = useState<"resumen" | "detalle" | "cargar">("resumen")
   const [pasteData, setPasteData] = useState("")
-  const [fileName, setFileName] = useState<string>("Semana 02/11/2026 - 08/11/2026")
+  const [fileName, setFileName] = useState<string>("Semana 02/11/2026 - 08/11/2026 (invoice-7600821271)")
+  const [presetActivo, setPresetActivo] = useState<"noviembre" | "octubre" | "personalizado">("noviembre")
   
-  // Parámetros del PDF (Estado de cuenta oficial)
+  // Parámetros del PDF (Estado de cuenta oficial de PedidosYa)
   const [publicidadTotal, setPublicidadTotal] = useState<number>(1298.30)
   const [impuestoTotal, setImpuestoTotal] = useState<number>(343.71)
   const [ajustesTotal, setAjustesTotal] = useState<number>(15.26)
+  const [cargosCancelarTotal, setCargosCancelarTotal] = useState<number>(0)
+  const [cargosReclamosTotal, setCargosReclamosTotal] = useState<number>(0)
+  const [reintegrosCanceladosTotal, setReintegrosCanceladosTotal] = useState<number>(0)
   const [metodoDistribucion, setMetodoDistribucion] = useState<"ventas" | "igualitario" | "pedidos">("ventas")
 
   // Filtros de tabla de detalle
@@ -124,82 +188,158 @@ export function PedidosYaModule() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const pageSize = 15
 
-  // Filas parseadas
+  // Filas parseadas de pedidos
   const [pedidos, setPedidos] = useState<PedidoYaRow[]>([])
 
-  const parseCsvText = (text: string) => {
+  const parseCsvText = (
+    text: string,
+    overrideCancelar?: number,
+    overrideReclamos?: number,
+    overrideReintegros?: number
+  ) => {
     const lines = text.trim().split(/\r?\n/)
     if (lines.length < 2) {
       toast.error("El contenido ingresado no tiene suficientes filas")
       return
     }
 
-    const norm = (s: string) =>
-      s
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/^["']|["']$/g, "")
-        .trim()
-
     const separator = lines[0].includes("\t") ? "\t" : lines[0].includes(";") ? ";" : ","
-    const headers = lines[0].split(separator).map(norm)
 
-    const getIdx = (keywords: string[]) =>
-      headers.findIndex((h) => keywords.some((k) => h.includes(norm(k))))
+    let currentSection: "pedidos" | "cancelaciones" | "reclamos" | "reintegros" = "pedidos"
+    let headersPedidos: string[] = []
 
-    const idxNum = getIdx(["numero de pedido", "pedido", "orden"])
-    const idxSuc = getIdx(["sucursal", "local", "tienda"])
-    const idxFecha = getIdx(["fecha de pedido", "fecha"])
-    const idxBruto = getIdx(["monto bruto"])
-    const idxDescLocal = getIdx(["descuento otorgado por el local", "descuento local", "desc. local"])
-    const idxDescPeya = getIdx(["desc. neto otorgado por peya a usuarios", "otorgado por peya", "otorgado x peya", "peya a usuarios", "reintegro"])
-    const idxNeto = getIdx(["monto neto de la venta", "monto neto", "neto"])
-    const idxComisionable = getIdx(["monto comisionable", "comisionable"])
-    const idxComVentaPct = getIdx(["servicio ventas pedidosya (%)", "servicio ventas (%)", "ventas (%)"])
-    const idxComLogPct = getIdx(["servicio logistica pedidosya (%)", "servicio logistica (%)", "logistica (%)"])
-    const idxComVentaMonto = getIdx(["servicio ventas pedidosya ($)", "servicio ventas pedidoya ($)", "servicio ventas ($)", "ventas ($)"])
-    const idxComLogMonto = getIdx(["servicio logistica pedidosya ($)", "servicio logistica pedidoya ($)", "servicio logistica ($)", "logistica ($)"])
-    const idxPlus = getIdx(["cargo por pedidos con plus", "cargo plus", "plus ($)"])
-    const idxMetodoPago = getIdx(["metodo de pago", "pago"])
-    const idxCobradoPor = getIdx(["cobrado por", "cobrado"])
+    let idxNum = -1
+    let idxSuc = -1
+    let idxFecha = -1
+    let idxBruto = -1
+    let idxDescLocal = -1
+    let idxDescPeya = -1
+    let idxNeto = -1
+    let idxComisionable = -1
+    let idxComVentaPct = -1
+    let idxComLogPct = -1
+    let idxComVentaMonto = -1
+    let idxComLogMonto = -1
+    let idxPlus = -1
+    let idxMetodoPago = -1
+    let idxCobradoPor = -1
+
+    let detectedCancelar = 0
+    let detectedReclamos = 0
+    let detectedReintegros = 0
 
     const parsedRows: PedidoYaRow[] = []
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
       if (!line) continue
-      const cols = line.split(separator).map((c) => c.replace(/^["']|["']$/g, "").trim())
 
-      const sucursalRaw = idxSuc !== -1 ? cols[idxSuc] : "Bizcochao"
-      const bruto = parseNumber(idxBruto !== -1 ? cols[idxBruto] : 0)
-      const descLocal = parseNumber(idxDescLocal !== -1 ? cols[idxDescLocal] : 0)
-      const descPeya = parseNumber(idxDescPeya !== -1 ? cols[idxDescPeya] : 0)
-      let neto = parseNumber(idxNeto !== -1 ? cols[idxNeto] : 0)
-      if (neto === 0 && bruto > 0) {
-        neto = bruto - descLocal
+      const cols = line.split(separator).map((c) => c.replace(/^["']|["']$/g, "").trim())
+      const firstCol = norm(cols[0])
+
+      // Detección de encabezado de pedidos
+      if (firstCol.includes("numero de pedido") || firstCol.includes("pedido")) {
+        currentSection = "pedidos"
+        headersPedidos = cols.map(norm)
+
+        const getIdx = (keywords: string[]) => {
+          for (const kw of keywords) {
+            const idx = headersPedidos.findIndex((h) => h.includes(norm(kw)))
+            if (idx !== -1) return idx
+          }
+          return -1
+        }
+
+        idxNum = getIdx(["numero de pedido", "pedido", "orden"])
+        idxSuc = getIdx(["sucursal", "local", "tienda"])
+        idxFecha = getIdx(["fecha de pedido", "fecha"])
+        idxBruto = getIdx(["monto bruto de la venta", "monto bruto"])
+        idxDescLocal = getIdx(["descuento otorgado por el local", "descuento local"])
+        idxDescPeya = getIdx(["desc. neto otorgado por peya a usuarios", "peya a usuarios"])
+        // Búsqueda estricta de monto neto para no confundir con descuentos comerciales netos
+        idxNeto = getIdx(["monto neto de la venta", "monto neto"])
+        idxComisionable = getIdx(["monto comisionable"])
+        idxComVentaPct = getIdx(["servicio ventas pedidosya (%)", "servicio ventas (%)"])
+        idxComLogPct = getIdx(["servicio logistica pedidosya (%)", "servicio logistica (%)"])
+        idxComVentaMonto = getIdx(["servicio ventas pedidoya ($)", "servicio ventas pedidosya ($)", "servicio ventas ($)"])
+        idxComLogMonto = getIdx(["servicio logistica pedidosya ($)", "servicio logistica pedidoya ($)", "servicio logistica ($)"])
+        idxPlus = getIdx(["cargo por pedidos con plus", "cargo plus"])
+        idxMetodoPago = getIdx(["metodo de pago"])
+        idxCobradoPor = headersPedidos.findLastIndex((h) => h.includes("cobrado por"))
+        continue
       }
 
-      parsedRows.push({
-        numeroPedido: idxNum !== -1 ? cols[idxNum] : `ORD-${i}`,
-        sucursal: normalizeSucursalName(sucursalRaw),
-        fecha: idxFecha !== -1 ? cols[idxFecha] : "",
-        montoBruto: bruto,
-        descuentoLocal: descLocal,
-        envioLocal: 0,
-        descuentoPeyaUsuarios: descPeya,
-        montoNetoVenta: neto,
-        montoComisionable: parseNumber(idxComisionable !== -1 ? cols[idxComisionable] : neto),
-        servicioVentasPct: parseNumber(idxComVentaPct !== -1 ? cols[idxComVentaPct] : 4),
-        servicioLogisticaPct: parseNumber(idxComLogPct !== -1 ? cols[idxComLogPct] : 0),
-        servicioVentasMonto: parseNumber(idxComVentaMonto !== -1 ? cols[idxComVentaMonto] : 0),
-        servicioLogisticaMonto: parseNumber(idxComLogMonto !== -1 ? cols[idxComLogMonto] : 0),
-        cargoPlus: parseNumber(idxPlus !== -1 ? cols[idxPlus] : 0),
-        esPlus: parseNumber(idxPlus !== -1 ? cols[idxPlus] : 0) > 0,
-        metodoPago: idxMetodoPago !== -1 ? cols[idxMetodoPago] : "Pago en la aplicación",
-        cobradoPor: idxCobradoPor !== -1 ? cols[idxCobradoPor] : "PedidosYa",
-        metodoEntrega: "Envío de PedidosYa",
-      })
+      // Detección de secciones de penalidades o reintegros adicionales
+      if (firstCol.startsWith("tipo de cargo") || firstCol.startsWith("tipo de reintegro")) {
+        const lineNorm = norm(line)
+        if (lineNorm.includes("reclamo")) {
+          currentSection = "reclamos"
+        } else if (lineNorm.includes("reintegro")) {
+          currentSection = "reintegros"
+        } else {
+          currentSection = "cancelaciones"
+        }
+        continue
+      }
+
+      if (currentSection === "pedidos") {
+        const sucursalRaw = idxSuc !== -1 ? cols[idxSuc] : "Bizcochao"
+        const bruto = parseNumber(idxBruto !== -1 ? cols[idxBruto] : 0)
+        const descLocal = parseNumber(idxDescLocal !== -1 ? cols[idxDescLocal] : 0)
+        const descPeya = parseNumber(idxDescPeya !== -1 ? cols[idxDescPeya] : 0)
+        let neto = parseNumber(idxNeto !== -1 ? cols[idxNeto] : 0)
+        if (neto === 0 && bruto > 0 && descLocal > 0) {
+          neto = bruto - descLocal
+        }
+
+        parsedRows.push({
+          numeroPedido: idxNum !== -1 ? cols[idxNum] : `ORD-${i}`,
+          sucursal: normalizeSucursalName(sucursalRaw),
+          fecha: idxFecha !== -1 ? cols[idxFecha] : "",
+          montoBruto: bruto,
+          descuentoLocal: descLocal,
+          envioLocal: 0,
+          descuentoPeyaUsuarios: descPeya,
+          montoNetoVenta: neto,
+          montoComisionable: parseNumber(idxComisionable !== -1 ? cols[idxComisionable] : neto),
+          servicioVentasPct: parseNumber(idxComVentaPct !== -1 ? cols[idxComVentaPct] : 4),
+          servicioLogisticaPct: parseNumber(idxComLogPct !== -1 ? cols[idxComLogPct] : 0),
+          servicioVentasMonto: parseNumber(idxComVentaMonto !== -1 ? cols[idxComVentaMonto] : 0),
+          servicioLogisticaMonto: parseNumber(idxComLogMonto !== -1 ? cols[idxComLogMonto] : 0),
+          cargoPlus: parseNumber(idxPlus !== -1 ? cols[idxPlus] : 0),
+          esPlus: parseNumber(idxPlus !== -1 ? cols[idxPlus] : 0) > 0,
+          metodoPago: idxMetodoPago !== -1 ? cols[idxMetodoPago] : "Pago en la aplicación",
+          cobradoPor: idxCobradoPor !== -1 ? cols[idxCobradoPor] : "PedidosYa",
+          metodoEntrega: "Envío de PedidosYa",
+        })
+      } else if (currentSection === "cancelaciones") {
+        const val = Math.abs(parseNumber(cols[cols.length - 1]))
+        detectedCancelar += val
+      } else if (currentSection === "reclamos") {
+        const val = Math.abs(parseNumber(cols[cols.length - 1]))
+        detectedReclamos += val
+      } else if (currentSection === "reintegros") {
+        const val = Math.abs(parseNumber(cols[cols.length - 1]))
+        detectedReintegros += val
+      }
+    }
+
+    if (overrideCancelar !== undefined) {
+      setCargosCancelarTotal(overrideCancelar)
+    } else if (detectedCancelar > 0) {
+      setCargosCancelarTotal(detectedCancelar)
+    }
+
+    if (overrideReclamos !== undefined) {
+      setCargosReclamosTotal(overrideReclamos)
+    } else if (detectedReclamos > 0) {
+      setCargosReclamosTotal(detectedReclamos)
+    }
+
+    if (overrideReintegros !== undefined) {
+      setReintegrosCanceladosTotal(overrideReintegros)
+    } else if (detectedReintegros > 0) {
+      setReintegrosCanceladosTotal(detectedReintegros)
     }
 
     setPedidos(parsedRows)
@@ -212,6 +352,7 @@ export function PedidosYaModule() {
     if (!file) return
 
     setFileName(file.name)
+    setPresetActivo("personalizado")
     const reader = new FileReader()
 
     if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
@@ -238,9 +379,35 @@ export function PedidosYaModule() {
     }
   }
 
+  const cargarPreset = (semana: "noviembre" | "octubre") => {
+    if (semana === "noviembre") {
+      setPresetActivo("noviembre")
+      setFileName("Semana 02/11/2026 - 08/11/2026 (invoice-7600821271)")
+      setPublicidadTotal(1298.30)
+      setImpuestoTotal(343.71)
+      setAjustesTotal(15.26)
+      setCargosCancelarTotal(0)
+      setCargosReclamosTotal(0)
+      setReintegrosCanceladosTotal(0)
+      parseCsvText(DEMO_CSV_DATA_NOV, 0, 0, 0)
+      toast.success("Cargada Semana 02/11 al 08/11 (RD$ 8,959.59)")
+    } else {
+      setPresetActivo("octubre")
+      setFileName("Semana 26/10/2026 - 01/11/2026 (invoice-7600816629)")
+      setPublicidadTotal(1078.96)
+      setImpuestoTotal(364.15)
+      setAjustesTotal(29.17)
+      setCargosCancelarTotal(412.70)
+      setCargosReclamosTotal(13.00)
+      setReintegrosCanceladosTotal(260.00)
+      parseCsvText(DEMO_CSV_DATA_OCT, 412.70, 13.00, 260.00)
+      toast.success("Cargada Semana 26/10 al 01/11 (RD$ 7,044.86)")
+    }
+  }
+
   // Cargar demo inicial
   useEffect(() => {
-    parseCsvText(DEMO_CSV_DATA)
+    cargarPreset("noviembre")
   }, [])
 
   // Agrupación y liquidación calculada
@@ -255,7 +422,7 @@ export function PedidosYaModule() {
     let totalPlus = 0
     let totalReintegros = 0
 
-    // 1. Acumulados directos
+    // 1. Acumulados directos por pedido
     for (const p of pedidos) {
       if (!porSucursal[p.sucursal]) {
         porSucursal[p.sucursal] = {
@@ -273,6 +440,10 @@ export function PedidosYaModule() {
           publicidad: 0,
           impuestos: 0,
           ajustes: 0,
+          cargosCancelar: 0,
+          cargosReclamos: 0,
+          reintegrosCancelados: 0,
+          totalCargosGlobales: 0,
           gananciaNeta: 0,
           ventasPagoApp: 0,
           ventasPagoFueraApp: 0,
@@ -308,7 +479,16 @@ export function PedidosYaModule() {
     const sucursalesKeys = Object.keys(porSucursal)
     const numSucursales = sucursalesKeys.length || 1
 
-    // 2. Prorrateo de gastos generales
+    // 2. Cargos globales netos del estado de cuenta PDF
+    const totalCargosGlobales =
+      publicidadTotal +
+      impuestoTotal +
+      cargosCancelarTotal +
+      cargosReclamosTotal -
+      ajustesTotal -
+      reintegrosCanceladosTotal
+
+    // 3. Prorrateo de gastos generales
     for (const key of sucursalesKeys) {
       const s = porSucursal[key]
       s.margenOperativo = s.ventaNeta - s.totalComisiones - s.cargoPlus + s.reintegrosPeya
@@ -326,12 +506,16 @@ export function PedidosYaModule() {
       s.publicidad = publicidadTotal * ratioDistribucion
       s.impuestos = impuestoTotal * ratioDistribucion
       s.ajustes = ajustesTotal * ratioDistribucion
+      s.cargosCancelar = cargosCancelarTotal * ratioDistribucion
+      s.cargosReclamos = cargosReclamosTotal * ratioDistribucion
+      s.reintegrosCancelados = reintegrosCanceladosTotal * ratioDistribucion
+      s.totalCargosGlobales = totalCargosGlobales * ratioDistribucion
 
-      s.gananciaNeta = s.margenOperativo - s.publicidad - s.impuestos + s.ajustes
+      s.gananciaNeta = s.margenOperativo - s.totalCargosGlobales
     }
 
     const totalLiquidado =
-      totalVentasNetas - totalComisiones - totalPlus - publicidadTotal - impuestoTotal + totalReintegros + ajustesTotal
+      totalVentasNetas - totalComisiones - totalPlus + totalReintegros - totalCargosGlobales
 
     return {
       fechaCarga: new Date().toISOString(),
@@ -345,12 +529,25 @@ export function PedidosYaModule() {
       totalPublicidad: publicidadTotal,
       totalImpuestos: impuestoTotal,
       totalAjustes: ajustesTotal,
+      totalCargosCancelar: cargosCancelarTotal,
+      totalCargosReclamos: cargosReclamosTotal,
+      totalReintegrosCancelados: reintegrosCanceladosTotal,
+      totalCargosGlobales,
       totalLiquidado,
       metodoDistribucion,
       porSucursal,
       pedidos,
     }
-  }, [pedidos, publicidadTotal, impuestoTotal, ajustesTotal, metodoDistribucion])
+  }, [
+    pedidos,
+    publicidadTotal,
+    impuestoTotal,
+    ajustesTotal,
+    cargosCancelarTotal,
+    cargosReclamosTotal,
+    reintegrosCanceladosTotal,
+    metodoDistribucion,
+  ])
 
   // Filtrado de pedidos
   const pedidosFiltrados = useMemo(() => {
@@ -391,6 +588,30 @@ export function PedidosYaModule() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Selector Rápido de Semanas Registradas */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg border text-xs">
+            <span className="text-muted-foreground px-2 font-medium flex items-center gap-1">
+              <Calendar className="size-3.5" />
+              Semanas:
+            </span>
+            <Button
+              variant={presetActivo === "octubre" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => cargarPreset("octubre")}
+            >
+              26/10 - 01/11 (RD$ 7,044.86)
+            </Button>
+            <Button
+              variant={presetActivo === "noviembre" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => cargarPreset("noviembre")}
+            >
+              02/11 - 08/11 (RD$ 8,959.59)
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -398,7 +619,7 @@ export function PedidosYaModule() {
             className="gap-2"
           >
             <Upload className="size-4" />
-            Cargar Archivo / Pegar
+            Cargar / Pegar
           </Button>
 
           <Button
@@ -408,7 +629,7 @@ export function PedidosYaModule() {
             className="gap-2 print:hidden"
           >
             <Printer className="size-4" />
-            Imprimir Reporte
+            Imprimir
           </Button>
         </div>
       </div>
@@ -495,7 +716,7 @@ export function PedidosYaModule() {
                       )}
                       <div className="flex justify-between text-rose-600/80">
                         <span>Cargos Globales PDF:</span>
-                        <span className="font-medium">-{currency(s.publicidad + s.impuestos - s.ajustes)}</span>
+                        <span className="font-medium">-{currency(s.totalCargosGlobales)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -517,6 +738,9 @@ export function PedidosYaModule() {
                     Montos globales de PedidosYa que se distribuyen entre las sucursales para cuadrar exactamente con el total transferido al banco.
                   </CardDescription>
                 </div>
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-300 w-fit">
+                  Total Cargos Globales: -{currency(liquidacion.totalCargosGlobales)}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -555,7 +779,7 @@ export function PedidosYaModule() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Ajustes (Aminoración descuento)
+                    Ajustes de liquidación (A favor)
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">RD$</span>
@@ -571,7 +795,7 @@ export function PedidosYaModule() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Distribución de Publicidad
+                    Método de Distribución
                   </label>
                   <Select
                     value={metodoDistribucion}
@@ -586,6 +810,69 @@ export function PedidosYaModule() {
                       <SelectItem value="pedidos">Proporcional por Cantidad de Pedidos</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-muted-foreground block">
+                      Cargos Cancelar / Rechazar
+                    </label>
+                    {cargosCancelarTotal > 0 && (
+                      <span className="text-[10px] text-amber-500 font-medium">Auto-detectado</span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">RD$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={cargosCancelarTotal}
+                      onChange={(e) => setCargosCancelarTotal(parseFloat(e.target.value) || 0)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-muted-foreground block">
+                      Cargos Reclamos Usuarios
+                    </label>
+                    {cargosReclamosTotal > 0 && (
+                      <span className="text-[10px] text-amber-500 font-medium">Auto-detectado</span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">RD$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={cargosReclamosTotal}
+                      onChange={(e) => setCargosReclamosTotal(parseFloat(e.target.value) || 0)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-muted-foreground block">
+                      Reintegros Pedidos Cancelados
+                    </label>
+                    {reintegrosCanceladosTotal > 0 && (
+                      <span className="text-[10px] text-green-500 font-medium">Auto-detectado</span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">RD$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={reintegrosCanceladosTotal}
+                      onChange={(e) => setReintegrosCanceladosTotal(parseFloat(e.target.value) || 0)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -786,6 +1073,54 @@ export function PedidosYaModule() {
                     </TableCell>
                   </TableRow>
 
+                  {liquidacion.totalCargosCancelar > 0 && (
+                    <TableRow>
+                      <TableCell className="text-muted-foreground text-xs">
+                        Cargos por cancelar / rechazar pedidos
+                      </TableCell>
+                      {sucursalesList.map((s) => (
+                        <TableCell key={s.sucursal} className="text-right text-muted-foreground text-xs">
+                          -{currency(s.cargosCancelar)}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                        -{currency(liquidacion.totalCargosCancelar)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {liquidacion.totalCargosReclamos > 0 && (
+                    <TableRow>
+                      <TableCell className="text-muted-foreground text-xs">
+                        Cargos por reclamos de usuarios
+                      </TableCell>
+                      {sucursalesList.map((s) => (
+                        <TableCell key={s.sucursal} className="text-right text-muted-foreground text-xs">
+                          -{currency(s.cargosReclamos)}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                        -{currency(liquidacion.totalCargosReclamos)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {liquidacion.totalReintegrosCancelados > 0 && (
+                    <TableRow>
+                      <TableCell className="text-muted-foreground text-xs">
+                        Reintegro por pedidos que cancelaron los usuarios
+                      </TableCell>
+                      {sucursalesList.map((s) => (
+                        <TableCell key={s.sucursal} className="text-right text-green-600 text-xs">
+                          +{currency(s.reintegrosCancelados)}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right text-green-600 text-xs bg-primary/5">
+                        +{currency(liquidacion.totalReintegrosCancelados)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
                   <TableRow className="border-t-2 border-primary bg-primary/10 font-bold text-base">
                     <TableCell className="text-primary flex items-center gap-2">
                       <ShieldCheck className="size-5" />
@@ -830,8 +1165,8 @@ export function PedidosYaModule() {
                   setCurrentPage(1)
                 }}
               >
-                <SelectTrigger className="w-full sm:w-60">
-                  <SelectValue placeholder="Todas las sucursales" />
+                <SelectTrigger className="w-full sm:w-[220px]">
+                  <SelectValue placeholder="Filtrar por sucursal" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas las sucursales</SelectItem>
@@ -849,14 +1184,15 @@ export function PedidosYaModule() {
             <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow className="bg-muted/50 text-xs">
                     <TableHead># Pedido</TableHead>
                     <TableHead>Sucursal</TableHead>
                     <TableHead>Fecha</TableHead>
-                    <TableHead className="text-right">Monto Bruto</TableHead>
+                    <TableHead className="text-right">Bruto</TableHead>
                     <TableHead className="text-right">Desc. Local</TableHead>
-                    <TableHead className="text-right">Monto Neto</TableHead>
-                    <TableHead className="text-right">Comisión (Ventas+Log)</TableHead>
+                    <TableHead className="text-right">Venta Neta</TableHead>
+                    <TableHead className="text-right">Com. Venta (4%)</TableHead>
+                    <TableHead className="text-right">Com. Logística</TableHead>
                     <TableHead className="text-center">Plus</TableHead>
                     <TableHead>Método Pago</TableHead>
                   </TableRow>
@@ -864,39 +1200,37 @@ export function PedidosYaModule() {
                 <TableBody>
                   {paginatedPedidos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        No se encontraron pedidos con los filtros seleccionados
+                      <TableCell colSpan={10} className="h-32 text-center text-muted-foreground text-sm">
+                        No se encontraron pedidos con los filtros aplicados.
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginatedPedidos.map((p) => {
-                      const totalComision = p.servicioVentasMonto + p.servicioLogisticaMonto
                       return (
-                        <TableRow key={p.numeroPedido} className="hover:bg-muted/40">
-                          <TableCell className="font-mono text-xs font-semibold">
-                            {p.numeroPedido}
-                          </TableCell>
+                        <TableRow key={p.numeroPedido} className="text-xs hover:bg-muted/40">
+                          <TableCell className="font-mono font-medium">{p.numeroPedido}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-[11px] font-normal">
                               {p.sucursal}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {p.fecha}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {currency(p.montoBruto)}
-                          </TableCell>
-                          <TableCell className="text-right text-rose-500 font-medium">
+                          <TableCell className="text-muted-foreground whitespace-nowrap">{p.fecha}</TableCell>
+                          <TableCell className="text-right font-medium">{currency(p.montoBruto)}</TableCell>
+                          <TableCell className="text-right text-rose-500">
                             {p.descuentoLocal > 0 ? `-${currency(p.descuentoLocal)}` : "—"}
                           </TableCell>
-                          <TableCell className="text-right font-bold text-foreground">
+                          <TableCell className="text-right font-semibold text-foreground">
                             {currency(p.montoNetoVenta)}
                           </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground">
-                            -{currency(totalComision)}
-                            <span className="block text-[10px] opacity-75">
-                              ({p.servicioVentasPct + p.servicioLogisticaPct}%)
+                          <TableCell className="text-right text-muted-foreground">
+                            -{currency(p.servicioVentasMonto)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            <span className="font-mono">
+                              -{currency(p.servicioLogisticaMonto)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              ({p.servicioLogisticaPct}%)
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
@@ -982,19 +1316,26 @@ export function PedidosYaModule() {
 
                 <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                   <span>Archivo en uso: <strong>{fileName}</strong></span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1 text-primary text-xs"
-                    onClick={() => {
-                      parseCsvText(DEMO_CSV_DATA)
-                      setFileName("Semana 02/11/2026 - 08/11/2026")
-                      toast.success("Datos de la semana de ejemplo recargados")
-                    }}
-                  >
-                    <RotateCcw className="size-3.5" />
-                    Cargar Semana Actual
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 text-primary text-xs"
+                      onClick={() => cargarPreset("octubre")}
+                    >
+                      <RotateCcw className="size-3.5" />
+                      Sem. 26/10
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 text-primary text-xs"
+                      onClick={() => cargarPreset("noviembre")}
+                    >
+                      <RotateCcw className="size-3.5" />
+                      Sem. 02/11
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1025,6 +1366,7 @@ export function PedidosYaModule() {
                     }
                     parseCsvText(pasteData)
                     setFileName("Datos pegados manualmente")
+                    setPresetActivo("personalizado")
                   }}
                   disabled={!pasteData.trim()}
                   className="w-full gap-2"

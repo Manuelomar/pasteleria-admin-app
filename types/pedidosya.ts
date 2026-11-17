@@ -34,6 +34,10 @@ export interface SucursalLiquidacion {
   publicidad: number
   impuestos: number
   ajustes: number
+  cargosCancelar: number
+  cargosReclamos: number
+  reintegrosCancelados: number
+  totalCargosGlobales: number
   gananciaNeta: number
   ventasPagoApp: number
   ventasPagoFueraApp: number
@@ -55,6 +59,10 @@ export interface LiquidacionResumen {
   totalPublicidad: number
   totalImpuestos: number
   totalAjustes: number
+  totalCargosCancelar: number
+  totalCargosReclamos: number
+  totalReintegrosCancelados: number
+  totalCargosGlobales: number
   totalLiquidado: number
   metodoDistribucion: "ventas" | "igualitario" | "pedidos"
   porSucursal: Record<string, SucursalLiquidacion>
