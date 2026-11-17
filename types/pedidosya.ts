@@ -60,3 +60,4 @@ export interface LiquidacionResumen {
   porSucursal: Record<string, SucursalLiquidacion>
   pedidos: PedidoYaRow[]
 }
+
