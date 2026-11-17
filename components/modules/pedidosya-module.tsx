@@ -134,26 +134,34 @@ export function PedidosYaModule() {
       return
     }
 
+    const norm = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/^["']|["']$/g, "")
+        .trim()
+
     const separator = lines[0].includes("\t") ? "\t" : lines[0].includes(";") ? ";" : ","
-    const headers = lines[0].split(separator).map((h) => h.replace(/^["']|["']$/g, "").trim().toLowerCase())
+    const headers = lines[0].split(separator).map(norm)
 
     const getIdx = (keywords: string[]) =>
-      headers.findIndex((h) => keywords.some((k) => h.includes(k)))
+      headers.findIndex((h) => keywords.some((k) => h.includes(norm(k))))
 
-    const idxNum = getIdx(["número", "numero", "pedido"])
+    const idxNum = getIdx(["numero de pedido", "pedido", "orden"])
     const idxSuc = getIdx(["sucursal", "local", "tienda"])
-    const idxFecha = getIdx(["fecha"])
-    const idxBruto = getIdx(["bruto"])
+    const idxFecha = getIdx(["fecha de pedido", "fecha"])
+    const idxBruto = getIdx(["monto bruto"])
     const idxDescLocal = getIdx(["descuento otorgado por el local", "descuento local", "desc. local"])
-    const idxDescPeya = getIdx(["desc. neto otorgado por peya", "otorgado x peya", "peya a usuarios"])
+    const idxDescPeya = getIdx(["desc. neto otorgado por peya a usuarios", "otorgado por peya", "otorgado x peya", "peya a usuarios", "reintegro"])
     const idxNeto = getIdx(["monto neto de la venta", "monto neto", "neto"])
-    const idxComisionable = getIdx(["comisionable"])
-    const idxComVentaPct = getIdx(["servicio ventas pedidosya (%)", "ventas pedidosya (%)"])
-    const idxComLogPct = getIdx(["servicio logística pedidosya (%)", "logistica pedidosya (%)"])
-    const idxComVentaMonto = getIdx(["servicio ventas pedidoya ($)", "servicio ventas ($)"])
-    const idxComLogMonto = getIdx(["servicio logística pedidoya ($)", "servicio logistica ($)"])
-    const idxPlus = getIdx(["cargo por pedidos con plus", "plus ($)", "cargo plus"])
-    const idxMetodoPago = getIdx(["método de pago", "metodo de pago", "pago"])
+    const idxComisionable = getIdx(["monto comisionable", "comisionable"])
+    const idxComVentaPct = getIdx(["servicio ventas pedidosya (%)", "servicio ventas (%)", "ventas (%)"])
+    const idxComLogPct = getIdx(["servicio logistica pedidosya (%)", "servicio logistica (%)", "logistica (%)"])
+    const idxComVentaMonto = getIdx(["servicio ventas pedidosya ($)", "servicio ventas pedidoya ($)", "servicio ventas ($)", "ventas ($)"])
+    const idxComLogMonto = getIdx(["servicio logistica pedidosya ($)", "servicio logistica pedidoya ($)", "servicio logistica ($)", "logistica ($)"])
+    const idxPlus = getIdx(["cargo por pedidos con plus", "cargo plus", "plus ($)"])
+    const idxMetodoPago = getIdx(["metodo de pago", "pago"])
     const idxCobradoPor = getIdx(["cobrado por", "cobrado"])
 
     const parsedRows: PedidoYaRow[] = []
@@ -305,22 +313,19 @@ export function PedidosYaModule() {
       const s = porSucursal[key]
       s.margenOperativo = s.ventaNeta - s.totalComisiones - s.cargoPlus + s.reintegrosPeya
 
-      // Ratio de distribución
-      let ratioPublicidad = 0
+      // Ratio de distribución (proporcional a ventas netas por defecto como distribuye PedidosYa)
+      let ratioDistribucion = 0
       if (metodoDistribucion === "ventas") {
-        ratioPublicidad = totalVentasNetas > 0 ? s.ventaNeta / totalVentasNetas : 1 / numSucursales
+        ratioDistribucion = totalVentasNetas > 0 ? s.ventaNeta / totalVentasNetas : 1 / numSucursales
       } else if (metodoDistribucion === "pedidos") {
-        ratioPublicidad = totalPedidos > 0 ? s.pedidos / totalPedidos : 1 / numSucursales
+        ratioDistribucion = totalPedidos > 0 ? s.pedidos / totalPedidos : 1 / numSucursales
       } else {
-        ratioPublicidad = 1 / numSucursales
+        ratioDistribucion = 1 / numSucursales
       }
 
-      const ratioComisiones = totalComisiones > 0 ? s.totalComisiones / totalComisiones : 1 / numSucursales
-      const ratioVentas = totalVentasNetas > 0 ? s.ventaNeta / totalVentasNetas : 1 / numSucursales
-
-      s.publicidad = publicidadTotal * ratioPublicidad
-      s.impuestos = impuestoTotal * ratioComisiones
-      s.ajustes = ajustesTotal * ratioVentas
+      s.publicidad = publicidadTotal * ratioDistribucion
+      s.impuestos = impuestoTotal * ratioDistribucion
+      s.ajustes = ajustesTotal * ratioDistribucion
 
       s.gananciaNeta = s.margenOperativo - s.publicidad - s.impuestos + s.ajustes
     }
@@ -475,6 +480,22 @@ export function PedidosYaModule() {
                       <div className="flex justify-between">
                         <span>Comisiones Peya:</span>
                         <span className="font-medium text-foreground">-{currency(s.totalComisiones)}</span>
+                      </div>
+                      {s.cargoPlus > 0 && (
+                        <div className="flex justify-between text-amber-600">
+                          <span>Cargos PLUS:</span>
+                          <span className="font-medium">-{currency(s.cargoPlus)}</span>
+                        </div>
+                      )}
+                      {s.reintegrosPeya > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Reintegros Peya:</span>
+                          <span className="font-medium">+{currency(s.reintegrosPeya)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-rose-600/80">
+                        <span>Cargos Globales PDF:</span>
+                        <span className="font-medium">-{currency(s.publicidad + s.impuestos - s.ajustes)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -739,7 +760,7 @@ export function PedidosYaModule() {
 
                   <TableRow>
                     <TableCell className="text-muted-foreground text-xs">
-                      Impuesto IVA sobre Comisiones (proporcional)
+                      Impuesto IVA sobre Comisiones ({metodoDistribucion === "ventas" ? "por ventas" : metodoDistribucion === "igualitario" ? "50/50" : "por pedidos"})
                     </TableCell>
                     {sucursalesList.map((s) => (
                       <TableCell key={s.sucursal} className="text-right text-muted-foreground text-xs">
@@ -753,7 +774,7 @@ export function PedidosYaModule() {
 
                   <TableRow>
                     <TableCell className="text-muted-foreground text-xs">
-                      Ajuste de Liquidación (Aminoración)
+                      Ajuste de Liquidación ({metodoDistribucion === "ventas" ? "por ventas" : metodoDistribucion === "igualitario" ? "50/50" : "por pedidos"})
                     </TableCell>
                     {sucursalesList.map((s) => (
                       <TableCell key={s.sucursal} className="text-right text-muted-foreground text-xs">
