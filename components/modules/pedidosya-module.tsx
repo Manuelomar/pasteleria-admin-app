@@ -898,8 +898,11 @@ export function PedidosYaModule() {
                         {s.sucursal}
                       </TableHead>
                     ))}
-                    <TableHead className="text-right font-bold text-primary bg-primary/5">
-                      Total Liquidación (PDF)
+                    <TableHead className="text-right font-bold text-foreground border-l-2 border-border/80 bg-muted/60 dark:bg-muted/40 whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <FileSpreadsheet className="size-3.5 text-primary" />
+                        <span>Total Liquidación (PDF)</span>
+                      </div>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -911,7 +914,7 @@ export function PedidosYaModule() {
                         {s.pedidos}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold bg-primary/5">
+                    <TableCell className="text-right font-bold text-foreground border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       {liquidacion.totalPedidos}
                     </TableCell>
                   </TableRow>
@@ -923,7 +926,7 @@ export function PedidosYaModule() {
                         {currency(s.montoBruto)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold bg-primary/5">
+                    <TableCell className="text-right font-bold text-foreground border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       {currency(liquidacion.totalBruto)}
                     </TableCell>
                   </TableRow>
@@ -938,7 +941,7 @@ export function PedidosYaModule() {
                         -{currency(s.descuentoLocal)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold text-rose-600 dark:text-rose-400 bg-rose-100/30 dark:bg-rose-950/40">
+                    <TableCell className="text-right font-bold text-rose-600 dark:text-rose-400 border-l-2 border-border/80 bg-rose-50/60 dark:bg-rose-950/25">
                       -{currency(liquidacion.totalDescuentos)}
                     </TableCell>
                   </TableRow>
@@ -950,7 +953,7 @@ export function PedidosYaModule() {
                         {currency(s.ventaNeta)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold bg-primary/5">
+                    <TableCell className="text-right font-bold text-foreground border-l-2 border-border/80 bg-muted/50 dark:bg-muted/25">
                       {currency(liquidacion.totalVentasNetas)}
                     </TableCell>
                   </TableRow>
@@ -964,7 +967,7 @@ export function PedidosYaModule() {
                         -{currency(s.comisionVentas)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                    <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       -{currency(sucursalesList.reduce((acc, s) => acc + s.comisionVentas, 0))}
                     </TableCell>
                   </TableRow>
@@ -978,7 +981,7 @@ export function PedidosYaModule() {
                         -{currency(s.comisionLogistica)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                    <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       -{currency(sucursalesList.reduce((acc, s) => acc + s.comisionLogistica, 0))}
                     </TableCell>
                   </TableRow>
@@ -990,7 +993,7 @@ export function PedidosYaModule() {
                         -{currency(s.totalComisiones)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold text-rose-600 dark:text-rose-400 bg-primary/5">
+                    <TableCell className="text-right font-bold text-rose-600 dark:text-rose-400 border-l-2 border-border/80 bg-muted/40 dark:bg-muted/20">
                       -{currency(liquidacion.totalComisiones)}
                     </TableCell>
                   </TableRow>
@@ -1002,7 +1005,7 @@ export function PedidosYaModule() {
                         {s.cargoPlus > 0 ? `-${currency(s.cargoPlus)}` : "RD$ 0.00"}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold text-amber-600 bg-primary/5">
+                    <TableCell className="text-right font-bold text-amber-600 dark:text-amber-500 border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       -{currency(liquidacion.totalPlus)}
                     </TableCell>
                   </TableRow>
@@ -1014,7 +1017,7 @@ export function PedidosYaModule() {
                         {s.reintegrosPeya > 0 ? `+${currency(s.reintegrosPeya)}` : "RD$ 0.00"}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold text-green-600 bg-primary/5">
+                    <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-500 border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       +{currency(liquidacion.totalReintegros)}
                     </TableCell>
                   </TableRow>
@@ -1026,7 +1029,7 @@ export function PedidosYaModule() {
                         {currency(s.margenOperativo)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-bold bg-primary/10">
+                    <TableCell className="text-right font-extrabold text-foreground border-l-2 border-border/80 bg-muted/60 dark:bg-muted/30">
                       {currency(sucursalesList.reduce((acc, s) => acc + s.margenOperativo, 0))}
                     </TableCell>
                   </TableRow>
@@ -1040,7 +1043,7 @@ export function PedidosYaModule() {
                         -{currency(s.publicidad)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                    <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       -{currency(liquidacion.totalPublicidad)}
                     </TableCell>
                   </TableRow>
@@ -1054,7 +1057,7 @@ export function PedidosYaModule() {
                         -{currency(s.impuestos)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                    <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       -{currency(liquidacion.totalImpuestos)}
                     </TableCell>
                   </TableRow>
@@ -1068,7 +1071,7 @@ export function PedidosYaModule() {
                         +{currency(s.ajustes)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                    <TableCell className="text-right text-emerald-600 dark:text-emerald-500 font-medium text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                       +{currency(liquidacion.totalAjustes)}
                     </TableCell>
                   </TableRow>
@@ -1083,7 +1086,7 @@ export function PedidosYaModule() {
                           -{currency(s.cargosCancelar)}
                         </TableCell>
                       ))}
-                      <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                      <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                         -{currency(liquidacion.totalCargosCancelar)}
                       </TableCell>
                     </TableRow>
@@ -1099,7 +1102,7 @@ export function PedidosYaModule() {
                           -{currency(s.cargosReclamos)}
                         </TableCell>
                       ))}
-                      <TableCell className="text-right text-muted-foreground text-xs bg-primary/5">
+                      <TableCell className="text-right text-muted-foreground text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                         -{currency(liquidacion.totalCargosReclamos)}
                       </TableCell>
                     </TableRow>
@@ -1115,7 +1118,7 @@ export function PedidosYaModule() {
                           +{currency(s.reintegrosCancelados)}
                         </TableCell>
                       ))}
-                      <TableCell className="text-right text-green-600 text-xs bg-primary/5">
+                      <TableCell className="text-right text-green-600 font-medium text-xs border-l-2 border-border/80 bg-muted/30 dark:bg-muted/15">
                         +{currency(liquidacion.totalReintegrosCancelados)}
                       </TableCell>
                     </TableRow>
@@ -1131,7 +1134,7 @@ export function PedidosYaModule() {
                         {currency(s.gananciaNeta)}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right text-primary text-xl bg-primary/20">
+                    <TableCell className="text-right text-xl font-extrabold border-l-2 border-emerald-500/80 text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 dark:bg-emerald-950/40">
                       {currency(liquidacion.totalLiquidado)}
                     </TableCell>
                   </TableRow>
