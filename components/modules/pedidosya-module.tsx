@@ -23,7 +23,9 @@ import {
   Calendar,
   AlertTriangle,
   Trash2,
+  FileText,
 } from "lucide-react"
+import pako from "pako"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -168,12 +170,124 @@ function normalizeSucursalName(raw: string): string {
   return "Bizcochao (Alma Rosa)"
 }
 
+interface ParsedPdfResult {
+  periodo: string
+  publicidad: number
+  impuestos: number
+  ajustes: number
+  cancelaciones: number
+  reclamos: number
+  reintegrosCancelados: number
+  totalLiquidado: number
+}
+
+function parsePedidosYaPdf(uint8Array: Uint8Array): ParsedPdfResult {
+  let pos = 0
+  let fullText = ""
+  const len = uint8Array.length
+
+  const streamMarker = [115, 116, 114, 101, 97, 109] // 'stream'
+  const endStreamMarker = [101, 110, 100, 115, 116, 114, 101, 97, 109] // 'endstream'
+
+  function findSubarray(sub: number[], start: number): number {
+    outer: for (let i = start; i <= len - sub.length; i++) {
+      for (let j = 0; j < sub.length; j++) {
+        if (uint8Array[i + j] !== sub[j]) continue outer
+      }
+      return i
+    }
+    return -1
+  }
+
+  while (pos < len) {
+    const sStart = findSubarray(streamMarker, pos)
+    if (sStart === -1) break
+    let dStart = sStart + 6
+    if (uint8Array[dStart] === 13) dStart++
+    if (uint8Array[dStart] === 10) dStart++
+
+    const sEnd = findSubarray(endStreamMarker, dStart)
+    if (sEnd === -1) break
+
+    const streamSlice = uint8Array.subarray(dStart, sEnd)
+    try {
+      const decompressed = pako.inflate(streamSlice)
+      let str = ""
+      for (let i = 0; i < decompressed.length; i++) {
+        str += String.fromCharCode(decompressed[i])
+      }
+      const tjRegex = /\((.*?)\)\s*Tj/g
+      let m: RegExpExecArray | null
+      while ((m = tjRegex.exec(str)) !== null) {
+        let val = m[1]
+        val = val
+          .replace(/\\355/g, "í")
+          .replace(/\\363/g, "ó")
+          .replace(/\\341/g, "á")
+          .replace(/\\351/g, "é")
+          .replace(/\\372/g, "ú")
+          .replace(/\\361/g, "ñ")
+        fullText += val + "\n"
+      }
+    } catch {
+      // no es un flujo deflate
+    }
+
+    pos = sEnd + 9
+  }
+
+  const lines = fullText.split("\n").map((l) => l.trim()).filter(Boolean)
+
+  const findValueAfter = (keyword: string): number => {
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(keyword.toLowerCase())) {
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          const valMatch = lines[j].match(/RD\$\s*(-?[\d,.]+)/)
+          if (valMatch) {
+            const clean = valMatch[1].replace(/,/g, "")
+            return parseFloat(clean)
+          }
+        }
+      }
+    }
+    return 0
+  }
+
+  const findPeriodo = (): string => {
+    for (const line of lines) {
+      const m = line.match(/Per[íi]+odo\s+del\s+([\d/]+)\s+al\s+([\d/]+)/i)
+      if (m) return `${m[1]} al ${m[2]}`
+    }
+    return ""
+  }
+
+  const publicidad = Math.abs(findValueAfter("publicidad dentro de la aplicaci"))
+  const impuestos = Math.abs(findValueAfter("impuesto en comisiones") || findValueAfter("impuestos"))
+  const ajustes = findValueAfter("ajustes de liquidaci")
+  const cancelaciones = Math.abs(findValueAfter("cancelar o rechazar"))
+  const reclamos = Math.abs(findValueAfter("cargos por reclamos"))
+  const reintegrosCancelados = findValueAfter("reintegro por pedidos que cancelaron")
+  const totalLiquidado = findValueAfter("total liquidado del") || findValueAfter("subtotal")
+
+  return {
+    periodo: findPeriodo(),
+    publicidad,
+    impuestos,
+    ajustes,
+    cancelaciones,
+    reclamos,
+    reintegrosCancelados,
+    totalLiquidado,
+  }
+}
+
 export function PedidosYaModule() {
   const [activeTab, setActiveTab] = useState<"resumen" | "detalle" | "cargar">("cargar")
   const [pasteData, setPasteData] = useState("")
   const [fileName, setFileName] = useState<string>("")
   const [presetActivo, setPresetActivo] = useState<"noviembre" | "octubre" | "personalizado" | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   
   // Parámetros del PDF (Estado de cuenta oficial de PedidosYa)
   const [publicidadTotal, setPublicidadTotal] = useState<number>(0)
@@ -206,6 +320,9 @@ export function PedidosYaModule() {
     setReintegrosCanceladosTotal(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
+    }
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = ""
     }
     setActiveTab("cargar")
     toast.info("Documento eliminado. La pantalla está limpia.")
@@ -367,23 +484,124 @@ export function PedidosYaModule() {
     toast.success(`Se procesaron ${parsedRows.length} pedidos correctamente`)
   }
 
+  const handlePdfFile = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const buffer = evt.target?.result as ArrayBuffer
+        if (!buffer) return
+        const pdfData = parsePedidosYaPdf(new Uint8Array(buffer))
+
+        if (pdfData.publicidad > 0) setPublicidadTotal(pdfData.publicidad)
+        if (pdfData.impuestos > 0) setImpuestoTotal(pdfData.impuestos)
+        if (pdfData.ajustes !== 0) setAjustesTotal(pdfData.ajustes)
+        if (pdfData.cancelaciones > 0) setCargosCancelarTotal(pdfData.cancelaciones)
+        if (pdfData.reclamos > 0) setCargosReclamosTotal(pdfData.reclamos)
+        if (pdfData.reintegrosCancelados > 0) setReintegrosCanceladosTotal(pdfData.reintegrosCancelados)
+
+        const infoPeriodo = pdfData.periodo ? ` (${pdfData.periodo})` : ""
+        toast.success(
+          `Estado de cuenta PDF cargado${infoPeriodo}: Total liquidado ${currency(pdfData.totalLiquidado)}`
+        )
+        setActiveTab("resumen")
+      } catch (err: unknown) {
+        console.error(err)
+        toast.error("Error al procesar el archivo PDF")
+      }
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setFileName(file.name)
     setPresetActivo("personalizado")
-    const reader = new FileReader()
 
-    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+    const lowerName = file.name.toLowerCase()
+
+    if (lowerName.endsWith(".pdf")) {
+      handlePdfFile(file)
+      e.target.value = ""
+      return
+    }
+
+    if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+      const reader = new FileReader()
       reader.onload = (evt) => {
         try {
           const binaryStr = evt.target?.result
           const workbook = XLSX.read(binaryStr, { type: "binary" })
-          const firstSheet = workbook.SheetNames[0]
-          const sheet = workbook.Sheets[firstSheet]
-          const csvText = XLSX.utils.sheet_to_csv(sheet)
-          parseCsvText(csvText)
+
+          let mainSheetName = workbook.SheetNames[0]
+          for (const sName of workbook.SheetNames) {
+            const n = sName.toLowerCase()
+            if (n.includes("pedido") || n.includes("orden") || n.includes("lista")) {
+              mainSheetName = sName
+              break
+            }
+          }
+
+          const wsMain = workbook.Sheets[mainSheetName]
+          const csvText = XLSX.utils.sheet_to_csv(wsMain)
+
+          // Extraer penalidades y reintegros de las hojas secundarias si existen
+          let detectedCancelar = 0
+          let detectedReclamos = 0
+          let detectedReintegros = 0
+
+          for (const sName of workbook.SheetNames) {
+            if (sName === mainSheetName) continue
+            const n = sName.toLowerCase()
+            const ws = workbook.Sheets[sName]
+            const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws)
+
+            if (n.includes("cancelac") || n.includes("cancelar")) {
+              for (const r of rows) {
+                const val = Math.abs(
+                  parseNumber(
+                    (r["Monto final"] as string | number) ??
+                    (r["Comisión PeYa"] as string | number) ??
+                    0
+                  )
+                )
+                detectedCancelar += val
+              }
+            } else if (n.includes("reclamo")) {
+              for (const r of rows) {
+                const val = Math.abs(
+                  parseNumber(
+                    (r["Cargos por reclamos de los usuarios"] as string | number) ??
+                    (r["Reintegro al usuario por reclamo"] as string | number) ??
+                    0
+                  )
+                )
+                detectedReclamos += val
+              }
+            } else if (n.includes("reintegro")) {
+              for (const r of rows) {
+                const val = Math.abs(
+                  parseNumber(
+                    (r["Monto neto a reintegrar"] as string | number) ??
+                    (r["Monto Bruto a reintegrar"] as string | number) ??
+                    0
+                  )
+                )
+                detectedReintegros += val
+              }
+            }
+          }
+
+          // Limpiar cargos de publicidad/impuestos de semanas anteriores para no contaminar
+          setPublicidadTotal(0)
+          setImpuestoTotal(0)
+          setAjustesTotal(0)
+          setCargosCancelarTotal(detectedCancelar)
+          setCargosReclamosTotal(detectedReclamos)
+          setReintegrosCanceladosTotal(detectedReintegros)
+
+          parseCsvText(csvText, detectedCancelar, detectedReclamos, detectedReintegros)
         } catch (err: unknown) {
           console.error(err)
           toast.error("Error al leer el archivo Excel")
@@ -391,12 +609,25 @@ export function PedidosYaModule() {
       }
       reader.readAsBinaryString(file)
     } else {
+      const reader = new FileReader()
       reader.onload = (evt) => {
         const text = evt.target?.result as string
-        if (text) parseCsvText(text)
+        if (text) {
+          setPublicidadTotal(0)
+          setImpuestoTotal(0)
+          setAjustesTotal(0)
+          parseCsvText(text)
+        }
       }
       reader.readAsText(file)
     }
+    e.target.value = ""
+  }
+
+  const handlePdfUploadDirect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    handlePdfFile(file)
     e.target.value = ""
   }
 
@@ -685,7 +916,9 @@ export function PedidosYaModule() {
             <Card className="border-primary/40 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Total Liquidado Banco (PDF)
+                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 || liquidacion.totalCargosGlobales !== 0
+                    ? "Total Liquidado Banco (PDF)"
+                    : "Margen Directo de Pedidos"}
                 </CardDescription>
                 <CardTitle className="text-3xl md:text-4xl font-heading font-bold text-foreground">
                   {currency(liquidacion.totalLiquidado)}
@@ -694,9 +927,15 @@ export function PedidosYaModule() {
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2 mt-2">
                   <span>{liquidacion.totalPedidos} pedidos en la semana</span>
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300">
-                    Conciliado 100%
-                  </Badge>
+                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 || liquidacion.totalCargosGlobales !== 0 ? (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300">
+                      Conciliado 100% con PDF
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-300">
+                      Margen Directo (Falta PDF)
+                    </Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -759,6 +998,32 @@ export function PedidosYaModule() {
             })}
           </div>
 
+          {/* Alerta si falta conciliar los cargos del PDF */}
+          {liquidacion.totalPublicidad === 0 && liquidacion.totalImpuestos === 0 && pedidos.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="size-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="font-semibold">
+                    Mostrando Margen Directo de Pedidos ({currency(liquidacion.totalLiquidado)})
+                  </p>
+                  <p className="text-muted-foreground text-[11px] mt-0.5">
+                    El archivo Excel contiene los pedidos pero no incluye Publicidad e Impuestos. Para cuadrar con el depósito real del banco, ingresa los valores abajo o sube tu Estado de Cuenta en PDF.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => pdfInputRef.current?.click()}
+                className="h-8 text-xs border-amber-500/50 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 gap-1.5 shrink-0"
+              >
+                <FileText className="size-3.5" />
+                Subir PDF Semanal
+              </Button>
+            </div>
+          )}
+
           {/* Ajustes del Estado de Cuenta (PDF) */}
           <Card className="border-border bg-muted/20">
             <CardHeader className="pb-3">
@@ -772,9 +1037,28 @@ export function PedidosYaModule() {
                     Montos globales de PedidosYa que se distribuyen entre las sucursales para cuadrar exactamente con el total transferido al banco.
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-300 w-fit">
-                  Total Cargos Globales: -{currency(liquidacion.totalCargosGlobales)}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => pdfInputRef.current?.click()}
+                    className="h-8 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                    title="Subir PDF del Estado de Cuenta para auto-llenar estos campos"
+                  >
+                    <FileText className="size-3.5" />
+                    Auto-llenar con PDF
+                  </Button>
+                  <input
+                    ref={pdfInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handlePdfUploadDirect}
+                    className="hidden"
+                  />
+                  <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-300 w-fit">
+                    Total Cargos Globales: -{currency(liquidacion.totalCargosGlobales)}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1387,10 +1671,10 @@ export function PedidosYaModule() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <FileSpreadsheet className="size-4 text-emerald-500" />
-                  Opción 1: Subir Archivo (.xlsx o .csv)
+                  Opción 1: Subir Archivo Excel o PDF
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Sube el archivo Excel o CSV que descargas del portal de PedidosYa.
+                  Sube el archivo Excel semanal con pedidos y penalidades, o el Estado de Cuenta oficial en PDF.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1400,12 +1684,12 @@ export function PedidosYaModule() {
                     Arrastra tu archivo aquí o haz clic para seleccionar
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Formatos admitidos: .xlsx, .xls, .csv, .tsv
+                    Formatos admitidos: Excel (.xlsx, .xls), Estado de Cuenta (.pdf), CSV
                   </p>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".xlsx,.xls,.csv,.tsv"
+                    accept=".xlsx,.xls,.csv,.tsv,.pdf"
                     onChange={handleFileUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
