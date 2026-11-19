@@ -56,6 +56,7 @@ export interface LiquidacionResumen {
   totalComisiones: number
   totalPlus: number
   totalReintegros: number
+  totalMOD: number
   totalPublicidad: number
   totalImpuestos: number
   totalAjustes: number
