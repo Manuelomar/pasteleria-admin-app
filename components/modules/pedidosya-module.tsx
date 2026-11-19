@@ -331,8 +331,12 @@ export function PedidosYaModule() {
   const [activeTab, setActiveTab] = useState<"resumen" | "detalle" | "cargar">("cargar")
   const [pasteData, setPasteData] = useState("")
   const [fileName, setFileName] = useState<string>("")
+  const [excelFileName, setExcelFileName] = useState<string>("")
+  const [pdfFileName, setPdfFileName] = useState<string>("")
+  const [isDragging, setIsDragging] = useState(false)
   const [presetActivo, setPresetActivo] = useState<"noviembre-15" | "noviembre" | "octubre" | "personalizado" | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const excelInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const [pdfDataCargado, setPdfDataCargado] = useState<ParsedPdfResult | null>(null)
   
@@ -358,6 +362,9 @@ export function PedidosYaModule() {
   const limpiarDatos = () => {
     setPedidos([])
     setFileName("")
+    setExcelFileName("")
+    setPdfFileName("")
+    setIsDragging(false)
     setPresetActivo(null)
     setPasteData("")
     setPublicidadTotal(0)
@@ -368,21 +375,37 @@ export function PedidosYaModule() {
     setReintegrosCanceladosTotal(0)
     setMontoDepositadoBanco("")
     setPdfDataCargado(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-    if (pdfInputRef.current) {
-      pdfInputRef.current.value = ""
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (excelInputRef.current) excelInputRef.current.value = ""
+    if (pdfInputRef.current) pdfInputRef.current.value = ""
     setActiveTab("cargar")
-    toast.info("Documento eliminado. La pantalla está limpia.")
+    toast.info("Datos eliminados. La pantalla está limpia.")
+  }
+
+  const descartarPdf = () => {
+    setPdfFileName("")
+    setPdfDataCargado(null)
+    setPublicidadTotal(0)
+    setImpuestoTotal(0)
+    setAjustesTotal(0)
+    setMontoDepositadoBanco("")
+    if (pdfInputRef.current) pdfInputRef.current.value = ""
+    toast.info("Estado de Cuenta PDF descartado.")
+  }
+
+  const descartarExcel = () => {
+    setExcelFileName("")
+    setPedidos([])
+    if (excelInputRef.current) excelInputRef.current.value = ""
+    toast.info("Pedidos de Excel descartados.")
   }
 
   const parseCsvText = (
     text: string,
     overrideCancelar?: number,
     overrideReclamos?: number,
-    overrideReintegros?: number
+    overrideReintegros?: number,
+    goToResumen: boolean = true
   ) => {
     const lines = text.trim().split(/\r?\n/)
     if (lines.length < 2) {
@@ -530,11 +553,14 @@ export function PedidosYaModule() {
     }
 
     setPedidos(parsedRows)
-    setActiveTab("resumen")
+    if (goToResumen) {
+      setActiveTab("resumen")
+    }
     toast.success(`Se procesaron ${parsedRows.length} pedidos correctamente`)
   }
 
   const handlePdfFile = (file: File) => {
+    setPdfFileName(file.name)
     const reader = new FileReader()
     reader.onload = (evt) => {
       try {
@@ -552,10 +578,19 @@ export function PedidosYaModule() {
         if (pdfData.totalLiquidado > 0) setMontoDepositadoBanco(pdfData.totalLiquidado)
 
         const infoPeriodo = pdfData.periodo ? ` (${pdfData.periodo})` : ""
-        toast.success(
-          `Estado de cuenta PDF cargado${infoPeriodo}: Total liquidado ${currency(pdfData.totalLiquidado)}`
-        )
-        setActiveTab("resumen")
+
+        // Si ya hay pedidos cargados del Excel, saltar de una vez al resumen conciliado
+        if (pedidos.length > 0) {
+          toast.success(
+            `Conciliado con Estado de Cuenta${infoPeriodo}: Total depositado ${currency(pdfData.totalLiquidado)}`
+          )
+          setActiveTab("resumen")
+        } else {
+          // Si no hay pedidos, no saltar a pantalla vacía; quedarse aquí y guiar al usuario
+          toast.success(
+            `Estado de cuenta PDF cargado${infoPeriodo}: Total banco ${currency(pdfData.totalLiquidado)}. Ahora sube el Excel de pedidos.`
+          )
+        }
       } catch (err: unknown) {
         console.error(err)
         toast.error("Error al procesar el archivo PDF")
@@ -564,7 +599,12 @@ export function PedidosYaModule() {
     reader.readAsArrayBuffer(file)
   }
 
-  const processExcelFile = (file: File, existingPdfData: ParsedPdfResult | null) => {
+  const processExcelFile = (
+    file: File,
+    existingPdfData: ParsedPdfResult | null,
+    switchTabToResumen: boolean = true
+  ) => {
+    setExcelFileName(file.name)
     const reader = new FileReader()
     reader.onload = (evt) => {
       try {
@@ -654,7 +694,7 @@ export function PedidosYaModule() {
           setMontoDepositadoBanco("")
         }
 
-        parseCsvText(csvText, detectedCancelar, detectedReclamos, detectedReintegros)
+        parseCsvText(csvText, detectedCancelar, detectedReclamos, detectedReintegros, switchTabToResumen)
 
         if (existingPdfData && existingPdfData.totalLiquidado > 0) {
           toast.success(
@@ -669,14 +709,13 @@ export function PedidosYaModule() {
     reader.readAsBinaryString(file)
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
+  const processFiles = (fileList: File[]) => {
+    if (!fileList || fileList.length === 0) return
 
     setPresetActivo("personalizado")
 
-    const pdfFile = files.find((f) => f.name.toLowerCase().endsWith(".pdf"))
-    const excelFile = files.find((f) => {
+    const pdfFile = fileList.find((f) => f.name.toLowerCase().endsWith(".pdf"))
+    const excelFile = fileList.find((f) => {
       const n = f.name.toLowerCase()
       return n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv") || n.endsWith(".tsv")
     })
@@ -684,6 +723,9 @@ export function PedidosYaModule() {
     // Caso 1: Se subieron ambos archivos (Excel y PDF) juntos
     if (pdfFile && excelFile) {
       setFileName(`${excelFile.name} + ${pdfFile.name}`)
+      setExcelFileName(excelFile.name)
+      setPdfFileName(pdfFile.name)
+
       const pdfReader = new FileReader()
       pdfReader.onload = (pdfEvt) => {
         try {
@@ -700,48 +742,58 @@ export function PedidosYaModule() {
           if (pdfData.reintegrosCancelados > 0) setReintegrosCanceladosTotal(pdfData.reintegrosCancelados)
           if (pdfData.totalLiquidado > 0) setMontoDepositadoBanco(pdfData.totalLiquidado)
 
-          processExcelFile(excelFile, pdfData)
+          processExcelFile(excelFile, pdfData, true)
         } catch (err: unknown) {
           console.error(err)
           toast.error("Error al procesar el archivo PDF adjunto")
-          processExcelFile(excelFile, null)
+          processExcelFile(excelFile, null, true)
         }
       }
       pdfReader.readAsArrayBuffer(pdfFile)
-      e.target.value = ""
       return
     }
 
     // Caso 2: Sólo PDF
     if (pdfFile && !excelFile) {
-      setFileName(pdfFile.name)
+      setFileName(excelFileName ? `${excelFileName} + ${pdfFile.name}` : pdfFile.name)
       handlePdfFile(pdfFile)
-      e.target.value = ""
       return
     }
 
     // Caso 3: Sólo Excel
     if (excelFile) {
-      setFileName(excelFile.name)
-      processExcelFile(excelFile, pdfDataCargado)
-      e.target.value = ""
+      setFileName(pdfFileName ? `${excelFile.name} + ${pdfFileName}` : excelFile.name)
+      processExcelFile(excelFile, pdfDataCargado, true)
       return
     }
+  }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    processFiles(files)
     e.target.value = ""
   }
 
   const handlePdfUploadDirect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    handlePdfFile(file)
+    processFiles([file])
+    e.target.value = ""
+  }
+
+  const handleExcelUploadDirect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    processFiles([file])
     e.target.value = ""
   }
 
   const cargarPreset = (semana: "noviembre-15" | "noviembre" | "octubre") => {
     if (semana === "noviembre-15") {
       setPresetActivo("noviembre-15")
-      setFileName("Semana 09/11/2026 - 15/11/2026 (invoice-7600825749)")
+      setFileName("Semana 09/11/2026 - 15/11/2026 (invoice-7600825749 + PDF)")
+      setExcelFileName("invoice-7600825749.xls")
+      setPdfFileName("account_statement_7600825749_1.pdf")
       setPublicidadTotal(881.86)
       setImpuestoTotal(278.02)
       setAjustesTotal(39.66)
@@ -749,11 +801,23 @@ export function PedidosYaModule() {
       setCargosReclamosTotal(0)
       setReintegrosCanceladosTotal(111.00)
       setMontoDepositadoBanco(10595.07)
+      setPdfDataCargado({
+        periodo: "09/11/2026 al 15/11/2026",
+        publicidad: 881.86,
+        impuestos: 278.02,
+        ajustes: 39.66,
+        cancelaciones: 0,
+        reclamos: 0,
+        reintegrosCancelados: 111.00,
+        totalLiquidado: 10595.07,
+      })
       parseCsvText(DEMO_CSV_DATA_NOV_15, 0, 0, 111.00)
       toast.success("Cargada Semana 09/11 al 15/11 (RD$ 10,595.07)")
     } else if (semana === "noviembre") {
       setPresetActivo("noviembre")
-      setFileName("Semana 02/11/2026 - 08/11/2026 (invoice-7600821271)")
+      setFileName("Semana 02/11/2026 - 08/11/2026 (invoice-7600821271 + PDF)")
+      setExcelFileName("invoice-7600821271.xls")
+      setPdfFileName("account_statement_7600821271.pdf")
       setPublicidadTotal(1298.30)
       setImpuestoTotal(343.71)
       setAjustesTotal(15.26)
@@ -761,11 +825,23 @@ export function PedidosYaModule() {
       setCargosReclamosTotal(0)
       setReintegrosCanceladosTotal(0)
       setMontoDepositadoBanco(8959.59)
+      setPdfDataCargado({
+        periodo: "02/11/2026 al 08/11/2026",
+        publicidad: 1298.30,
+        impuestos: 343.71,
+        ajustes: 15.26,
+        cancelaciones: 0,
+        reclamos: 0,
+        reintegrosCancelados: 0,
+        totalLiquidado: 8959.59,
+      })
       parseCsvText(DEMO_CSV_DATA_NOV, 0, 0, 0)
       toast.success("Cargada Semana 02/11 al 08/11 (RD$ 8,959.59)")
     } else {
       setPresetActivo("octubre")
-      setFileName("Semana 26/10/2026 - 01/11/2026 (invoice-7600816629)")
+      setFileName("Semana 26/10/2026 - 01/11/2026 (invoice-7600816629 + PDF)")
+      setExcelFileName("invoice-7600816629.xls")
+      setPdfFileName("account_statement_7600816629.pdf")
       setPublicidadTotal(1078.96)
       setImpuestoTotal(364.15)
       setAjustesTotal(29.17)
@@ -773,6 +849,16 @@ export function PedidosYaModule() {
       setCargosReclamosTotal(13.00)
       setReintegrosCanceladosTotal(260.00)
       setMontoDepositadoBanco(7044.86)
+      setPdfDataCargado({
+        periodo: "26/10/2026 al 01/11/2026",
+        publicidad: 1078.96,
+        impuestos: 364.15,
+        ajustes: 29.17,
+        cancelaciones: 412.70,
+        reclamos: 13.00,
+        reintegrosCancelados: 260.00,
+        totalLiquidado: 7044.86,
+      })
       parseCsvText(DEMO_CSV_DATA_OCT, 412.70, 13.00, 260.00)
       toast.success("Cargada Semana 26/10 al 01/11 (RD$ 7,044.86)")
     }
@@ -950,6 +1036,30 @@ export function PedidosYaModule() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+      {/* File inputs centralizados y siempre disponibles */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".xlsx,.xls,.csv,.tsv,.pdf"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      <input
+        ref={excelInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv,.tsv"
+        onChange={handleExcelUploadDirect}
+        className="hidden"
+      />
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handlePdfUploadDirect}
+        className="hidden"
+      />
+
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
@@ -1054,23 +1164,99 @@ export function PedidosYaModule() {
         {/* PESTAÑA 1: RESUMEN FINANCIERO */}
         <TabsContent value="resumen" className="flex flex-col gap-6 mt-6">
           {pedidos.length === 0 ? (
-            <Card className="border-2 border-dashed border-border p-10 md:p-14 text-center bg-card shadow-sm">
-              <div className="flex flex-col items-center justify-center max-w-md mx-auto">
-                <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <FileSpreadsheet className="size-8 text-primary" />
+            pdfDataCargado ? (
+              <Card
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setIsDragging(true)
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setIsDragging(false)
+                  const files = Array.from(e.dataTransfer.files || [])
+                  processFiles(files)
+                }}
+                className={`border-2 border-dashed transition-all p-10 md:p-14 text-center bg-card shadow-sm ${
+                  isDragging ? "border-primary bg-primary/10" : "border-emerald-500/40"
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                  <div className="size-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
+                    <FileText className="size-8" />
+                  </div>
+                  <Badge variant="outline" className="mb-2 bg-emerald-500/10 text-emerald-600 border-emerald-300 text-xs">
+                    Estado de Cuenta PDF Detectado
+                  </Badge>
+                  <h3 className="text-xl font-heading font-semibold text-foreground">
+                    Depósito: {currency(pdfDataCargado.totalLiquidado)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2 mb-6">
+                    El monto transferido al banco está listo. Ahora solo falta el archivo <strong>Excel de pedidos (.xls)</strong> para distribuir este depósito exacto entre Alma Rosa y Los Jardines.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button
+                      onClick={() => excelInputRef.current?.click()}
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <FileSpreadsheet className="size-4" />
+                      Subir Excel de Pedidos (.xls)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab("cargar")}
+                      className="gap-2"
+                    >
+                      Ver panel de carga
+                    </Button>
+                  </div>
                 </div>
-                <h3 className="text-xl font-heading font-semibold text-foreground">
-                  No hay ningún documento cargado
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2 mb-6">
-                  Sube el archivo Excel semanal de PedidosYa o pega los datos para calcular la liquidación neta de cada sucursal. Los datos se procesan en memoria; si recargas la página o haces clic en "Limpiar datos", se borran.
-                </p>
-                <Button onClick={() => setActiveTab("cargar")} className="gap-2">
-                  <Upload className="size-4" />
-                  Ir a Cargar Archivo Excel
-                </Button>
-              </div>
-            </Card>
+              </Card>
+            ) : (
+              <Card
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setIsDragging(true)
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setIsDragging(false)
+                  const files = Array.from(e.dataTransfer.files || [])
+                  processFiles(files)
+                }}
+                className={`border-2 border-dashed transition-all p-10 md:p-14 text-center bg-card shadow-sm ${
+                  isDragging ? "border-primary bg-primary/10" : "border-border"
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                  <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Upload className="size-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-heading font-semibold text-foreground">
+                    {isDragging ? "¡Suelta tus archivos aquí!" : "No hay ningún documento cargado"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2 mb-6">
+                    Arrastra aquí tu <strong>Excel de pedidos (.xls)</strong> y tu <strong>Estado de Cuenta (.pdf)</strong> juntos, o haz clic en el botón para seleccionarlos.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Upload className="size-4" />
+                      Seleccionar Archivos (Excel / PDF)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab("cargar")}
+                    >
+                      Ir al Panel de Carga
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )
           ) : (
             <>
               {/* Tarjetas Principales de Ganancia */}
@@ -1265,13 +1451,6 @@ export function PedidosYaModule() {
                     <FileText className="size-3.5" />
                     Auto-llenar con PDF
                   </Button>
-                  <input
-                    ref={pdfInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handlePdfUploadDirect}
-                    className="hidden"
-                  />
                   <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-300 w-fit">
                     Total Cargos Globales: -{currency(liquidacion.totalCargosGlobales)}
                   </Badge>
@@ -1847,103 +2026,286 @@ export function PedidosYaModule() {
 
         {/* PESTAÑA 3: CARGAR DATOS */}
         <TabsContent value="cargar" className="flex flex-col gap-6 mt-6">
-          {pedidos.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-foreground">
-              <div className="flex items-center gap-2.5">
-                <FileSpreadsheet className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          {/* Indicador de los 2 Documentos Requeridos */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Documento 1: Excel de Pedidos */}
+            <div
+              className={`p-4 rounded-xl border transition-all ${
+                excelFileName || pedidos.length > 0
+                  ? "border-emerald-500/40 bg-emerald-500/10"
+                  : "border-border bg-card"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      excelFileName || pedidos.length > 0
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <FileSpreadsheet className="size-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm">1. Excel de Pedidos (.xls)</p>
+                      {excelFileName || pedidos.length > 0 ? (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-400/50">
+                          Listo
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+                          Pendiente
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">
+                      {excelFileName || pedidos.length > 0
+                        ? `${excelFileName || "Archivo cargado"} (${pedidos.length} pedidos)`
+                        : "Contiene las ventas y pedidos por sucursal"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant={excelFileName || pedidos.length > 0 ? "outline" : "default"}
+                    size="sm"
+                    className="h-8 text-xs shrink-0"
+                    onClick={() => excelInputRef.current?.click()}
+                  >
+                    {excelFileName || pedidos.length > 0 ? "Cambiar" : "Subir Excel"}
+                  </Button>
+                  {(excelFileName || pedidos.length > 0) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10"
+                      onClick={descartarExcel}
+                      title="Quitar Excel"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Documento 2: PDF Estado de Cuenta */}
+            <div
+              className={`p-4 rounded-xl border transition-all ${
+                pdfDataCargado
+                  ? "border-emerald-500/40 bg-emerald-500/10"
+                  : "border-border bg-card"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      pdfDataCargado
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <FileText className="size-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm">2. Estado de Cuenta (.pdf)</p>
+                      {pdfDataCargado ? (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-400/50">
+                          Listo
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+                          Pendiente
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">
+                      {pdfDataCargado
+                        ? `${pdfFileName || "PDF cargado"} (${currency(pdfDataCargado.totalLiquidado)} en banco)`
+                        : "Contiene el total del banco, publicidad e impuestos"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant={pdfDataCargado ? "outline" : "default"}
+                    size="sm"
+                    className="h-8 text-xs shrink-0"
+                    onClick={() => pdfInputRef.current?.click()}
+                  >
+                    {pdfDataCargado ? "Cambiar" : "Subir PDF"}
+                  </Button>
+                  {pdfDataCargado && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10"
+                      onClick={descartarPdf}
+                      title="Quitar PDF"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Banners Informativos según Estado de Carga */}
+          {pedidos.length > 0 && pdfDataCargado && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div>
                   <p className="font-semibold text-emerald-800 dark:text-emerald-300">
-                    Documento cargado en memoria: {fileName || "Datos procesados"}
+                    ¡Ambos documentos listos y conciliados al 100%!
                   </p>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    {pedidos.length} pedidos conciliados. Si recargas la página o haces clic en Limpiar, se descarta.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {pedidos.length} pedidos conciliados exactamente con el depósito bancario de {currency(pdfDataCargado.totalLiquidado)}.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => setActiveTab("resumen")}
-                  className="h-8 text-xs border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15"
+                  className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
                 >
-                  Ver Resumen
+                  Ver Resumen por Sucursal
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={limpiarDatos}
-                  className="h-8 text-xs border-rose-300 dark:border-rose-900 text-rose-600 hover:bg-rose-500/10 gap-1.5"
+                  className="h-8 text-xs text-rose-500 border-rose-300 dark:border-rose-900 hover:bg-rose-500/10"
                 >
-                  <Trash2 className="size-3.5" />
-                  Borrar / Descartar
+                  <Trash2 className="size-3" />
                 </Button>
               </div>
             </div>
           )}
 
+          {pedidos.length === 0 && pdfDataCargado && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10">
+              <div className="flex items-center gap-3">
+                <FileText className="size-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div>
+                  <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                    Estado de Cuenta PDF cargado: Total {currency(pdfDataCargado.totalLiquidado)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    ¡Excelente! Ahora sube el archivo <strong>Excel de pedidos (.xls)</strong> para dividir este monto entre las sucursales.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => excelInputRef.current?.click()}
+                className="h-8 text-xs gap-1.5 shrink-0"
+              >
+                <Upload className="size-3.5" />
+                Subir Excel de Pedidos
+              </Button>
+            </div>
+          )}
+
+          {pedidos.length > 0 && !pdfDataCargado && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="size-6 text-amber-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-amber-900 dark:text-amber-200">
+                    Excel cargado ({pedidos.length} pedidos) - Falta el PDF del Estado de Cuenta
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sube el PDF para descontar publicidad e impuestos automáticamente, o continúa al resumen para ingresar el depósito a mano.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => pdfInputRef.current?.click()}
+                  className="h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <FileText className="size-3.5" />
+                  Subir PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab("resumen")}
+                  className="h-8 text-xs"
+                >
+                  Ver Resumen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Gran Dropzone Inteligente Multidocumento con soporte Drag & Drop nativo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Opción 1: Subir Archivo */}
             <Card className="border-border">
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <FileSpreadsheet className="size-4 text-emerald-500" />
-                  Opción 1: Subir Archivo Excel o PDF
+                  <Upload className="size-4 text-primary" />
+                  Zona de Carga Rápida (Arrastra tus archivos)
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Sube el archivo Excel semanal con pedidos y penalidades, o el Estado de Cuenta oficial en PDF.
+                  Puedes arrastrar el Excel (.xls) y el PDF del Estado de Cuenta <strong>juntos al mismo tiempo</strong> o de uno en uno.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-8 hover:border-primary/60 transition-colors text-center cursor-pointer relative bg-muted/10">
-                  <Upload className="size-10 text-muted-foreground mb-3" />
-                  <p className="text-sm font-medium text-foreground">
-                    Arrastra tus archivos aquí o haz clic para seleccionar
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Puedes seleccionar el Excel de pedidos (.xls) y el PDF del Estado de Cuenta juntos para conciliación automática al 100%
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".xlsx,.xls,.csv,.tsv,.pdf"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                </div>
-
-                {fileName && (
-                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border">
-                    <span className="truncate max-w-[240px]">Archivo: <strong>{fileName}</strong></span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 gap-1"
-                      onClick={limpiarDatos}
-                    >
-                      <Trash2 className="size-3" />
-                      Descartar
-                    </Button>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setIsDragging(true)
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDragging(false)
+                    const files = Array.from(e.dataTransfer.files || [])
+                    processFiles(files)
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                    isDragging
+                      ? "border-primary bg-primary/10 scale-[1.01]"
+                      : "border-border/80 bg-muted/10 hover:border-primary/60 hover:bg-muted/20"
+                  }`}
+                >
+                  <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 text-primary">
+                    <Upload className="size-6" />
                   </div>
-                )}
+                  <p className="text-sm font-semibold text-foreground">
+                    {isDragging ? "¡Suelta los archivos aquí!" : "Arrastra aquí tus archivos de PedidosYa"}
+                  </p>
+                  <p className="text-xs text-muted-foreground max-w-sm mt-1">
+                    Admite <strong>.xls, .xlsx</strong> y <strong>.pdf</strong> juntos. También puedes hacer clic para buscar en tu equipo.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
             {/* Opción 2: Pegar Texto Directo */}
             <Card className="border-border">
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <ClipboardPaste className="size-4 text-blue-500" />
-                  Opción 2: Pegar Datos de Excel (Copiar y Pegar)
+                  Opción Alternativa: Pegar Datos de Excel
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Abre tu Excel de PedidosYa, selecciona las celdas (o Ctrl+A), copia (Ctrl+C) y pégalas aquí.
+                  Si prefieres copiar celdas: abre tu Excel, copia (Ctrl+C) y pégalas aquí.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <textarea
-                  className="w-full h-44 p-3 rounded-lg border border-input bg-background text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full h-32 p-3 rounded-lg border border-input bg-background text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Pega aquí las filas copiadas desde Excel..."
                   value={pasteData}
                   onChange={(e) => setPasteData(e.target.value)}
@@ -1956,10 +2318,11 @@ export function PedidosYaModule() {
                     }
                     parseCsvText(pasteData)
                     setFileName("Datos pegados manualmente")
+                    setExcelFileName("Datos pegados")
                     setPresetActivo("personalizado")
                   }}
                   disabled={!pasteData.trim()}
-                  className="w-full gap-2"
+                  className="w-full gap-2 text-xs h-9"
                 >
                   <CheckCircle2 className="size-4" />
                   Procesar Datos Pegados
