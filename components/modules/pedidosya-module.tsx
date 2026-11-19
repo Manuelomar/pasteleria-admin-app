@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import * as XLSX from "xlsx"
 import {
   FileSpreadsheet,
@@ -22,6 +22,7 @@ import {
   Tag,
   Calendar,
   AlertTriangle,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -168,15 +169,16 @@ function normalizeSucursalName(raw: string): string {
 }
 
 export function PedidosYaModule() {
-  const [activeTab, setActiveTab] = useState<"resumen" | "detalle" | "cargar">("resumen")
+  const [activeTab, setActiveTab] = useState<"resumen" | "detalle" | "cargar">("cargar")
   const [pasteData, setPasteData] = useState("")
-  const [fileName, setFileName] = useState<string>("Semana 02/11/2026 - 08/11/2026 (invoice-7600821271)")
-  const [presetActivo, setPresetActivo] = useState<"noviembre" | "octubre" | "personalizado">("noviembre")
+  const [fileName, setFileName] = useState<string>("")
+  const [presetActivo, setPresetActivo] = useState<"noviembre" | "octubre" | "personalizado" | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Parámetros del PDF (Estado de cuenta oficial de PedidosYa)
-  const [publicidadTotal, setPublicidadTotal] = useState<number>(1298.30)
-  const [impuestoTotal, setImpuestoTotal] = useState<number>(343.71)
-  const [ajustesTotal, setAjustesTotal] = useState<number>(15.26)
+  const [publicidadTotal, setPublicidadTotal] = useState<number>(0)
+  const [impuestoTotal, setImpuestoTotal] = useState<number>(0)
+  const [ajustesTotal, setAjustesTotal] = useState<number>(0)
   const [cargosCancelarTotal, setCargosCancelarTotal] = useState<number>(0)
   const [cargosReclamosTotal, setCargosReclamosTotal] = useState<number>(0)
   const [reintegrosCanceladosTotal, setReintegrosCanceladosTotal] = useState<number>(0)
@@ -190,6 +192,24 @@ export function PedidosYaModule() {
 
   // Filas parseadas de pedidos
   const [pedidos, setPedidos] = useState<PedidoYaRow[]>([])
+
+  const limpiarDatos = () => {
+    setPedidos([])
+    setFileName("")
+    setPresetActivo(null)
+    setPasteData("")
+    setPublicidadTotal(0)
+    setImpuestoTotal(0)
+    setAjustesTotal(0)
+    setCargosCancelarTotal(0)
+    setCargosReclamosTotal(0)
+    setReintegrosCanceladosTotal(0)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+    setActiveTab("cargar")
+    toast.info("Documento eliminado. La pantalla está limpia.")
+  }
 
   const parseCsvText = (
     text: string,
@@ -377,6 +397,7 @@ export function PedidosYaModule() {
       }
       reader.readAsText(file)
     }
+    e.target.value = ""
   }
 
   const cargarPreset = (semana: "noviembre" | "octubre") => {
@@ -404,11 +425,6 @@ export function PedidosYaModule() {
       toast.success("Cargada Semana 26/10 al 01/11 (RD$ 7,044.86)")
     }
   }
-
-  // Cargar demo inicial
-  useEffect(() => {
-    cargarPreset("noviembre")
-  }, [])
 
   // Agrupación y liquidación calculada
   const liquidacion: LiquidacionResumen = useMemo(() => {
@@ -588,49 +604,47 @@ export function PedidosYaModule() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector Rápido de Semanas Registradas */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg border text-xs">
-            <span className="text-muted-foreground px-2 font-medium flex items-center gap-1">
-              <Calendar className="size-3.5" />
-              Semanas:
-            </span>
-            <Button
-              variant={presetActivo === "octubre" ? "default" : "ghost"}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => cargarPreset("octubre")}
-            >
-              26/10 - 01/11 (RD$ 7,044.86)
-            </Button>
-            <Button
-              variant={presetActivo === "noviembre" ? "default" : "ghost"}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => cargarPreset("noviembre")}
-            >
-              02/11 - 08/11 (RD$ 8,959.59)
-            </Button>
-          </div>
+          {pedidos.length > 0 && (
+            <>
+              <Badge variant="outline" className="hidden sm:inline-flex bg-muted/50 text-foreground font-normal text-xs py-1 px-2.5 gap-1.5 max-w-[260px] truncate">
+                <FileSpreadsheet className="size-3.5 text-emerald-500 shrink-0" />
+                <span className="truncate">{fileName || "Documento en memoria"}</span>
+              </Badge>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={limpiarDatos}
+                className="gap-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-300 dark:border-rose-900"
+                title="Eliminar documento cargado y reiniciar pantalla"
+              >
+                <Trash2 className="size-3.5" />
+                Limpiar datos
+              </Button>
+            </>
+          )}
 
           <Button
-            variant="outline"
+            variant={pedidos.length === 0 ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveTab("cargar")}
             className="gap-2"
           >
             <Upload className="size-4" />
-            Cargar / Pegar
+            {pedidos.length === 0 ? "Cargar Archivo Excel" : "Cargar otro"}
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="gap-2 print:hidden"
-          >
-            <Printer className="size-4" />
-            Imprimir
-          </Button>
+          {pedidos.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="gap-2 print:hidden"
+            >
+              <Printer className="size-4" />
+              Imprimir
+            </Button>
+          )}
         </div>
       </div>
 
@@ -646,7 +660,27 @@ export function PedidosYaModule() {
 
         {/* PESTAÑA 1: RESUMEN FINANCIERO */}
         <TabsContent value="resumen" className="flex flex-col gap-6 mt-6">
-          {/* Tarjetas Principales de Ganancia */}
+          {pedidos.length === 0 ? (
+            <Card className="border-2 border-dashed border-border p-10 md:p-14 text-center bg-card shadow-sm">
+              <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <FileSpreadsheet className="size-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-heading font-semibold text-foreground">
+                  No hay ningún documento cargado
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2 mb-6">
+                  Sube el archivo Excel semanal de PedidosYa o pega los datos para calcular la liquidación neta de cada sucursal. Los datos se procesan en memoria; si recargas la página o haces clic en "Limpiar datos", se borran.
+                </p>
+                <Button onClick={() => setActiveTab("cargar")} className="gap-2">
+                  <Upload className="size-4" />
+                  Ir a Cargar Archivo Excel
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <>
+              {/* Tarjetas Principales de Ganancia */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="border-primary/40 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
               <CardHeader className="pb-2">
@@ -1142,11 +1176,33 @@ export function PedidosYaModule() {
               </Table>
             </CardContent>
           </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* PESTAÑA 2: DETALLE DE PEDIDOS */}
         <TabsContent value="detalle" className="flex flex-col gap-4 mt-6">
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          {pedidos.length === 0 ? (
+            <Card className="border-2 border-dashed border-border p-10 md:p-14 text-center bg-card shadow-sm">
+              <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <FileSpreadsheet className="size-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-heading font-semibold text-foreground">
+                  No hay pedidos para mostrar
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2 mb-6">
+                  Carga un archivo Excel de liquidación para ver el listado detallado de cada pedido y sus comisiones.
+                </p>
+                <Button onClick={() => setActiveTab("cargar")} className="gap-2">
+                  <Upload className="size-4" />
+                  Cargar Archivo Excel
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
@@ -1284,10 +1340,47 @@ export function PedidosYaModule() {
               </Button>
             </div>
           </div>
+            </>
+          )}
         </TabsContent>
 
         {/* PESTAÑA 3: CARGAR DATOS */}
         <TabsContent value="cargar" className="flex flex-col gap-6 mt-6">
+          {pedidos.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-foreground">
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div>
+                  <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                    Documento cargado en memoria: {fileName || "Datos procesados"}
+                  </p>
+                  <p className="text-muted-foreground text-[11px] mt-0.5">
+                    {pedidos.length} pedidos conciliados. Si recargas la página o haces clic en Limpiar, se descarta.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab("resumen")}
+                  className="h-8 text-xs border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15"
+                >
+                  Ver Resumen
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={limpiarDatos}
+                  className="h-8 text-xs border-rose-300 dark:border-rose-900 text-rose-600 hover:bg-rose-500/10 gap-1.5"
+                >
+                  <Trash2 className="size-3.5" />
+                  Borrar / Descartar
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Opción 1: Subir Archivo */}
             <Card className="border-border">
@@ -1310,6 +1403,7 @@ export function PedidosYaModule() {
                     Formatos admitidos: .xlsx, .xls, .csv, .tsv
                   </p>
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept=".xlsx,.xls,.csv,.tsv"
                     onChange={handleFileUpload}
@@ -1317,29 +1411,20 @@ export function PedidosYaModule() {
                   />
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Archivo en uso: <strong>{fileName}</strong></span>
-                  <div className="flex gap-1">
+                {fileName && (
+                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border">
+                    <span className="truncate max-w-[240px]">Archivo: <strong>{fileName}</strong></span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1 text-primary text-xs"
-                      onClick={() => cargarPreset("octubre")}
+                      className="h-7 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 gap-1"
+                      onClick={limpiarDatos}
                     >
-                      <RotateCcw className="size-3.5" />
-                      Sem. 26/10
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 text-primary text-xs"
-                      onClick={() => cargarPreset("noviembre")}
-                    >
-                      <RotateCcw className="size-3.5" />
-                      Sem. 02/11
+                      <Trash2 className="size-3" />
+                      Descartar
                     </Button>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1379,6 +1464,32 @@ export function PedidosYaModule() {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Opcional: Cargar Datos de Prueba */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-dashed bg-muted/20 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="size-4 shrink-0 text-primary" />
+              <span>¿Deseas probar la calculadora con un archivo de prueba anterior?</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => cargarPreset("octubre")}
+              >
+                Cargar Sem. 26/10 (RD$ 7,044.86)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => cargarPreset("noviembre")}
+              >
+                Cargar Sem. 02/11 (RD$ 8,959.59)
+              </Button>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
