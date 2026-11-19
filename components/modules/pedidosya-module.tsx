@@ -212,22 +212,21 @@ function parsePedidosYaPdf(uint8Array: Uint8Array): ParsedPdfResult {
     const streamSlice = uint8Array.subarray(dStart, sEnd)
     try {
       const decompressed = pako.inflate(streamSlice)
-      let str = ""
-      for (let i = 0; i < decompressed.length; i++) {
-        str += String.fromCharCode(decompressed[i])
-      }
-      const tjRegex = /\((.*?)\)\s*Tj/g
-      let m: RegExpExecArray | null
-      while ((m = tjRegex.exec(str)) !== null) {
-        let val = m[1]
-        val = val
-          .replace(/\\355/g, "í")
-          .replace(/\\363/g, "ó")
-          .replace(/\\341/g, "á")
-          .replace(/\\351/g, "é")
-          .replace(/\\372/g, "ú")
-          .replace(/\\361/g, "ñ")
-        fullText += val + "\n"
+      if (decompressed.length <= 80000) {
+        const str = new TextDecoder("latin1").decode(decompressed)
+        const tjRegex = /\((.*?)\)\s*Tj/g
+        let m: RegExpExecArray | null
+        while ((m = tjRegex.exec(str)) !== null) {
+          let val = m[1]
+          val = val
+            .replace(/\\355/g, "í")
+            .replace(/\\363/g, "ó")
+            .replace(/\\341/g, "á")
+            .replace(/\\351/g, "é")
+            .replace(/\\372/g, "ú")
+            .replace(/\\361/g, "ñ")
+          fullText += val + "\n"
+        }
       }
     } catch {
       // no es un flujo deflate
@@ -288,6 +287,7 @@ export function PedidosYaModule() {
   const [presetActivo, setPresetActivo] = useState<"noviembre" | "octubre" | "personalizado" | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const [pdfDataCargado, setPdfDataCargado] = useState<ParsedPdfResult | null>(null)
   
   // Parámetros del PDF (Estado de cuenta oficial de PedidosYa)
   const [publicidadTotal, setPublicidadTotal] = useState<number>(0)
@@ -318,6 +318,7 @@ export function PedidosYaModule() {
     setCargosCancelarTotal(0)
     setCargosReclamosTotal(0)
     setReintegrosCanceladosTotal(0)
+    setPdfDataCargado(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -491,6 +492,7 @@ export function PedidosYaModule() {
         const buffer = evt.target?.result as ArrayBuffer
         if (!buffer) return
         const pdfData = parsePedidosYaPdf(new Uint8Array(buffer))
+        setPdfDataCargado(pdfData)
 
         if (pdfData.publicidad > 0) setPublicidadTotal(pdfData.publicidad)
         if (pdfData.impuestos > 0) setImpuestoTotal(pdfData.impuestos)
@@ -593,10 +595,16 @@ export function PedidosYaModule() {
             }
           }
 
-          // Limpiar cargos de publicidad/impuestos de semanas anteriores para no contaminar
-          setPublicidadTotal(0)
-          setImpuestoTotal(0)
-          setAjustesTotal(0)
+          // Aplicar cargos del PDF si ya se había subido, o limpiar si es una nueva carga
+          if (pdfDataCargado) {
+            setPublicidadTotal(pdfDataCargado.publicidad)
+            setImpuestoTotal(pdfDataCargado.impuestos)
+            setAjustesTotal(pdfDataCargado.ajustes)
+          } else {
+            setPublicidadTotal(0)
+            setImpuestoTotal(0)
+            setAjustesTotal(0)
+          }
           setCargosCancelarTotal(detectedCancelar)
           setCargosReclamosTotal(detectedReclamos)
           setReintegrosCanceladosTotal(detectedReintegros)
@@ -916,7 +924,7 @@ export function PedidosYaModule() {
             <Card className="border-primary/40 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 || liquidacion.totalCargosGlobales !== 0
+                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0
                     ? "Total Liquidado Banco (PDF)"
                     : "Margen Directo de Pedidos"}
                 </CardDescription>
@@ -927,13 +935,13 @@ export function PedidosYaModule() {
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2 mt-2">
                   <span>{liquidacion.totalPedidos} pedidos en la semana</span>
-                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 || liquidacion.totalCargosGlobales !== 0 ? (
+                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 ? (
                     <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300">
                       Conciliado 100% con PDF
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-300">
-                      Margen Directo (Falta PDF)
+                      Falta Estado de Cuenta (PDF)
                     </Badge>
                   )}
                 </div>
