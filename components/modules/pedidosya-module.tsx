@@ -297,6 +297,7 @@ export function PedidosYaModule() {
   const [cargosReclamosTotal, setCargosReclamosTotal] = useState<number>(0)
   const [reintegrosCanceladosTotal, setReintegrosCanceladosTotal] = useState<number>(0)
   const [metodoDistribucion, setMetodoDistribucion] = useState<"ventas" | "igualitario" | "pedidos">("ventas")
+  const [montoDepositadoBanco, setMontoDepositadoBanco] = useState<number | "">("")
 
   // Filtros de tabla de detalle
   const [filtroSucursal, setFiltroSucursal] = useState<string>("todas")
@@ -318,6 +319,7 @@ export function PedidosYaModule() {
     setCargosCancelarTotal(0)
     setCargosReclamosTotal(0)
     setReintegrosCanceladosTotal(0)
+    setMontoDepositadoBanco("")
     setPdfDataCargado(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -500,6 +502,7 @@ export function PedidosYaModule() {
         if (pdfData.cancelaciones > 0) setCargosCancelarTotal(pdfData.cancelaciones)
         if (pdfData.reclamos > 0) setCargosReclamosTotal(pdfData.reclamos)
         if (pdfData.reintegrosCancelados > 0) setReintegrosCanceladosTotal(pdfData.reintegrosCancelados)
+        if (pdfData.totalLiquidado > 0) setMontoDepositadoBanco(pdfData.totalLiquidado)
 
         const infoPeriodo = pdfData.periodo ? ` (${pdfData.periodo})` : ""
         toast.success(
@@ -649,6 +652,7 @@ export function PedidosYaModule() {
       setCargosCancelarTotal(0)
       setCargosReclamosTotal(0)
       setReintegrosCanceladosTotal(0)
+      setMontoDepositadoBanco(8959.59)
       parseCsvText(DEMO_CSV_DATA_NOV, 0, 0, 0)
       toast.success("Cargada Semana 02/11 al 08/11 (RD$ 8,959.59)")
     } else {
@@ -660,6 +664,7 @@ export function PedidosYaModule() {
       setCargosCancelarTotal(412.70)
       setCargosReclamosTotal(13.00)
       setReintegrosCanceladosTotal(260.00)
+      setMontoDepositadoBanco(7044.86)
       parseCsvText(DEMO_CSV_DATA_OCT, 412.70, 13.00, 260.00)
       toast.success("Cargada Semana 26/10 al 01/11 (RD$ 7,044.86)")
     }
@@ -735,6 +740,9 @@ export function PedidosYaModule() {
     const numSucursales = sucursalesKeys.length || 1
 
     // 2. Cargos globales netos del estado de cuenta PDF
+    const totalMOD = totalVentasNetas - totalComisiones - totalPlus + totalReintegros
+    const tieneMontoManual = typeof montoDepositadoBanco === "number" && montoDepositadoBanco > 0
+
     const totalCargosGlobales =
       publicidadTotal +
       impuestoTotal +
@@ -742,6 +750,11 @@ export function PedidosYaModule() {
       cargosReclamosTotal -
       ajustesTotal -
       reintegrosCanceladosTotal
+
+    // Si el usuario especificó directamente el monto depositado en el banco, la deducción global se ajusta para cuadrar exacto
+    const deduccionEfectiva = tieneMontoManual
+      ? totalMOD - montoDepositadoBanco
+      : totalCargosGlobales
 
     // 3. Prorrateo de gastos generales
     for (const key of sucursalesKeys) {
@@ -764,13 +777,14 @@ export function PedidosYaModule() {
       s.cargosCancelar = cargosCancelarTotal * ratioDistribucion
       s.cargosReclamos = cargosReclamosTotal * ratioDistribucion
       s.reintegrosCancelados = reintegrosCanceladosTotal * ratioDistribucion
-      s.totalCargosGlobales = totalCargosGlobales * ratioDistribucion
+      s.totalCargosGlobales = deduccionEfectiva * ratioDistribucion
 
       s.gananciaNeta = s.margenOperativo - s.totalCargosGlobales
     }
 
-    const totalLiquidado =
-      totalVentasNetas - totalComisiones - totalPlus + totalReintegros - totalCargosGlobales
+    const totalLiquidado = tieneMontoManual
+      ? montoDepositadoBanco
+      : totalMOD - totalCargosGlobales
 
     return {
       fechaCarga: new Date().toISOString(),
@@ -787,7 +801,7 @@ export function PedidosYaModule() {
       totalCargosCancelar: cargosCancelarTotal,
       totalCargosReclamos: cargosReclamosTotal,
       totalReintegrosCancelados: reintegrosCanceladosTotal,
-      totalCargosGlobales,
+      totalCargosGlobales: deduccionEfectiva,
       totalLiquidado,
       metodoDistribucion,
       porSucursal,
@@ -802,6 +816,7 @@ export function PedidosYaModule() {
     cargosReclamosTotal,
     reintegrosCanceladosTotal,
     metodoDistribucion,
+    montoDepositadoBanco,
   ])
 
   // Filtrado de pedidos
@@ -923,27 +938,46 @@ export function PedidosYaModule() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="border-primary/40 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
               <CardHeader className="pb-2">
-                <CardDescription className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0
-                    ? "Total Liquidado Banco (PDF)"
-                    : "Margen Directo de Pedidos"}
-                </CardDescription>
-                <CardTitle className="text-3xl md:text-4xl font-heading font-bold text-foreground">
-                  {currency(liquidacion.totalLiquidado)}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardDescription className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    Total Liquidado Banco (PDF)
+                  </CardDescription>
+                  {typeof montoDepositadoBanco === "number" && montoDepositadoBanco > 0 ? (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 text-[10px]">
+                      Conciliado 100%
+                    </Badge>
+                  ) : liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 ? (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 text-[10px]">
+                      Conciliado con PDF
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-300 text-[10px]">
+                      Directo de Pedidos
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-2xl md:text-3xl font-heading font-bold text-foreground">RD$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Monto depositado"
+                    value={montoDepositadoBanco !== "" ? montoDepositadoBanco : (liquidacion.totalLiquidado > 0 ? Number(liquidacion.totalLiquidado.toFixed(2)) : "")}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? "" : parseFloat(e.target.value)
+                      setMontoDepositadoBanco(val)
+                    }}
+                    className="text-2xl md:text-3xl font-heading font-bold h-11 w-full max-w-[240px] bg-background/70 border-primary/40 focus-visible:ring-primary"
+                    title="Ingresa aquí el total depositado por PedidosYa para dividirlo automáticamente entre las sucursales"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2 mt-2">
                   <span>{liquidacion.totalPedidos} pedidos en la semana</span>
-                  {liquidacion.totalPublicidad > 0 || liquidacion.totalImpuestos > 0 ? (
-                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300">
-                      Conciliado 100% con PDF
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-300">
-                      Falta Estado de Cuenta (PDF)
-                    </Badge>
-                  )}
+                  <span className="text-[11px] text-muted-foreground">
+                    Ajusta el monto del banco aquí para recalcular
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -1007,16 +1041,16 @@ export function PedidosYaModule() {
           </div>
 
           {/* Alerta si falta conciliar los cargos del PDF */}
-          {liquidacion.totalPublicidad === 0 && liquidacion.totalImpuestos === 0 && pedidos.length > 0 && (
+          {(montoDepositadoBanco === "" || montoDepositadoBanco === 0) && liquidacion.totalPublicidad === 0 && liquidacion.totalImpuestos === 0 && pedidos.length > 0 && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200">
               <div className="flex items-center gap-2.5">
                 <AlertCircle className="size-5 text-amber-600 shrink-0" />
                 <div>
                   <p className="font-semibold">
-                    Mostrando Margen Directo de Pedidos ({currency(liquidacion.totalLiquidado)})
+                    ¿Cuánto te depositó PedidosYa en el banco?
                   </p>
                   <p className="text-muted-foreground text-[11px] mt-0.5">
-                    El archivo Excel contiene los pedidos pero no incluye Publicidad e Impuestos. Para cuadrar con el depósito real del banco, ingresa los valores abajo o sube tu Estado de Cuenta en PDF.
+                    Escribe arriba en la tarjeta el monto depositado (ej. 10,595.07) o sube tu PDF para dividirlo automáticamente entre Alma Rosa y Los Jardines.
                   </p>
                 </div>
               </div>
