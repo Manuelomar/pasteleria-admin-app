@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Cake, Package, ShoppingCart } from "lucide-react"
+import { Search, Cake, Package, ShoppingCart, MapPin } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,17 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TipoBadge } from "@/components/badges"
 import { currency, type Producto, type Tipo } from "@/types"
 import { api } from "@/services"
+import type { SucursalPublica } from "@/services/sucursales.service"
 import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
 import { API_URL } from "@/services/api.config"
@@ -25,6 +33,9 @@ export function MenuPublicoModule() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
   const [isNavigating, setIsNavigating] = useState(false)
+  const [sucursales, setSucursales] = useState<SucursalPublica[]>([])
+  const [sucursalId, setSucursalId] = useState<string>("")
+  const [loadingSucursales, setLoadingSucursales] = useState(true)
   const router = useRouter()
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -32,11 +43,49 @@ export function MenuPublicoModule() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
+  // Cargar sucursales públicas al inicio y seleccionar Alma Rosa por defecto
+  useEffect(() => {
+    let isMounted = true
+    api.sucursales
+      .getPublic()
+      .then((list) => {
+        if (!isMounted) return
+        const sorted = [...list].sort((a, b) => {
+          const aIsAlma = a.codigo?.toUpperCase() === "AR" || a.nombre.toLowerCase().includes("alma rosa")
+          const bIsAlma = b.codigo?.toUpperCase() === "AR" || b.nombre.toLowerCase().includes("alma rosa")
+          if (aIsAlma && !bIsAlma) return -1
+          if (!aIsAlma && bIsAlma) return 1
+          return a.nombre.localeCompare(b.nombre)
+        })
+        setSucursales(sorted)
+        if (sorted.length > 0) {
+          setSucursalId(sorted[0].id)
+        }
+      })
+      .catch((err) => {
+        console.error("Error cargando sucursales:", err)
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSucursales(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const loadProductos = () => {
+    if (loadingSucursales) return
     setIsLoadingData(true)
     Promise.all([
-      api.productos.getPublicPaged(currentPage, pageSize, search, tipo as any),
-      new Promise(resolve => setTimeout(resolve, 800)) // pequeña demora para mostrar loader suave
+      api.productos.getPublicPaged(
+        currentPage,
+        pageSize,
+        search,
+        tipo as any,
+        undefined,
+        sucursalId || undefined
+      ),
+      new Promise((resolve) => setTimeout(resolve, 400))
     ])
       .then(([res]) => {
         setFetchedProductos(res.data)
@@ -52,7 +101,7 @@ export function MenuPublicoModule() {
 
   useEffect(() => {
     loadProductos()
-  }, [currentPage, search, tipo])
+  }, [currentPage, search, tipo, sucursalId, loadingSucursales])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -124,6 +173,33 @@ export function MenuPublicoModule() {
           
           {/* Barra de Filtros */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {/* Filtro por Sucursal */}
+            {sucursales.length > 0 && (
+              <div className="w-full sm:w-[250px] shrink-0">
+                <Select
+                  value={sucursalId}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setSucursalId(val)
+                      setCurrentPage(1)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <SelectValue placeholder="Sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

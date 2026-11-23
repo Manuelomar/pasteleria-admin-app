@@ -1,10 +1,16 @@
-import { fetchAPI } from './api.config';
+import { fetchAPI, fetchPublicAPI } from './api.config';
 import { Sucursal, CreateSucursalInput, UpdateSucursalInput } from '@/types';
+
+export type SucursalPublica = Pick<Sucursal, 'id' | 'nombre' | 'codigo'>
 
 export const sucursalesService = {
   getAll: async (includeInactivas = false): Promise<Sucursal[]> => {
     const query = includeInactivas ? '?includeInactivas=true' : '';
     return fetchAPI(`/sucursales${query}`);
+  },
+
+  getPublic: async (): Promise<SucursalPublica[]> => {
+    return fetchPublicAPI('/sucursales/public');
   },
 
   getById: async (id: string): Promise<Sucursal> => {

@@ -3,11 +3,20 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/services'
 import { type Producto } from '@/types'
+import type { SucursalPublica } from '@/services/sucursales.service'
 import { OrdenProductGrid } from './OrdenProductGrid'
 import { OrdenSummary } from './OrdenSummary'
 import { toast } from 'sonner'
 import { Loader } from '@/components/ui/loader'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { MapPin } from 'lucide-react'
 import { AppPagination } from '@/components/ui/app-pagination'
 
 export type CartItem = {
@@ -20,15 +29,50 @@ export function OrdenBuilder() {
   const [isLoading, setIsLoading] = useState(true)
   const [cart, setCart] = useState<Record<string, CartItem>>({})
   const [tipoFiltro, setTipoFiltro] = useState<string>('todos')
+  const [sucursales, setSucursales] = useState<SucursalPublica[]>([])
+  const [sucursalId, setSucursalId] = useState<string>('')
+  const [loadingSucursales, setLoadingSucursales] = useState(true)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(12)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
+  // Cargar sucursales públicas al inicio y seleccionar Alma Rosa por defecto
   useEffect(() => {
+    let isMounted = true
+    api.sucursales
+      .getPublic()
+      .then((list) => {
+        if (!isMounted) return
+        const sorted = [...list].sort((a, b) => {
+          const aIsAlma = a.codigo?.toUpperCase() === 'AR' || a.nombre.toLowerCase().includes('alma rosa')
+          const bIsAlma = b.codigo?.toUpperCase() === 'AR' || b.nombre.toLowerCase().includes('alma rosa')
+          if (aIsAlma && !bIsAlma) return -1
+          if (!aIsAlma && bIsAlma) return 1
+          return a.nombre.localeCompare(b.nombre)
+        })
+        setSucursales(sorted)
+        if (sorted.length > 0) {
+          setSucursalId(sorted[0].id)
+        }
+      })
+      .catch((err) => {
+        console.error('Error cargando sucursales:', err)
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSucursales(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loadingSucursales) return
     setIsLoading(true)
-    api.productos.getPublicPaged(currentPage, pageSize, '', tipoFiltro)
+    api.productos
+      .getPublicPaged(currentPage, pageSize, '', tipoFiltro, undefined, sucursalId || undefined)
       .then((res) => {
         setProductos(res.data)
         setTotalItems(res.total)
@@ -36,7 +80,7 @@ export function OrdenBuilder() {
       })
       .catch(() => toast.error('Error cargando los productos'))
       .finally(() => setIsLoading(false))
-  }, [currentPage, pageSize, tipoFiltro])
+  }, [currentPage, pageSize, tipoFiltro, sucursalId, loadingSucursales])
 
   const handleUpdateQuantity = (producto: Producto, delta: number) => {
     setCart((prev) => {
@@ -81,17 +125,43 @@ export function OrdenBuilder() {
         </p>
       </header>
 
-      <div className="mb-6 flex overflow-x-auto pb-2">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <ToggleGroup 
           value={[tipoFiltro]} 
           onValueChange={(val) => { if (val && val.length > 0) setTipoFiltro(val[0]) }} 
-          className="justify-start bg-background p-1 rounded-md shadow-sm border border-input"
+          className="justify-start bg-background p-1 rounded-md shadow-sm border border-input w-fit"
         >
           <ToggleGroupItem value="todos" aria-label="Todos">Todos</ToggleGroupItem>
           <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
           <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
           <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
         </ToggleGroup>
+
+        {sucursales.length > 0 && (
+          <div className="w-full sm:w-[250px] shrink-0">
+            <Select
+              value={sucursalId}
+              onValueChange={(val) => {
+                if (val) {
+                  setSucursalId(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
+                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                <SelectValue placeholder="Sucursal" />
+              </SelectTrigger>
+              <SelectContent>
+                {sucursales.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">

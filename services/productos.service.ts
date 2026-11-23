@@ -37,18 +37,23 @@ export const productosService = {
     pageSize: number,
     search?: string,
     tipo?: string,
-    disponible?: string
+    disponible?: string,
+    sucursalId?: string
   ): Promise<PaginatedResponse<Producto>> => {
     let url = `/productos/public/paged?pageNumber=${page}&pageSize=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tipo && tipo !== 'todos') url += `&tipo=${tipo}`;
     if (disponible) url += `&disponible=${disponible}`;
+    if (sucursalId && sucursalId !== 'todas') url += `&sucursalId=${sucursalId}`;
     return fetchPublicAPI(url).then((res: any) => ({
       ...res,
       data: (res.data || []).map(mapProductoToFrontend)
     }));
   },
-  getPublicAll: (): Promise<Producto[]> => fetchPublicAPI('/productos/public/all').then((list: any[]) => list.map(mapProductoToFrontend)),
+  getPublicAll: (sucursalId?: string): Promise<Producto[]> => {
+    const query = sucursalId && sucursalId !== 'todas' ? `?sucursalId=${sucursalId}` : '';
+    return fetchPublicAPI(`/productos/public/all${query}`).then((list: any[]) => list.map(mapProductoToFrontend));
+  },
   getById: (id: string): Promise<Producto> => fetchAPI(`/productos/${id}`).then(mapProductoToFrontend),
   getUniqueNames: (): Promise<Partial<Producto>[]> => fetchAPI('/productos/unique'),
   create: (data: Partial<Producto>): Promise<Producto> => fetchAPI('/productos', { method: 'POST', body: JSON.stringify(data) }).then(mapProductoToFrontend),
