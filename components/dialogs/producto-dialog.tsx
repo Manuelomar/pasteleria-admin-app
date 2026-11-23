@@ -346,7 +346,7 @@ export function ProductoDialog({
                   />
                 </Field>
               )}
-              {(currentUser?.rol === "admin" || currentUser?.rol === "proveedor" || defaultTipo === 'material') && (
+              {(currentUser?.rol === "admin" || currentUser?.rol === "superadmin" || currentUser?.rol === "proveedor" || defaultTipo === 'material') && (
                 <Field className={defaultTipo === 'material' ? "col-span-1" : ""}>
                   <FieldLabel htmlFor="prod-precio-costo">{defaultTipo === 'material' ? 'Precio' : 'Precio de Costo'}</FieldLabel>
                   <Input
