@@ -43,7 +43,9 @@ export const productosService = {
     let url = `/productos/public/paged?pageNumber=${page}&pageSize=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tipo && tipo !== 'todos') url += `&tipo=${tipo}`;
-    if (disponible) url += `&disponible=${disponible}`;
+    if (disponible && disponible !== 'todos') {
+      url += `&disponible=${disponible === 'disponible' || disponible === 'true' ? 'true' : 'false'}`;
+    }
     if (sucursalId && sucursalId !== 'todas') url += `&sucursalId=${sucursalId}`;
     return fetchPublicAPI(url).then((res: any) => ({
       ...res,

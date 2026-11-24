@@ -30,6 +30,7 @@ import { API_URL } from "@/services/api.config"
 export function MenuPublicoModule() {
   const [search, setSearch] = useState("")
   const [tipo, setTipo] = useState<"productos" | Tipo>("productos")
+  const [disp, setDisp] = useState<"disponible" | "todos" | "no-disponible">("disponible")
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [fetchedProductos, setFetchedProductos] = useState<Producto[]>([])
   const [isNavigating, setIsNavigating] = useState(false)
@@ -82,7 +83,7 @@ export function MenuPublicoModule() {
         pageSize,
         search,
         tipo as any,
-        undefined,
+        disp,
         sucursalId || undefined
       ),
       new Promise((resolve) => setTimeout(resolve, 400))
@@ -101,7 +102,7 @@ export function MenuPublicoModule() {
 
   useEffect(() => {
     loadProductos()
-  }, [currentPage, search, tipo, sucursalId, loadingSucursales])
+  }, [currentPage, search, tipo, disp, sucursalId, loadingSucursales])
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -110,6 +111,11 @@ export function MenuPublicoModule() {
 
   const handleTipoChange = (val: "productos" | Tipo) => {
     setTipo(val)
+    setCurrentPage(1)
+  }
+
+  const handleDispChange = (val: "disponible" | "todos" | "no-disponible") => {
+    setDisp(val)
     setCurrentPage(1)
   }
 
@@ -172,52 +178,88 @@ export function MenuPublicoModule() {
         <div className="mx-auto max-w-6xl space-y-6">
           
           {/* Barra de Filtros */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            {/* Filtro por Sucursal */}
-            {sucursales.length > 0 && (
-              <div className="w-full sm:w-[250px] shrink-0">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Filtro por Sucursal */}
+              {sucursales.length > 0 && (
+                <div className="w-full sm:w-[240px] shrink-0">
+                  <Select
+                    value={sucursalId}
+                    onValueChange={(val) => {
+                      if (val) {
+                        setSucursalId(val)
+                        setCurrentPage(1)
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <SelectValue placeholder="Sucursal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sucursales.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Filtro Disponibilidad */}
+              <div className="w-full sm:w-[170px] shrink-0">
                 <Select
-                  value={sucursalId}
-                  onValueChange={(val) => {
-                    if (val) {
-                      setSucursalId(val)
-                      setCurrentPage(1)
-                    }
-                  }}
+                  value={disp}
+                  onValueChange={(val) => val && handleDispChange(val as typeof disp)}
                 >
-                  <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
-                    <MapPin className="h-4 w-4 text-primary shrink-0" />
-                    <SelectValue placeholder="Sucursal" />
+                  <SelectTrigger className="w-full bg-background shadow-sm">
+                    <SelectValue placeholder="Disponibilidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sucursales.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="disponible">Disponibles</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="no-disponible">Agotados</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
 
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar producto..."
-                className="w-full bg-background pl-9 shadow-sm"
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
+              {/* Buscador */}
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar producto..."
+                  className="w-full bg-background pl-9 shadow-sm"
+                  value={search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                />
+              </div>
+
+              {/* Categorías en pantallas grandes */}
+              <div className="hidden lg:block shrink-0">
+                <ToggleGroup value={[tipo]} onValueChange={(val) => {
+                  if (val && val.length > 0) handleTipoChange(val[0] as any)
+                }} className="justify-start bg-background p-1 rounded-md shadow-sm border border-input">
+                  <ToggleGroupItem value="productos" aria-label="Todos">Todos</ToggleGroupItem>
+                  <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
+                  <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
+                  <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </div>
-            <ToggleGroup value={[tipo]} onValueChange={(val) => {
-              if (val && val.length > 0) handleTipoChange(val[0] as any)
-            }} className="justify-start bg-background p-1 rounded-md shadow-sm border border-input">
-              <ToggleGroupItem value="productos" aria-label="Todos">Todos</ToggleGroupItem>
-              <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
-              <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
-              <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
-            </ToggleGroup>
+
+            {/* Categorías en pantallas móviles */}
+            <div className="lg:hidden flex overflow-x-auto pb-1">
+              <ToggleGroup value={[tipo]} onValueChange={(val) => {
+                if (val && val.length > 0) handleTipoChange(val[0] as any)
+              }} className="justify-start bg-background p-1 rounded-md shadow-sm border border-input">
+                <ToggleGroupItem value="productos" aria-label="Todos">Todos</ToggleGroupItem>
+                <ToggleGroupItem value="dulce" aria-label="Dulces">Dulces</ToggleGroupItem>
+                <ToggleGroupItem value="salado" aria-label="Salados">Salados</ToggleGroupItem>
+                <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
 
           {/* Grid de Productos */}

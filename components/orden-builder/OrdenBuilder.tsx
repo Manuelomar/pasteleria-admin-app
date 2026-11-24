@@ -29,6 +29,7 @@ export function OrdenBuilder() {
   const [isLoading, setIsLoading] = useState(true)
   const [cart, setCart] = useState<Record<string, CartItem>>({})
   const [tipoFiltro, setTipoFiltro] = useState<string>('todos')
+  const [disp, setDisp] = useState<"disponible" | "todos" | "no-disponible">("disponible")
   const [sucursales, setSucursales] = useState<SucursalPublica[]>([])
   const [sucursalId, setSucursalId] = useState<string>('')
   const [loadingSucursales, setLoadingSucursales] = useState(true)
@@ -72,7 +73,7 @@ export function OrdenBuilder() {
     if (loadingSucursales) return
     setIsLoading(true)
     api.productos
-      .getPublicPaged(currentPage, pageSize, '', tipoFiltro, undefined, sucursalId || undefined)
+      .getPublicPaged(currentPage, pageSize, '', tipoFiltro, disp, sucursalId || undefined)
       .then((res) => {
         setProductos(res.data)
         setTotalItems(res.total)
@@ -80,7 +81,7 @@ export function OrdenBuilder() {
       })
       .catch(() => toast.error('Error cargando los productos'))
       .finally(() => setIsLoading(false))
-  }, [currentPage, pageSize, tipoFiltro, sucursalId, loadingSucursales])
+  }, [currentPage, pageSize, tipoFiltro, disp, sucursalId, loadingSucursales])
 
   const handleUpdateQuantity = (producto: Producto, delta: number) => {
     setCart((prev) => {
@@ -128,7 +129,7 @@ export function OrdenBuilder() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <ToggleGroup 
           value={[tipoFiltro]} 
-          onValueChange={(val) => { if (val && val.length > 0) setTipoFiltro(val[0]) }} 
+          onValueChange={(val) => { if (val && val.length > 0) { setTipoFiltro(val[0]); setCurrentPage(1); } }} 
           className="justify-start bg-background p-1 rounded-md shadow-sm border border-input w-fit"
         >
           <ToggleGroupItem value="todos" aria-label="Todos">Todos</ToggleGroupItem>
@@ -137,31 +138,54 @@ export function OrdenBuilder() {
           <ToggleGroupItem value="bebida" aria-label="Bebidas">Bebidas</ToggleGroupItem>
         </ToggleGroup>
 
-        {sucursales.length > 0 && (
-          <div className="w-full sm:w-[250px] shrink-0">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          {sucursales.length > 0 && (
+            <div className="w-full sm:w-[220px] shrink-0">
+              <Select
+                value={sucursalId}
+                onValueChange={(val) => {
+                  if (val) {
+                    setSucursalId(val)
+                    setCurrentPage(1)
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
+                  <MapPin className="h-4 w-4 text-primary shrink-0" />
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="w-full sm:w-[160px] shrink-0">
             <Select
-              value={sucursalId}
+              value={disp}
               onValueChange={(val) => {
                 if (val) {
-                  setSucursalId(val)
+                  setDisp(val as typeof disp)
                   setCurrentPage(1)
                 }
               }}
             >
-              <SelectTrigger className="w-full bg-background shadow-sm flex items-center gap-2 font-medium">
-                <MapPin className="h-4 w-4 text-primary shrink-0" />
-                <SelectValue placeholder="Sucursal" />
+              <SelectTrigger className="w-full bg-background shadow-sm">
+                <SelectValue placeholder="Disponibilidad" />
               </SelectTrigger>
               <SelectContent>
-                {sucursales.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nombre} {s.codigo ? `(${s.codigo})` : ""}
-                  </SelectItem>
-                ))}
+                <SelectItem value="disponible">Disponibles</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="no-disponible">Agotados</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
