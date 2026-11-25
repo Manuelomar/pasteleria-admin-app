@@ -244,7 +244,7 @@ export function VentasModule() {
                 }
                 return [
                   ...prevItems,
-                  { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, cantidad: 1 },
+                  { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, precioPedidosYa: prod.precioPedidosYa, cantidad: 1 },
                 ]
              })
          }
@@ -262,7 +262,7 @@ export function VentasModule() {
       }
       return [
         ...prev,
-        { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, cantidad: 1 },
+        { productoId: id, nombre: prod.nombre, precio: prod.precio, precioUber: prod.precioUber, precioPedidosYa: prod.precioPedidosYa, cantidad: 1 },
       ]
     })
   }
@@ -309,8 +309,10 @@ export function VentasModule() {
   const subtotal = useMemo(
     () => items.reduce((s, i) => {
       let p = Number(i.precio);
-      if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+      if (metodoPago === "uberEats") {
         p = Number(i.precioUber) || p;
+      } else if (metodoPago === "pedidosYa") {
+        p = Number(i.precioPedidosYa) || Number(i.precioUber) || p;
       }
       return s + p * i.cantidad;
     }, 0),
@@ -422,8 +424,10 @@ export function VentasModule() {
     try {
       const payloadItems = items.map(i => {
         let finalPrecio = Number(i.precio);
-        if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+        if (metodoPago === "uberEats") {
           finalPrecio = Number(i.precioUber) || finalPrecio;
+        } else if (metodoPago === "pedidosYa") {
+          finalPrecio = Number(i.precioPedidosYa) || Number(i.precioUber) || finalPrecio;
         }
         return { ...i, precio: finalPrecio };
       })
@@ -517,8 +521,10 @@ export function VentasModule() {
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = Number(i.precio)
-                if (metodoPago === "uberEats" || metodoPago === "pedidosYa") {
+                if (metodoPago === "uberEats") {
                   displayPrice = Number(i.precioUber) || displayPrice;
+                } else if (metodoPago === "pedidosYa") {
+                  displayPrice = Number(i.precioPedidosYa) || Number(i.precioUber) || displayPrice;
                 }
                 
                 return (
@@ -806,7 +812,15 @@ export function VentasModule() {
                 <span className="line-clamp-1 text-sm font-medium text-foreground">{p.nombre}</span>
                 <span className="text-[10px] text-muted-foreground">Stock: {p.contable === false ? '∞' : (p.cantidad ?? 0)}</span>
                 <div className="flex items-center justify-between gap-1 mt-0.5">
-                  <span className="text-sm font-semibold text-primary">{currency(p.precio)}</span>
+                  <span className="text-sm font-semibold text-primary">
+                    {currency(
+                      metodoPago === "uberEats"
+                        ? (Number(p.precioUber) || Number(p.precio))
+                        : metodoPago === "pedidosYa"
+                        ? (Number(p.precioPedidosYa) || Number(p.precioUber) || Number(p.precio))
+                        : Number(p.precio)
+                    )}
+                  </span>
                   <Plus className="size-4 text-muted-foreground group-hover:text-primary" />
                 </div>
               </div>

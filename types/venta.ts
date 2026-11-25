@@ -8,6 +8,7 @@ export interface VentaItem {
   nombre: string
   precio: number
   precioUber?: number
+  precioPedidosYa?: number
   cantidad: number
   precioCosto?: number
 }

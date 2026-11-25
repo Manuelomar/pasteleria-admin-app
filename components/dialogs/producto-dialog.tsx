@@ -57,6 +57,7 @@ export function ProductoDialog({
   const [precio, setPrecio] = useState("")
   const [precioCosto, setPrecioCosto] = useState("")
   const [precioUber, setPrecioUber] = useState("")
+  const [precioPedidosYa, setPrecioPedidosYa] = useState("")
   const [cantidad, setCantidad] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [disponible, setDisponible] = useState(true)
@@ -106,6 +107,7 @@ export function ProductoDialog({
       setPrecio(producto && producto.precio !== undefined ? String(producto.precio) : "")
       setPrecioCosto(producto && producto.precioCosto !== undefined ? String(producto.precioCosto) : "")
       setPrecioUber(producto && producto.precioUber !== undefined ? String(producto.precioUber) : "")
+      setPrecioPedidosYa(producto && producto.precioPedidosYa !== undefined ? String(producto.precioPedidosYa) : "")
       setCantidad(producto?.cantidad !== undefined ? String(producto.cantidad) : "0")
       setDescripcion(producto?.descripcion ?? "")
       setDisponible(producto?.disponible ?? true)
@@ -205,6 +207,7 @@ export function ProductoDialog({
         precio: parseFloat(precio) || 0,
         precioCosto: parseFloat(precioCosto) || 0,
         precioUber: parseFloat(precioUber) || 0,
+        precioPedidosYa: parseFloat(precioPedidosYa) || 0,
         cantidad: parseInt(cantidad) || 0,
         descripcion,
         disponible,
@@ -334,18 +337,6 @@ export function ProductoDialog({
                   />
                 </Field>
               )}
-              {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
-                <Field>
-                  <FieldLabel htmlFor="prod-precio-uber">Precio UberEats</FieldLabel>
-                  <Input
-                    id="prod-precio-uber"
-                    type="number"
-                    value={precioUber}
-                    onChange={(e) => setPrecioUber(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </Field>
-              )}
               {(currentUser?.rol === "admin" || currentUser?.rol === "superadmin" || currentUser?.rol === "proveedor" || defaultTipo === 'material') && (
                 <Field className={defaultTipo === 'material' ? "col-span-1" : ""}>
                   <FieldLabel htmlFor="prod-precio-costo">{defaultTipo === 'material' ? 'Precio' : 'Precio de Costo'}</FieldLabel>
@@ -363,7 +354,31 @@ export function ProductoDialog({
                   )}
                 </Field>
               )}
-              <Field className={defaultTipo === 'material' || currentUser?.rol !== "admin" ? "col-span-1" : "col-span-2"}>
+              {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+                <Field>
+                  <FieldLabel htmlFor="prod-precio-uber">Precio UberEats</FieldLabel>
+                  <Input
+                    id="prod-precio-uber"
+                    type="number"
+                    value={precioUber}
+                    onChange={(e) => setPrecioUber(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </Field>
+              )}
+              {defaultTipo !== 'material' && (currentUser?.rol === "admin" || currentUser?.rol !== "proveedor") && (
+                <Field>
+                  <FieldLabel htmlFor="prod-precio-pedidosya">Precio PedidosYa</FieldLabel>
+                  <Input
+                    id="prod-precio-pedidosya"
+                    type="number"
+                    value={precioPedidosYa}
+                    onChange={(e) => setPrecioPedidosYa(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </Field>
+              )}
+              <Field className="col-span-1 sm:col-span-2">
                 <FieldLabel htmlFor="prod-cantidad">Cantidad</FieldLabel>
                 <Input
                   id="prod-cantidad"

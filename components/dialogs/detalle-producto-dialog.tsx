@@ -61,21 +61,45 @@ export function DetalleProductoDialog({
           </div>
 
           {/* Grid de Precio e Inventario */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg bg-muted/50 p-3 border border-border/50">
+          <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/50 p-3 border border-border/50 text-sm">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">
-                {currentUser?.rol === "proveedor" ? "Precio Costo" : "Precio Venta"}
+                {currentUser?.rol === "proveedor" ? "Precio Costo" : "Precio Venta (Tienda)"}
               </span>
-              <span className="text-lg font-bold text-primary">
+              <span className="text-base font-bold text-primary">
                 {currentUser?.rol === "proveedor" ? currency(producto.precioCosto || 0) : currency(producto.precio)}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Stock actual</span>
-              <span className="text-lg font-bold text-foreground">
+              <span className="text-base font-bold text-foreground">
                 {producto.cantidad ?? 0} unidades
               </span>
             </div>
+            {currentUser?.rol !== "proveedor" && (
+              <>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Precio UberEats</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {producto.precioUber ? currency(producto.precioUber) : "No asignado"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Precio PedidosYa</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {producto.precioPedidosYa ? currency(producto.precioPedidosYa) : "No asignado"}
+                  </span>
+                </div>
+              </>
+            )}
+            {(currentUser?.rol === "admin" || currentUser?.rol === "superadmin") && (
+              <div className="flex flex-col col-span-2 pt-1 border-t border-border/40">
+                <span className="text-xs text-muted-foreground">Precio de Costo</span>
+                <span className="text-sm font-medium text-foreground">
+                  {currency(producto.precioCosto || 0)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Descripción */}

@@ -16,6 +16,7 @@ export interface Producto {
   proveedorId?: string
   precioCosto?: number
   precioUber?: number
+  precioPedidosYa?: number
   historialCostos?: number[]
   sucursalId?: string | null
   sucursalNombre?: string | null
