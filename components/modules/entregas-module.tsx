@@ -125,7 +125,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoEntrega(id, estado)
         toast.success("Estado de entrega actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal)
       } catch (e) {
         toast.error("Error al actualizar estado")
       }
@@ -147,7 +147,7 @@ export function EntregasModule() {
       try {
         await api.entregas.updateEstadoPago(id, estado)
         toast.success("Estado de pago actualizado")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal)
       } catch (e) {
         toast.error("Error al actualizar pago")
       }
@@ -209,7 +209,7 @@ export function EntregasModule() {
       try {
         await api.entregas.addToStock(id)
         toast.success("Productos añadidos al stock correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal)
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Error al añadir al stock"
         toast.error(msg)
@@ -232,9 +232,10 @@ export function EntregasModule() {
       try {
         await api.entregas.remove(id)
         toast.success("Entrega descartada correctamente")
-        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds)
-      } catch (e: any) {
-        toast.error(e.message || "Error al descartar la entrega")
+        fetchEntregas(currentPage, pageSize, filtroEstado, search, proveedoresIds, selectedSucursal)
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Error al descartar la entrega"
+        toast.error(msg)
       }
     }
   }
@@ -305,7 +306,12 @@ export function EntregasModule() {
               </div>
 
               {isProveedorDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsProveedorDropdownOpen(false)}
+                  />
+                  <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md p-1">
                   <div className="p-1 pb-2 border-b">
                     <Input
                       placeholder="Buscar proveedor..."
@@ -347,6 +353,7 @@ export function EntregasModule() {
                       })}
                   </div>
                 </div>
+                </>
               )}
             </div>
           )}
