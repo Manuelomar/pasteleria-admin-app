@@ -1,5 +1,5 @@
 import { fetchAPI } from "./api.config";
-import { Entrega, CreateEntregaInput, PaginatedResponse } from "@/types";
+import { Entrega, CreateEntregaInput, PaginatedResponse, IngresoRapidoInput, IngresoRapidoResponse } from "@/types";
 
 export const entregasService = {
   getAll: (filtro?: string, sucursalId?: string): Promise<Entrega[]> => {
@@ -36,5 +36,7 @@ export const entregasService = {
   updateItems: (id: string, items: Array<{ id?: string; productoId: string; cantidad: number }>): Promise<Entrega> =>
     fetchAPI(`/entregas/${id}/items`, { method: 'PATCH', body: JSON.stringify({ items }) }),
   addToStock: (id: string): Promise<Entrega> => fetchAPI(`/entregas/${id}/add-to-stock`, { method: 'POST' }),
+  ingresoRapido: (data: IngresoRapidoInput): Promise<IngresoRapidoResponse> =>
+    fetchAPI('/entregas/ingreso-rapido', { method: 'POST', body: JSON.stringify(data) }),
   remove: (id: string): Promise<{ message: string }> => fetchAPI(`/entregas/${id}`, { method: 'DELETE' }),
 };

@@ -24,6 +24,7 @@ import { ProductoDialog } from "@/components/dialogs/producto-dialog"
 import { DetalleProductoDialog } from "@/components/dialogs/detalle-producto-dialog"
 import { SelectExistingProductDialog } from "@/components/dialogs/select-existing-product-dialog"
 import { ClonarCatalogoDialog } from "@/components/dialogs/clonar-catalogo-dialog"
+import { IngresoStockDialog } from "@/components/dialogs/ingreso-stock-dialog"
 import { currency, type Producto, type Tipo, type Usuario, type Sucursal } from "@/types"
 import { api } from "@/services"
 import { API_URL } from "@/services/api.config"
@@ -57,6 +58,8 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas")
   const [clonarDialogOpen, setClonarDialogOpen] = useState<boolean>(false)
+  const [ingresoStockOpen, setIngresoStockOpen] = useState<boolean>(false)
+  const [ingresoStockProduct, setIngresoStockProduct] = useState<Producto | null>(null)
 
   const isSuperAdmin = currentUser?.rol === "superadmin"
   const isAdmin = isSuperAdmin || currentUser?.rol === "admin"
@@ -185,7 +188,12 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
   }
 
   const handleAddStock = async (p: Producto) => {
-    // ... [Content unchanged but to keep file correct I need to match the previous handleAddStock completely or just add after it]
+    if (isAdmin) {
+      setIngresoStockProduct(p)
+      setIngresoStockOpen(true)
+      return
+    }
+
     const { value: amount } = await Swal.fire({
       title: `Añadir stock`,
       text: `Producto: ${p.nombre}`,
@@ -343,6 +351,20 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               >
                 <Copy className="size-4" />
                 Clonar catálogo
+              </Button>
+            )}
+
+            {isAdmin && (selectedProviderId === "internos" || !selectedProviderId) && items.length > 0 && (
+              <Button
+                variant="outline"
+                className="gap-2 border-emerald-500/40 text-emerald-600 hover:border-emerald-600 hover:bg-emerald-50"
+                onClick={() => {
+                  setIngresoStockProduct(items[0])
+                  setIngresoStockOpen(true)
+                }}
+              >
+                <PackagePlus className="size-4" />
+                Ingreso rápido
               </Button>
             )}
 
@@ -664,6 +686,18 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
         onOpenChange={setClonarDialogOpen}
         onCloned={fetchProductos}
         defaultDestinoId={isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : undefined}
+      />
+
+      <IngresoStockDialog
+        open={ingresoStockOpen}
+        onOpenChange={setIngresoStockOpen}
+        producto={ingresoStockProduct}
+        productos={items}
+        sucursales={sucursales}
+        providers={providers}
+        currentUser={currentUser}
+        defaultSucursalId={isSuperAdmin && sucursalFiltro !== "todas" ? sucursalFiltro : undefined}
+        onSuccess={fetchProductos}
       />
     </div>
   )

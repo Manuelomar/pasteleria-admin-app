@@ -27,6 +27,20 @@ export interface CreateEntregaInput {
   items: CreateEntregaItemInput[]
 }
 
+export interface IngresoRapidoInput {
+  proveedorId: string
+  sucursalId: string
+  productoId: string
+  cantidad: number
+  precioCosto?: number
+  estadoPago?: EstadoPagoEntrega
+}
+
+export interface IngresoRapidoResponse {
+  entrega: Entrega
+  producto: Producto
+}
+
 export interface Entrega {
   id: string
   proveedorId: string
