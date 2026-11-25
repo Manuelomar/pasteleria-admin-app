@@ -343,6 +343,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
               </Select>
             )}
 
+            {/* Clonar catálogo oculto por ahora
             {isSuperAdmin && sucursales.length >= 2 && (
               <Button
                 variant="outline"
@@ -353,6 +354,7 @@ export function CatalogoModule({ subModule }: { subModule?: string }) {
                 Clonar catálogo
               </Button>
             )}
+            */}
 
             {isAdmin && (selectedProviderId === "internos" || !selectedProviderId) && items.length > 0 && (
               <Button

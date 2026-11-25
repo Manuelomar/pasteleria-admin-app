@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect, useCallback } from "react"
-import { Search, Plus, Trash2, Minus, Printer, Save, Eraser, X, Building2 } from "lucide-react"
+import { Search, Plus, Trash2, Minus, Printer, Save, Eraser, X, Building2, Store, Bike } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,6 +39,7 @@ import { AppPagination } from "@/components/ui/app-pagination"
 import { Loader } from "@/components/ui/loader"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { API_URL } from "@/services/api.config"
+import { cn } from "@/lib/utils"
 
 export function VentasModule() {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
@@ -52,6 +53,7 @@ export function VentasModule() {
   const [descuento, setDescuento] = useState("0")
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState("0")
   const [aplicarItbis, setAplicarItbis] = useState(false)
+  const [canalVenta, setCanalVenta] = useState<"local" | "uberEats" | "pedidosYa">("local")
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo")
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pagado")
   const [montoPagado, setMontoPagado] = useState("")
@@ -124,6 +126,13 @@ export function VentasModule() {
         if (parsed.descuento) setDescuento(parsed.descuento)
         if (parsed.descuentoPorcentaje) setDescuentoPorcentaje(parsed.descuentoPorcentaje)
         if (parsed.aplicarItbis !== undefined) setAplicarItbis(parsed.aplicarItbis)
+        if (parsed.canalVenta) {
+          setCanalVenta(parsed.canalVenta)
+        } else if (parsed.metodoPago === "uberEats" || parsed.metodoPago === "pedidosYa") {
+          setCanalVenta(parsed.metodoPago)
+        } else {
+          setCanalVenta("local")
+        }
         if (parsed.metodoPago) setMetodoPago(parsed.metodoPago)
         if (parsed.estadoPago) setEstadoPago(parsed.estadoPago)
         if (parsed.montoPagado) setMontoPagado(parsed.montoPagado)
@@ -144,6 +153,7 @@ export function VentasModule() {
         descuento,
         descuentoPorcentaje,
         aplicarItbis,
+        canalVenta,
         metodoPago,
         estadoPago,
         montoPagado,
@@ -155,7 +165,7 @@ export function VentasModule() {
     }
   }, [
     items, clienteId, descuento, descuentoPorcentaje, 
-    aplicarItbis, metodoPago, estadoPago, montoPagado, 
+    aplicarItbis, canalVenta, metodoPago, estadoPago, montoPagado, 
     efectivoRecibido, isLoaded
   ])
 
@@ -309,14 +319,14 @@ export function VentasModule() {
   const subtotal = useMemo(
     () => items.reduce((s, i) => {
       let p = Number(i.precio);
-      if (metodoPago === "uberEats") {
+      if (canalVenta === "uberEats") {
         p = Number(i.precioUber) || p;
-      } else if (metodoPago === "pedidosYa") {
+      } else if (canalVenta === "pedidosYa") {
         p = Number(i.precioPedidosYa) || Number(i.precioUber) || p;
       }
       return s + p * i.cantidad;
     }, 0),
-    [items, metodoPago],
+    [items, canalVenta],
   )
   const descMonto = Number(descuento) || 0
   const descPorcentaje = Number(descuentoPorcentaje) || 0
@@ -329,10 +339,10 @@ export function VentasModule() {
   let comisionPlataforma = 0;
   let impuestosPlataforma = 0;
   
-  if (metodoPago === "uberEats") {
+  if (canalVenta === "uberEats") {
     comisionPlataforma = baseTotal * 0.3304; // 28% comisión + 18% ITBIS = 33.04%
     total = baseTotal - comisionPlataforma;
-  } else if (metodoPago === "pedidosYa") {
+  } else if (canalVenta === "pedidosYa") {
     comisionPlataforma = baseTotal * 0.26; // cobran 26%
     impuestosPlataforma = baseTotal * 0.0072; // impuestos 0.72%
     total = baseTotal - comisionPlataforma - impuestosPlataforma;
@@ -340,7 +350,7 @@ export function VentasModule() {
 
   const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
-  const devuelta = metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
+  const devuelta = canalVenta === "local" && metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
     ? Number(efectivoRecibido) - total 
     : 0
 
@@ -353,8 +363,9 @@ export function VentasModule() {
     setAplicarItbis(false)
     setMontoPagado("")
     setEfectivoRecibido("")
-    setEstadoPago("pagado")
+    setCanalVenta("local")
     setMetodoPago("efectivo")
+    setEstadoPago("pagado")
     setClienteId("general")
     setMobileCartOpen(false)
   }
@@ -424,17 +435,17 @@ export function VentasModule() {
     try {
       const payloadItems = items.map(i => {
         let finalPrecio = Number(i.precio);
-        if (metodoPago === "uberEats") {
+        if (canalVenta === "uberEats") {
           finalPrecio = Number(i.precioUber) || finalPrecio;
-        } else if (metodoPago === "pedidosYa") {
+        } else if (canalVenta === "pedidosYa") {
           finalPrecio = Number(i.precioPedidosYa) || Number(i.precioUber) || finalPrecio;
         }
         return { ...i, precio: finalPrecio };
       })
       
       const finalSubtotal = subtotal
-      const finalImp = metodoPago === "uberEats" ? 0 : imp
-      const finalDescuento = metodoPago === "uberEats" ? Math.max(0, subtotal - total) : descTotal
+      const finalImp = canalVenta === "uberEats" ? 0 : imp
+      const finalDescuento = canalVenta === "uberEats" ? Math.max(0, subtotal - total) : descTotal
       const finalPagado = estadoPago === "pagado" ? total : (Number(montoPagado) || 0)
       const finalBalance = Math.max(0, total - finalPagado)
       const targetSucursalId = selectedSucursal || currentUser?.sucursalId || null
@@ -447,7 +458,7 @@ export function VentasModule() {
         descuento: finalDescuento,
         impuesto: finalImp,
         total,
-        metodoPago,
+        metodoPago: canalVenta === "local" ? metodoPago : canalVenta,
         estadoPago,
         montoPagado: finalPagado,
         balance: finalBalance,
@@ -521,9 +532,9 @@ export function VentasModule() {
               {items.map((i) => {
                 const prod = fetchedProductos.find(p => p.id === i.productoId)
                 let displayPrice = Number(i.precio)
-                if (metodoPago === "uberEats") {
+                if (canalVenta === "uberEats") {
                   displayPrice = Number(i.precioUber) || displayPrice;
-                } else if (metodoPago === "pedidosYa") {
+                } else if (canalVenta === "pedidosYa") {
                   displayPrice = Number(i.precioPedidosYa) || Number(i.precioUber) || displayPrice;
                 }
                 
@@ -556,36 +567,113 @@ export function VentasModule() {
 
           <Separator />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field>
-              <FieldLabel>Método de pago</FieldLabel>
-              <Select value={metodoPago} onValueChange={(v) => v !== null && setMetodoPago(v as MetodoPago)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="efectivo">Efectivo</SelectItem>
-                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                  <SelectItem value="transferencia">Transferencia</SelectItem>
-                  <SelectItem value="uberEats">UberEats</SelectItem>
-                  <SelectItem value="pedidosYa">Pedidos Ya</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel>Estado de pago</FieldLabel>
-              <Select value={estadoPago} onValueChange={(v) => v !== null && setEstadoPago(v as EstadoPago)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pagado">Pagado</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="parcial">Parcial</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
+          {/* Selector de Canal de Venta */}
+          <Field>
+            <FieldLabel className="text-xs font-semibold">Canal de Venta</FieldLabel>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-medium transition cursor-pointer",
+                  canalVenta === "local"
+                    ? "border-primary bg-primary/10 text-primary shadow-sm font-semibold"
+                    : "border-border hover:bg-muted text-muted-foreground"
+                )}
+                onClick={() => {
+                  setCanalVenta("local")
+                  setMetodoPago("efectivo")
+                }}
+              >
+                <Store className="size-3.5 shrink-0" />
+                Local
+              </button>
+
+              <button
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-medium transition cursor-pointer",
+                  canalVenta === "uberEats"
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm font-semibold"
+                    : "border-border hover:bg-muted text-muted-foreground"
+                )}
+                onClick={() => {
+                  setCanalVenta("uberEats")
+                  setMetodoPago("uberEats")
+                }}
+              >
+                <Bike className="size-3.5 shrink-0" />
+                UberEats
+              </button>
+
+              <button
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-medium transition cursor-pointer",
+                  canalVenta === "pedidosYa"
+                    ? "border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 shadow-sm font-semibold"
+                    : "border-border hover:bg-muted text-muted-foreground"
+                )}
+                onClick={() => {
+                  setCanalVenta("pedidosYa")
+                  setMetodoPago("pedidosYa")
+                }}
+              >
+                <Bike className="size-3.5 shrink-0" />
+                Pedidos Ya
+              </button>
+            </div>
+          </Field>
+
+          {canalVenta === "local" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field>
+                <FieldLabel>Método de pago</FieldLabel>
+                <Select value={metodoPago} onValueChange={(v) => v !== null && setMetodoPago(v as MetodoPago)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Estado de pago</FieldLabel>
+                <Select value={estadoPago} onValueChange={(v) => v !== null && setEstadoPago(v as EstadoPago)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pagado">Pagado</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                    <SelectItem value="parcial">Parcial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field>
+                <FieldLabel>Pago por Plataforma</FieldLabel>
+                <div className="flex items-center h-10 px-3 rounded-md bg-muted/60 border text-xs font-medium text-foreground">
+                  {canalVenta === "uberEats" ? "Cobro vía UberEats" : "Cobro vía PedidosYa"}
+                </div>
+              </Field>
+              <Field>
+                <FieldLabel>Estado de pago</FieldLabel>
+                <Select value={estadoPago} onValueChange={(v) => v !== null && setEstadoPago(v as EstadoPago)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pagado">Pagado</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          )}
 
           <Separator />
 
@@ -625,33 +713,37 @@ export function VentasModule() {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-border pt-2">
-                <span className="font-heading text-base font-semibold">Subtotal Bruto</span>
-                <span className="font-heading text-lg font-semibold">{currency(baseTotal)}</span>
-              </div>
-              
-              {(metodoPago === "uberEats" || metodoPago === "pedidosYa") && (
+
+              {canalVenta !== "local" ? (
                 <>
+                  <div className="flex items-center justify-between border-t border-border pt-2">
+                    <span className="font-heading text-base font-semibold">Subtotal Bruto</span>
+                    <span className="font-heading text-lg font-semibold">{currency(baseTotal)}</span>
+                  </div>
                   <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-2">
-                    <span>Comisión Plataforma ({metodoPago === "uberEats" ? "33.04%" : "26%"})</span>
+                    <span>Comisión Plataforma ({canalVenta === "uberEats" ? "33.04%" : "26%"})</span>
                     <span>-{currency(comisionPlataforma)}</span>
                   </div>
-                  {metodoPago === "pedidosYa" && (
+                  {canalVenta === "pedidosYa" && (
                     <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mt-1">
                       <span>Impuestos Plataforma (0.72%)</span>
                       <span>-{currency(impuestosPlataforma)}</span>
                     </div>
                   )}
+                  <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
+                    <span className="font-heading text-base font-semibold">Total Final (Net Payout)</span>
+                    <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
+                  </div>
                 </>
+              ) : (
+                <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
+                  <span className="font-heading text-base font-semibold">Total</span>
+                  <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
+                </div>
               )}
-
-              <div className="flex items-center justify-between border-t border-border pt-2 mt-2">
-                <span className="font-heading text-base font-semibold">Total Final (Net Payout)</span>
-                <span className="font-heading text-lg font-semibold text-primary">{currency(total)}</span>
-              </div>
             </div>
 
-          {estadoPago === "pagado" && metodoPago === "efectivo" ? (
+          {canalVenta === "local" && estadoPago === "pagado" && metodoPago === "efectivo" ? (
             <div className="flex flex-col gap-3">
               <Field>
                 <FieldLabel>Efectivo recibido (Calcula devuelta)</FieldLabel>
@@ -814,9 +906,9 @@ export function VentasModule() {
                 <div className="flex items-center justify-between gap-1 mt-0.5">
                   <span className="text-sm font-semibold text-primary">
                     {currency(
-                      metodoPago === "uberEats"
+                      canalVenta === "uberEats"
                         ? (Number(p.precioUber) || Number(p.precio))
-                        : metodoPago === "pedidosYa"
+                        : canalVenta === "pedidosYa"
                         ? (Number(p.precioPedidosYa) || Number(p.precioUber) || Number(p.precio))
                         : Number(p.precio)
                     )}
