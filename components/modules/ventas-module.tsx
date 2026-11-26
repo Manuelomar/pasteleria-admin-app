@@ -128,8 +128,12 @@ export function VentasModule() {
         if (parsed.aplicarItbis !== undefined) setAplicarItbis(parsed.aplicarItbis)
         if (parsed.canalVenta) {
           setCanalVenta(parsed.canalVenta)
+          if (parsed.canalVenta !== "local") {
+            setEstadoPago("pagado")
+          }
         } else if (parsed.metodoPago === "uberEats" || parsed.metodoPago === "pedidosYa") {
           setCanalVenta(parsed.metodoPago)
+          setEstadoPago("pagado")
         } else {
           setCanalVenta("local")
         }
@@ -348,7 +352,7 @@ export function VentasModule() {
     total = baseTotal - comisionPlataforma - impuestosPlataforma;
   }
 
-  const pagado = estadoPago === "pagado" ? total : Number(montoPagado) || 0
+  const pagado = (canalVenta !== "local" || estadoPago === "pagado") ? total : Number(montoPagado) || 0
   const balance = Math.max(0, total - pagado)
   const devuelta = canalVenta === "local" && metodoPago === "efectivo" && estadoPago === "pagado" && Number(efectivoRecibido) > total 
     ? Number(efectivoRecibido) - total 
@@ -411,7 +415,7 @@ export function VentasModule() {
       toast.error("Agrega al menos un producto a la venta")
       return
     }
-    if (estadoPago !== "pagado" && !esCredito) {
+    if (canalVenta === "local" && estadoPago !== "pagado" && !esCredito) {
       toast.error("Las ventas a crédito requieren un cliente registrado")
       return
     }
@@ -446,7 +450,8 @@ export function VentasModule() {
       const finalSubtotal = subtotal
       const finalImp = canalVenta === "uberEats" ? 0 : imp
       const finalDescuento = canalVenta === "uberEats" ? Math.max(0, subtotal - total) : descTotal
-      const finalPagado = estadoPago === "pagado" ? total : (Number(montoPagado) || 0)
+      const finalEstadoPago = canalVenta === "local" ? estadoPago : "pagado"
+      const finalPagado = finalEstadoPago === "pagado" ? total : (Number(montoPagado) || 0)
       const finalBalance = Math.max(0, total - finalPagado)
       const targetSucursalId = selectedSucursal || currentUser?.sucursalId || null
 
@@ -459,7 +464,7 @@ export function VentasModule() {
         impuesto: finalImp,
         total,
         metodoPago: canalVenta === "local" ? metodoPago : canalVenta,
-        estadoPago,
+        estadoPago: finalEstadoPago,
         montoPagado: finalPagado,
         balance: finalBalance,
         items: payloadItems
@@ -599,6 +604,7 @@ export function VentasModule() {
                 onClick={() => {
                   setCanalVenta("uberEats")
                   setMetodoPago("uberEats")
+                  setEstadoPago("pagado")
                 }}
               >
                 <Bike className="size-3.5 shrink-0" />
@@ -616,6 +622,7 @@ export function VentasModule() {
                 onClick={() => {
                   setCanalVenta("pedidosYa")
                   setMetodoPago("pedidosYa")
+                  setEstadoPago("pagado")
                 }}
               >
                 <Bike className="size-3.5 shrink-0" />
@@ -653,26 +660,12 @@ export function VentasModule() {
               </Field>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel>Pago por Plataforma</FieldLabel>
-                <div className="flex items-center h-10 px-3 rounded-md bg-muted/60 border text-xs font-medium text-foreground">
-                  {canalVenta === "uberEats" ? "Cobro vía UberEats" : "Cobro vía PedidosYa"}
-                </div>
-              </Field>
-              <Field>
-                <FieldLabel>Estado de pago</FieldLabel>
-                <Select value={estadoPago} onValueChange={(v) => v !== null && setEstadoPago(v as EstadoPago)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pagado">Pagado</SelectItem>
-                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel>Pago por Plataforma</FieldLabel>
+              <div className="flex items-center h-10 px-3 rounded-md bg-muted/60 border text-xs font-medium text-foreground">
+                {canalVenta === "uberEats" ? "Cobro vía UberEats" : "Cobro vía PedidosYa"}
+              </div>
+            </Field>
           )}
 
           <Separator />
@@ -763,7 +756,7 @@ export function VentasModule() {
             </div>
           ) : null}
 
-          {estadoPago !== "pagado" ? (
+          {canalVenta === "local" && estadoPago !== "pagado" ? (
             <>
               <Field>
                 <FieldLabel>Monto pagado</FieldLabel>
